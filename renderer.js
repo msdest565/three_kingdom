@@ -63,6 +63,7 @@ export class Renderer {
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.reducedMotion = reducedMotion;
     this.flash = null;
+    this.bladeTrails = [];
     this.width = 0;
     this.height = 0;
     this.background = document.createElement('canvas');
@@ -110,11 +111,13 @@ export class Renderer {
       started: now, resultAt: null, kills: event.kills ?? event.count ?? 0,
       burstId: event.burstId, angle: event.angle ?? -Math.PI / 2,
     };
+    this.bladeTrails = [];
   }
 
   destroy() {
     this.resizeObserver?.disconnect();
     this.flash = null;
+    this.bladeTrails = [];
   }
 
   drawBackground(ctx) {
@@ -259,8 +262,8 @@ export class Renderer {
   render(game, { selectedSlot = -1 } = {}) {
     if (!game || !this.ctx) return;
     const ctx = this.ctx;
-    const time = game.time || 0;
     const now = performance.now() / 1000;
+    const time = now;
     const flashAge = this.flash ? now - this.flash.started : Infinity;
     if (flashAge > 1.65 && (!this.flash?.resultAt || now - this.flash.resultAt > 1.05)) this.flash = null;
 
@@ -284,7 +287,15 @@ export class Renderer {
       if (!camps[index]) this.drawEmptyCamp(ctx, slot, index === selectedSlot, time);
     });
     const enemies = game.enemies || [];
-    const entities = enemies.map(enemy => ({ kind: 'enemy', entity: enemy, y: enemy.y }));
+    // Small stable offsets reveal the actual troop silhouettes without changing hitboxes or RNG.
+    const entities = enemies.map(enemy => {
+      const id = Number(enemy.id) || 0;
+      const amount = enemy.type === 'boss' ? 0 : enemy.type === 'armor' ? 0.65 : 1;
+      const dx = ((id % 7) - 3) * 1.55 * amount;
+      const dy = ((Math.floor(id / 7) % 3) - 1) * 1.6 * amount;
+      const visualEnemy = { ...enemy, x: enemy.x + dx, y: enemy.y + dy };
+      return { kind: 'enemy', entity: visualEnemy, y: visualEnemy.y };
+    });
     camps.forEach((camp, slot) => {
       if (camp) entities.push({ kind: 'camp', entity: { ...camp, slot }, y: CAMP_SLOTS[slot].y });
     });
@@ -293,10 +304,24 @@ export class Renderer {
       if (item.kind === 'enemy') this.drawEnemy(ctx, item.entity, time);
       else this.drawCamp(ctx, item.entity, item.entity.slot === selectedSlot, time);
     }
-    if (game.state === 'ready' && enemies.length === 0) this.drawPreview(ctx);
-
     for (const projectile of game.projectiles || []) this.drawProjectile(ctx, projectile);
     this.drawHero(ctx, time, (game.rage || 0) >= 100, this.flash && flashAge < 0.4);
+    // The damage wave stays on battle time. Its faint sampled trail lasts in wall time at 2×.
+    for (const effect of game.effects || []) {
+      if (effect.type !== 'ultimate') continue;
+      const latest = this.bladeTrails.at(-1);
+      if (!latest || latest.effect.burstId !== effect.burstId || Math.abs(latest.effect.front - effect.front) >= 15) {
+        this.bladeTrails.push({ effect: { ...effect }, at: now });
+      }
+    }
+    this.bladeTrails = this.bladeTrails.filter(trail => now - trail.at <= 0.3).slice(-8);
+    if (!this.reducedMotion) {
+      for (const trail of this.bladeTrails) {
+        const age = now - trail.at;
+        if (age < 0.025) continue;
+        this.drawBladeWave(ctx, trail.effect, 0.3, { opacity: 0.18 * (1 - age / 0.3), trailOnly: true });
+      }
+    }
     for (const effect of game.effects || []) this.drawEffect(ctx, effect, time);
     if (game.hp <= (game.maxHp || 100) * 0.3 && isPlaying) this.drawDanger(ctx, time);
     ctx.restore();
@@ -567,11 +592,11 @@ export class Renderer {
     ctx.restore();
   }
 
-  drawBladeWave(ctx, effect, ratio) {
+  drawBladeWave(ctx, effect, ratio, { opacity = 1, trailOnly = false } = {}) {
     const width = effect.width || 180;
     const front = effect.front || 0;
     ctx.save(); ctx.translate(effect.originX ?? 210, effect.originY ?? 550); ctx.rotate(effect.angle ?? -Math.PI / 2);
-    ctx.globalAlpha = Math.min(0.9, 0.5 + ratio * 0.5);
+    ctx.globalAlpha *= Math.min(0.9, 0.5 + ratio * 0.5) * opacity;
     const trail = ctx.createLinearGradient(front - 100, 0, front + 10, 0);
     trail.addColorStop(0, '#71e2bd00'); trail.addColorStop(0.8, '#71e2bd70'); trail.addColorStop(1, '#daffdeb3');
     ctx.fillStyle = trail;
@@ -580,8 +605,8 @@ export class Renderer {
     ctx.beginPath(); ctx.moveTo(front - 24, -width / 2); ctx.quadraticCurveTo(front + 70, 0, front - 24, width / 2); ctx.stroke();
     ctx.strokeStyle = '#d6ffdf'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(front - 24, -width / 2); ctx.quadraticCurveTo(front + 70, 0, front - 24, width / 2); ctx.stroke();
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.stroke();
-    if (!this.reducedMotion) {
+    if (!trailOnly) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.stroke(); }
+    if (!this.reducedMotion && !trailOnly) {
       ctx.strokeStyle = '#aef0c5a8'; ctx.lineWidth = 1.5;
       for (let i = 0; i < 6; i++) { const y = (i / 5 - 0.5) * width * 0.9; ctx.beginPath(); ctx.moveTo(front - 85 + i % 2 * 20, y); ctx.lineTo(front - 35, y); ctx.stroke(); }
     }

@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1840" viewBox="0 0 1600 1840" role="img" aria-labelledby="title desc">
+  <title id="title">无双守关 V1 可编辑美术生产参考</title>
+  <desc id="desc">墨绿金赭国风色板、竖屏双路山关与三将阵位、四位武将轮廓示意、敌军和六类军阵、关羽刀波时间轴，以及魏蜀吴十五位武将的配色和武器索引。此图是生产参考，角色动画和资源尚待制作。</desc>
+  <defs>
+    <style>
+      text{font-family:"Microsoft YaHei","PingFang SC",sans-serif;fill:#eedfb3}
+      .title{font-size:36px;font-weight:700;letter-spacing:3px}
+      .section{font-size:22px;font-weight:700;letter-spacing:1px}
+      .body{font-size:17px;fill:#b7c0a8}
+      .small{font-size:15px;fill:#b7c0a8}
+      .tiny{font-size:13px;fill:#c1c7af}
+      .name{font-size:22px;font-weight:700}
+      .caption{font-size:17px;fill:#e4c27a}
+      .panel{fill:#213a30;stroke:#a7a477;stroke-opacity:.28;stroke-width:1}
+      .card{fill:#192f29;stroke:#c3b986;stroke-opacity:.22;stroke-width:1}
+      .divider{stroke:#c5bb88;stroke-opacity:.2;stroke-width:1}
+    </style>
+    <linearGradient id="canvas-bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#20392e"/><stop offset="1" stop-color="#101f1b"/></linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#758664"/><stop offset=".5" stop-color="#909b71"/><stop offset="1" stop-color="#697d62"/></linearGradient>
+    <linearGradient id="blade-tail" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#77ceb0" stop-opacity="0"/><stop offset="1" stop-color="#a8ecc7" stop-opacity=".68"/></linearGradient>
+    <pattern id="grass" width="33" height="31" patternUnits="userSpaceOnUse"><path d="M2 9l3-4M15 24l4-1M27 10l2-3" fill="none" stroke="#d3d4a5" stroke-opacity=".2" stroke-width="1.3"/></pattern>
+    <filter id="silhouette" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.04 0 0 0 0 0.09 0 0 0 0 0.07 0 0 0 1 0"/></filter>
+    <filter id="blade-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2"/></filter>
+
+    <g id="pine"><path d="M0 8V-25" stroke="#5c5743" stroke-width="4"/><path d="M0-52L23-24H-24ZM0-36L26-8H-26ZM0-21L29 6H-29Z" fill="#3c5945"/><path d="M0-50L-18-27M0-35L-22-10M0-20L-24 3" stroke="#93a574" stroke-opacity=".45" fill="none"/></g>
+    <g id="rock"><ellipse cx="1" cy="5" rx="23" ry="8" fill="#314839" opacity=".2"/><path d="M-24 2L-13-12L8-17L26 4L15 11H-17Z" fill="#797e66"/><path d="M-24 2L-13-12L8-17L4 7Z" fill="#a7a68a"/></g>
+    <g id="empty-camp"><ellipse cy="6" rx="31" ry="21" fill="#4c624e" fill-opacity=".7" stroke="#dbd3a7" stroke-width="1.8"/><ellipse cy="6" rx="25" ry="16" fill="none" stroke="#2c4738" stroke-opacity=".6"/><path d="M-7 6H7M0-1V13" stroke="#f0e5bf" stroke-width="2.8" stroke-linecap="round"/></g>
+    <g id="infantry"><ellipse cy="3" rx="7" ry="3" fill="#23352c" opacity=".3"/><path d="M-4-2V5M3-2V5" stroke="#34382f" stroke-width="3"/><rect x="-5" y="-13" width="10" height="14" rx="2" fill="#a23d37"/><circle cy="-17" r="4" fill="#d3b389"/><path d="M-5-17Q-5-25 0-22Q5-25 5-17Z" fill="#87392f"/><path d="M-5-17H5" stroke="#d6b874"/><path d="M8 4V-27" stroke="#624d38" stroke-width="1.4"/><path d="M8-30L5-25H11Z" fill="#d3cfb7"/><path d="M8-24L18-21L8-16Z" fill="#b95742"/></g>
+    <g id="cavalry"><ellipse cy="5" rx="15" ry="4" fill="#23352c" opacity=".3"/><rect x="-14" y="-5" width="27" height="10" rx="4" fill="#79573e"/><path d="M-9 1L-11 9M8 1L10 9" stroke="#4b3b2c" stroke-width="3"/><path d="M9-4L11-13L18-8L16 0Z" fill="#8d6246"/><rect x="-5" y="-17" width="10" height="14" rx="2" fill="#a23d37"/><circle cy="-20" r="4" fill="#d3b389"/><path d="M-5-20Q0-29 5-20Z" fill="#883b32"/><path d="M6-5L9-36" stroke="#a08b61" stroke-width="1.5"/><path d="M9-36L22-31L9-25Z" fill="#b6573f"/></g>
+    <g id="armor"><ellipse cy="4" rx="10" ry="4" fill="#23352c" opacity=".3"/><path d="M-5-2V6M4-2V6" stroke="#303d34" stroke-width="4"/><rect x="-10" y="-19" width="20" height="22" rx="3" fill="#565e54"/><path d="M-10-15H10M-8-10H8M-8-5H8" stroke="#bfb897" stroke-width="1"/><circle cy="-24" r="5" fill="#caad86"/><path d="M-6-24L-5-32H5L6-24Z" fill="#505b50"/><path d="M-6-24H6" stroke="#d2bf8b"/><rect x="-13" y="-13" width="10" height="20" rx="1" fill="#6b705d" stroke="#d0c597" stroke-width="1.2"/><path d="M3-19V-14" stroke="#a94837" stroke-width="5"/></g>
+    <g id="boss"><ellipse cy="5" rx="16" ry="6" fill="#20362c" opacity=".4"/><path d="M-9 0V10M7 0V10" stroke="#29372f" stroke-width="6"/><path d="M-15-33H15L18 4H-18Z" fill="#5b6155" stroke="#c9b68b" stroke-width="1.5"/><path d="M-13-25H13M-12-15H12M-13-5H13" stroke="#b8b096" stroke-width="1.5"/><path d="M-20-32L-10-39L-8-25H-20ZM20-32L10-39L8-25H20Z" fill="#a54c39"/><circle cy="-43" r="7" fill="#bc926a"/><path d="M-9-43L-7-55H7L9-43Z" fill="#37453b" stroke="#c9b68b"/><path d="M1-55Q12-74 17-62L7-54" fill="#b14f3b"/><path d="M23 10V-58" stroke="#ab8e58" stroke-width="3"/><path d="M23-58L42-47L23-38Z" fill="#b7c5ad"/></g>
+
+    <g id="guanyu"><ellipse cy="7" rx="18" ry="6" fill="#173329" opacity=".4"/><path d="M-13-30L10-30L17 6H-19Z" fill="#164d42"/><path d="M-9-29H7L10 5H-14Z" fill="#3e9873"/><path d="M-10-19H10M-12-6H13" stroke="#d6be78" stroke-width="2"/><ellipse cy="-39" rx="8" ry="10" fill="#a84f3c"/><path d="M-9-44L-6-56L8-53L10-44Z" fill="#246049"/><path d="M-9-44H9" stroke="#d2bb74" stroke-width="2"/><path d="M-5-40L-1-42M1-42L5-40" stroke="#233129" stroke-width="1.5"/><path d="M-7-33H7Q8-15 1-9Q-8-19-7-33Z" fill="#202e27"/><path d="M1-29L2-13" stroke="#718875" stroke-width=".7"/><path d="M23 15L19-62" stroke="#795d39" stroke-width="4"/><path d="M19-62Q50-73 43-42Q31-55 20-50Z" fill="#b4e1cd" stroke="#edffe8" stroke-width="1.5"/><path d="M20-46L30-39L26-22L22-39Z" fill="#b64137"/></g>
+    <g id="zhouyu"><ellipse cy="7" rx="15" ry="5" fill="#173329" opacity=".4"/><path d="M-10-29H11L15 7H-15Z" fill="#bb6245"/><path d="M-8-27H3L4 5H-12Z" fill="#e3b17a"/><path d="M-11-16H12" stroke="#ceb879" stroke-width="2"/><ellipse cy="-39" rx="7" ry="9" fill="#d5ac84"/><path d="M-8-43L-5-53H7L9-43Z" fill="#3f5353"/><path d="M-5-48L-13-53M5-48L14-52" stroke="#3e5652" stroke-width="2"/><path d="M7-24L22-34" stroke="#cfa178" stroke-width="4"/><path d="M20-34L16-49Q33-50 38-33L23-26Z" fill="#d8d9ac" stroke="#405e4b" stroke-width="1"/><path d="M23-30L20-45M23-30L27-46M23-30L34-38" stroke="#7c9466"/><path d="M-15 3Q-26-19-15-35Q-18-20-6-15Q-10-4-15 3Z" fill="#e6b760" opacity=".6"/></g>
+    <g id="zhangfei"><ellipse cy="8" rx="20" ry="6" fill="#173329" opacity=".4"/><path d="M-20-30L20-30L17 7H-18Z" fill="#46504c"/><path d="M-24-29L-13-37L-7-25L-21-18ZM24-29L13-37L7-25L21-18Z" fill="#8c7350"/><path d="M-17-13H17M-15 0H15" stroke="#c7ab68" stroke-width="2"/><ellipse cy="-43" rx="9" ry="9" fill="#ae7853"/><path d="M-10-45Q-14-63 0-55Q13-62 11-44Z" fill="#273b32"/><path d="M-10-36L-17-27L-5-30L0-17L7-28L18-25L10-38Z" fill="#26322b"/><path d="M-7-43L-2-46M2-46L7-43" stroke="#24322a" stroke-width="2"/><path d="M30 15V-62" stroke="#806743" stroke-width="4"/><path d="M30-62Q18-72 32-80Q43-72 29-65" fill="none" stroke="#d7debe" stroke-width="3"/><path d="M27-54L38-47L35-35" fill="none" stroke="#ba4c3a" stroke-width="3"/></g>
+    <g id="zhaoyun"><ellipse cy="8" rx="15" ry="5" fill="#173329" opacity=".4"/><path d="M-10-30L10-30L16 7H-14Z" fill="#e3e8d4"/><path d="M-10-28L-18-10L-14 3L-6-16Z" fill="#9ac4cd"/><rect x="-9" y="-29" width="18" height="24" rx="3" fill="#8bafc4" stroke="#dbe4d3"/><path d="M-8-21H8M-8-13H8" stroke="#dceadd"/><ellipse cy="-40" rx="7" ry="9" fill="#d0ac88"/><path d="M-9-40L-7-53L0-59L8-52L9-40Z" fill="#9cb6c6" stroke="#dfebdf"/><path d="M0-59Q14-67 16-57L5-55" fill="#ecefdf"/><path d="M26 16L21-68" stroke="#7a6b4d" stroke-width="3"/><path d="M21-77L17-65L24-65Z" fill="#ecf5e3" stroke="#91b9c4"/><path d="M22-63L31-54L27-41" fill="none" stroke="#7fb9cc" stroke-width="3"/></g>
+
+    <g id="camp-base"><ellipse cy="5" rx="29" ry="20" fill="#566e52" stroke="#c2c29b" stroke-width="1.5"/><path d="M-24 9V-28" stroke="#68513a" stroke-width="2"/><path d="M-24-27L-8-24L-24-14Z" fill="#236254" stroke="#e1c482" stroke-width=".7"/></g>
+    <g id="camp-shield"><use href="#camp-base"/><rect x="-15" y="-15" width="13" height="21" rx="2" fill="#335f61" stroke="#bac7ac"/><rect x="3" y="-15" width="13" height="21" rx="2" fill="#335f61" stroke="#bac7ac"/><rect x="-6" y="-1" width="13" height="18" rx="2" fill="#335f61" stroke="#bac7ac"/><path d="M-8-11V1M9-11V1M0 2V13" stroke="#d0c68c"/></g>
+    <g id="camp-archer"><use href="#camp-base"/><path d="M-7-22Q17-11-7 0M-1-8Q20 1-1 12" fill="none" stroke="#d8c48b" stroke-width="3"/><path d="M-7-22V0M-1-8V12M-13-10H13" stroke="#eadcb1" stroke-width="1"/><circle cx="-12" cy="-16" r="4" fill="#d0b08a"/><rect x="-16" y="-12" width="8" height="14" rx="2" fill="#276b57"/></g>
+    <g id="camp-crossbow"><use href="#camp-base"/><path d="M-18-7Q0-21 18-7M-18-7H18" stroke="#d5c18d" stroke-width="3" fill="none"/><path d="M0-19V14M-8 11H8" stroke="#62503b" stroke-width="5"/><path d="M0-20V-32" stroke="#eddfba" stroke-width="2"/></g>
+    <g id="camp-catapult"><use href="#camp-base"/><path d="M-15 8L-2-18L13 8M-2-18L15-35" stroke="#62513e" stroke-width="5" fill="none"/><circle cx="-12" cy="10" r="5" fill="#374839"/><circle cx="11" cy="10" r="5" fill="#374839"/><ellipse cx="15" cy="-35" rx="7" ry="4" fill="#b6baa1"/></g>
+    <g id="camp-oil"><use href="#camp-base"/><path d="M-17-16H-3L0 9H-20Z" fill="#726745" stroke="#c1ad78"/><path d="M4-11H17L20 12H1Z" fill="#958053" stroke="#d2c397"/><path d="M9-12Q0-24 12-33Q7-22 17-21Q22-12 9-12Z" fill="#d5a258"/><path d="M10-14Q6-20 12-25Q12-19 15-17Z" fill="#efcf84"/></g>
+    <g id="camp-drum"><use href="#camp-base"/><path d="M-16 14L-10-20M16 14L10-20" stroke="#67583d" stroke-width="4"/><ellipse cy="-10" rx="17" ry="14" fill="#a2573d" stroke="#d5bd7b" stroke-width="2"/><ellipse cy="-14" rx="17" ry="12" fill="#d9c08e"/><path d="M-7-20L10-9M7-20L-10-9" stroke="#78613e" stroke-width="2"/></g>
+  </defs>
+
+  <rect width="1600" height="1840" fill="url(#canvas-bg)"/>
+  <path d="M48 136H1552" class="divider"/>
+  <rect x="48" y="40" width="52" height="58" rx="2" fill="#8a4133" stroke="#d09d63"/>
+  <text x="74" y="79" text-anchor="middle" font-family="serif" font-size="30" font-weight="700">关</text>
+  <text x="122" y="74" class="title">无双守关 V1 美术生产参考</text>
+  <text x="124" y="110" class="body">国风卷轴 · 战棋轮廓 · 竖屏单手 · 一招清场</text>
+  <rect x="1180" y="48" width="372" height="40" rx="5" fill="#e4c27a"/>
+  <text x="1366" y="74" text-anchor="middle" font-size="17" font-weight="700" fill="#203933" style="fill:#203933">15 将 / 60 关 / 12 地图母版</text>
+  <text x="1552" y="114" text-anchor="end" class="small">参考示意，精修角色与动画待生产</text>
+
+  <!-- Editable phone layout and map, in the game's 420 × 600 world coordinates. -->
+  <g id="vertical-layout">
+    <rect x="48" y="172" width="466" height="1176" rx="12" class="panel"/>
+    <text x="72" y="213" class="section">01 竖屏战场与三将阵位</text>
+    <rect x="72" y="242" width="420" height="824" rx="9" fill="#192f2a" stroke="#a59e74" stroke-opacity=".5"/>
+    <text x="91" y="271" font-size="18" font-weight="700">无双守关</text>
+    <text x="471" y="271" text-anchor="end" class="tiny">音效  /  暂停</text>
+    <text x="91" y="298" class="tiny">城关 100 / 100</text>
+    <rect x="91" y="307" width="193" height="4" rx="2" fill="#aab47b"/>
+    <text x="350" y="300" class="tiny">军粮 120</text>
+    <text x="471" y="300" text-anchor="end" class="tiny">第 1 波</text>
+    <svg x="72" y="322" width="420" height="600" viewBox="0 0 420 600">
+      <g id="map-ground"><rect width="420" height="600" fill="url(#field)"/><rect width="420" height="536" fill="url(#grass)"/>
+        <path d="M105-20C90 94 94 150 119 183C150 235 183 268 210 300V548M315-20C330 94 326 150 301 183C270 235 237 268 210 300" stroke="#485b3a" stroke-opacity=".32" stroke-width="64" fill="none"/>
+        <path d="M105-20C90 94 94 150 119 183C150 235 183 268 210 300V548M315-20C330 94 326 150 301 183C270 235 237 268 210 300" stroke="#caba92" stroke-width="54" fill="none"/>
+        <path d="M105-20C90 94 94 150 119 183C150 235 183 268 210 300V548M315-20C330 94 326 150 301 183C270 235 237 268 210 300" stroke="#e0d0aa" stroke-opacity=".35" stroke-width="30" fill="none"/>
+      </g>
+      <g id="map-props"><use href="#pine" transform="translate(15 75) scale(.9)"/><use href="#pine" transform="translate(402 80)"/><use href="#pine" transform="translate(212 81) scale(1.1)"/><use href="#pine" transform="translate(246 104) scale(.65)"/><use href="#rock" transform="translate(198 120)"/><use href="#rock" transform="translate(237 136) scale(.8)"/><use href="#pine" transform="translate(15 244) scale(.8)"/><use href="#pine" transform="translate(406 297) scale(.85)"/><use href="#rock" transform="translate(11 342)"/><use href="#rock" transform="translate(405 461)"/><use href="#pine" transform="translate(20 449)"/></g>
+      <g id="map-sites"><use href="#empty-camp" transform="translate(53 142)"/><use href="#empty-camp" transform="translate(367 142)"/><use href="#camp-archer" transform="translate(67 290)"/><use href="#empty-camp" transform="translate(353 290)"/><use href="#camp-shield" transform="translate(88 420)"/><use href="#empty-camp" transform="translate(332 420)"/></g>
+      <g id="enemy-wave"><use href="#infantry" transform="translate(97 42)"/><use href="#infantry" transform="translate(113 72)"/><use href="#infantry" transform="translate(89 107)"/><use href="#cavalry" transform="translate(316 51)"/><use href="#infantry" transform="translate(329 101)"/><use href="#infantry" transform="translate(310 132)"/><use href="#infantry" transform="translate(130 200)"/><use href="#infantry" transform="translate(296 205)"/><use href="#armor" transform="translate(257 257)"/><use href="#infantry" transform="translate(177 270)"/><use href="#infantry" transform="translate(205 318)"/><use href="#infantry" transform="translate(219 347)"/><use href="#infantry" transform="translate(196 372)"/><use href="#infantry" transform="translate(228 384)"/><use href="#infantry" transform="translate(203 410)"/><use href="#infantry" transform="translate(217 433)"/></g>
+      <g id="aim-preview"><path d="M210 530L132 328M210 530L289 328" stroke="#c8f2cf" stroke-opacity=".6" stroke-dasharray="5 8" fill="none"/><path d="M135 321Q210 276 287 321" stroke="#d6ffdf" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M135 321Q210 276 287 321L269 407Q210 427 149 407Z" fill="url(#blade-tail)" opacity=".45"/></g>
+      <g id="gate"><rect y="536" width="420" height="64" fill="#455c50"/><path d="M0 552H420M0 571H420M0 590H420M30 536V552M70 552V571M110 536V552M155 571V590M264 536V552M311 552V571M357 571V590M395 536V552" stroke="#31473c"/><rect y="531" width="420" height="7" fill="#aaa889"/><path d="M8 531V518H23V531M43 531V518H58V531M78 531V518H93V531M328 531V518H343V531M363 531V518H378V531M397 531V518H412V531" fill="#7f8b71" stroke="#c2bb94" stroke-width="1"/><path d="M174 600V549A36 36 0 0 1 246 549V600Z" fill="#233a30" stroke="#a2a084" stroke-width="7"/><path d="M170 512L185 498H235L250 512Z" fill="#2e4d3f" stroke="#c2af79"/><rect x="185" y="513" width="50" height="15" fill="#253e31"/><text x="210" y="525" font-size="11" text-anchor="middle" fill="#e4c27a">演武关</text></g>
+      <g id="three-heroes"><use href="#zhaoyun" transform="translate(140 548) scale(.6)"/><use href="#guanyu" transform="translate(210 550) scale(.75)"/><use href="#zhouyu" transform="translate(280 548) scale(.6)"/><ellipse cx="210" cy="558" rx="28" ry="12" fill="none" stroke="#b3f0c8" stroke-width="1.5"/><text x="140" y="587" font-size="11" text-anchor="middle">协战</text><text x="210" y="590" font-size="12" text-anchor="middle" fill="#e4c27a">领衔</text><text x="280" y="587" font-size="11" text-anchor="middle">协战</text></g>
+    </svg>
+    <g id="command-area"><rect x="72" y="922" width="420" height="144" fill="#20392e"/><rect x="88" y="934" width="122" height="48" rx="5" fill="#345749" stroke="#d5bf7d" stroke-opacity=".45"/><rect x="220" y="934" width="122" height="48" rx="5" fill="#2b493c" stroke="#cfcb9b" stroke-opacity=".25"/><rect x="352" y="934" width="124" height="48" rx="5" fill="#2b493c" stroke="#cfcb9b" stroke-opacity=".25"/><text x="101" y="953" font-size="14">关羽 · 领衔</text><text x="101" y="969" font-size="11" fill="#e4c27a">怒气 100 / 100</text><text x="233" y="953" font-size="14">赵云 · 协战</text><text x="233" y="969" font-size="11">手动 / 可选自动</text><text x="365" y="953" font-size="14">周瑜 · 协战</text><text x="365" y="969" font-size="11">手动 / 可选自动</text><rect x="88" y="989" width="388" height="56" rx="6" fill="#dcb77b" stroke="#f0d69f"/><text x="282" y="1024" text-anchor="middle" font-size="21" font-weight="700" style="fill:#203933">青龙横扫 · 无双就绪</text><path d="M215 1056H349" stroke="#b0b798" stroke-width="3" stroke-linecap="round" opacity=".6"/></g>
+    <text x="72" y="1111" class="caption">逻辑世界 420 × 600</text>
+    <text x="72" y="1141" class="body">地形可适度拉伸，角色与文字等比。</text>
+    <text x="72" y="1170" class="body">主按钮 ≥ 56 CSS px，触控 ≥ 44 px。</text>
+    <text x="72" y="1209" class="small">三将阵位为 V1 设计，当前原型仅关羽。</text>
+    <text x="72" y="1238" class="small">协战默认手动，战前可开启自动。</text>
+    <text x="72" y="1294" class="caption">角色 / UI / 特效 / 地形分层交付</text>
+  </g>
+
+  <g id="palette">
+    <rect x="542" y="172" width="1010" height="184" rx="12" class="panel"/>
+    <text x="566" y="213" class="section">02 色板与明度关系</text>
+    <g id="swatches">
+      <rect x="566" y="238" width="110" height="45" rx="4" fill="#203933" stroke="#798d75"/><text x="621" y="308" text-anchor="middle" class="small">深墨</text><text x="621" y="331" text-anchor="middle" class="tiny">#203933</text>
+      <rect x="688" y="238" width="110" height="45" rx="4" fill="#276b57"/><text x="743" y="308" text-anchor="middle" class="small">我军青绿</text><text x="743" y="331" text-anchor="middle" class="tiny">#276B57</text>
+      <rect x="810" y="238" width="110" height="45" rx="4" fill="#77ceb0"/><text x="865" y="308" text-anchor="middle" class="small">刀波亮色</text><text x="865" y="331" text-anchor="middle" class="tiny">#77CEB0</text>
+      <rect x="932" y="238" width="110" height="45" rx="4" fill="#e4c27a"/><text x="987" y="308" text-anchor="middle" class="small">金赭</text><text x="987" y="331" text-anchor="middle" class="tiny">#E4C27A</text>
+      <rect x="1054" y="238" width="110" height="45" rx="4" fill="#eedfb3"/><text x="1109" y="308" text-anchor="middle" class="small">卷轴浅色</text><text x="1109" y="331" text-anchor="middle" class="tiny">#EEDFB3</text>
+      <rect x="1176" y="238" width="110" height="45" rx="4" fill="#a23d37"/><text x="1231" y="308" text-anchor="middle" class="small">敌军朱红</text><text x="1231" y="331" text-anchor="middle" class="tiny">#A23D37</text>
+      <rect x="1298" y="238" width="110" height="45" rx="4" fill="#758664"/><text x="1353" y="308" text-anchor="middle" class="small">草地</text><text x="1353" y="331" text-anchor="middle" class="tiny">#758664</text>
+      <rect x="1420" y="238" width="108" height="45" rx="4" fill="#caba92"/><text x="1474" y="308" text-anchor="middle" class="small">道路</text><text x="1474" y="331" text-anchor="middle" class="tiny">#CABA92</text>
+    </g>
+  </g>
+
+  <g id="hero-silhouettes">
+    <rect x="542" y="382" width="1010" height="410" rx="12" class="panel"/>
+    <text x="566" y="424" class="section">03 轮廓样例，先通过黑白缩小辨识</text>
+    <text x="566" y="454" class="small">每位武将须独立轮廓；配色不能代替武器与体块差异。</text>
+    <rect x="566" y="474" width="220" height="292" rx="7" class="card"/><rect x="809" y="474" width="220" height="292" rx="7" class="card"/><rect x="1052" y="474" width="220" height="292" rx="7" class="card"/><rect x="1295" y="474" width="233" height="292" rx="7" class="card"/>
+    <use href="#guanyu" transform="translate(665 593) scale(1.7)"/><use href="#zhouyu" transform="translate(919 593) scale(1.7)"/><use href="#zhangfei" transform="translate(1160 593) scale(1.5)"/><use href="#zhaoyun" transform="translate(1400 593) scale(1.5)"/>
+    <text x="676" y="632" text-anchor="middle" class="name">关羽</text><text x="919" y="632" text-anchor="middle" class="name">周瑜</text><text x="1162" y="632" text-anchor="middle" class="name">张飞</text><text x="1411" y="632" text-anchor="middle" class="name">赵云</text>
+    <text x="676" y="658" text-anchor="middle" class="small">长髯 / 宽弧大刀</text><text x="919" y="658" text-anchor="middle" class="small">窄袍 / 火令扇形</text><text x="1162" y="658" text-anchor="middle" class="small">宽肩 / 蛇矛</text><text x="1411" y="658" text-anchor="middle" class="small">银甲 / 细长枪</text>
+    <rect x="583" y="681" width="186" height="70" rx="4" fill="#d4d2ad"/><rect x="826" y="681" width="186" height="70" rx="4" fill="#d4d2ad"/><rect x="1069" y="681" width="186" height="70" rx="4" fill="#d4d2ad"/><rect x="1312" y="681" width="199" height="70" rx="4" fill="#d4d2ad"/>
+    <use href="#guanyu" transform="translate(668 739) scale(.64)" filter="url(#silhouette)"/><use href="#zhouyu" transform="translate(916 739) scale(.64)" filter="url(#silhouette)"/><use href="#zhangfei" transform="translate(1154 739) scale(.62)" filter="url(#silhouette)"/><use href="#zhaoyun" transform="translate(1401 739) scale(.62)" filter="url(#silhouette)"/>
+  </g>
+
+  <g id="troops-and-camps">
+    <rect x="542" y="818" width="1010" height="224" rx="12" class="panel"/>
+    <text x="566" y="858" class="section">04 敌军轮廓样例与六类军阵</text>
+    <path d="M1015 874V1020" class="divider"/>
+    <use href="#infantry" transform="translate(602 970) scale(2)"/><use href="#cavalry" transform="translate(719 970) scale(1.8)"/><use href="#armor" transform="translate(836 970) scale(1.75)"/><use href="#boss" transform="translate(947 970) scale(1.3)"/>
+    <text x="602" y="1009" text-anchor="middle" class="small">普通兵</text><text x="719" y="1009" text-anchor="middle" class="small">骑兵</text><text x="836" y="1009" text-anchor="middle" class="small">重甲</text><text x="947" y="1009" text-anchor="middle" class="small">首领</text>
+    <text x="566" y="1030" class="tiny">另需扰阵弓手、军旗手、攻城车，规格见规范。</text>
+    <use href="#camp-shield" transform="translate(1103 902) scale(.85)"/><use href="#camp-archer" transform="translate(1255 902) scale(.85)"/><use href="#camp-crossbow" transform="translate(1410 902) scale(.85)"/>
+    <text x="1103" y="930" text-anchor="middle" class="tiny">盾营</text><text x="1255" y="930" text-anchor="middle" class="tiny">弓营</text><text x="1410" y="930" text-anchor="middle" class="tiny">弩营</text>
+    <use href="#camp-catapult" transform="translate(1103 985) scale(.85)"/><use href="#camp-oil" transform="translate(1255 985) scale(.85)"/><use href="#camp-drum" transform="translate(1410 985) scale(.85)"/>
+    <text x="1103" y="1013" text-anchor="middle" class="tiny">投石营</text><text x="1255" y="1013" text-anchor="middle" class="tiny">火油营</text><text x="1410" y="1013" text-anchor="middle" class="tiny">战鼓营</text>
+  </g>
+
+  <g id="ultimate-timeline">
+    <rect x="542" y="1068" width="1010" height="280" rx="12" class="panel"/>
+    <text x="566" y="1110" class="section">05 关羽刀波时间轴，命中以引擎事件为准</text>
+    <g id="fx-frame-windup" transform="translate(566 1133)"><rect width="216" height="165" rx="6" class="card"/><text x="14" y="26" class="caption">0.00 秒  起势</text><path d="M108 55V143" stroke="#7d8d6b" stroke-width="38"/><use href="#infantry" transform="translate(102 69) scale(.65)"/><use href="#infantry" transform="translate(118 95) scale(.65)"/><ellipse cx="108" cy="142" rx="28" ry="10" fill="#77ceb0" opacity=".25"/><use href="#guanyu" transform="translate(108 145) scale(.45)"/><text x="108" y="190" text-anchor="middle" class="tiny">局部蓄光，不遮敌群</text></g>
+    <g id="fx-frame-release" transform="translate(814 1133)"><rect width="216" height="165" rx="6" class="card"/><text x="14" y="26" class="caption">0.12 秒  出刃</text><path d="M108 55V143" stroke="#7d8d6b" stroke-width="38"/><use href="#infantry" transform="translate(102 69) scale(.65)"/><use href="#infantry" transform="translate(118 95) scale(.65)"/><path d="M66 119Q108 85 150 119" fill="none" stroke="#77ceb0" stroke-width="10" opacity=".5"/><path d="M66 119Q108 85 150 119" fill="none" stroke="#d6ffdf" stroke-width="3"/><use href="#guanyu" transform="translate(108 145) scale(.45)"/><text x="108" y="190" text-anchor="middle" class="tiny">窄亮刃，短促刀击</text></g>
+    <g id="fx-frame-sweep" transform="translate(1062 1133)"><rect width="216" height="165" rx="6" class="card"/><text x="14" y="26" class="caption">0.36 秒  贯穿</text><path d="M108 55V143" stroke="#7d8d6b" stroke-width="38"/><use href="#armor" transform="translate(118 69) scale(.7)"/><path d="M61 79Q108 42 155 79L148 124Q108 149 67 124Z" fill="url(#blade-tail)" opacity=".75"/><path d="M61 79Q108 42 155 79" fill="none" stroke="#77ceb0" stroke-width="11" filter="url(#blade-glow)"/><path d="M61 79Q108 42 155 79" fill="none" stroke="#e3ffe6" stroke-width="3"/><use href="#guanyu" transform="translate(108 145) scale(.45)"/><text x="108" y="190" text-anchor="middle" class="tiny">尾迹透明，精锐仍可见</text></g>
+    <g id="fx-frame-settle" transform="translate(1310 1133)"><rect width="216" height="165" rx="6" class="card"/><text x="14" y="26" class="caption">0.76 秒  余辉</text><path d="M108 55V143" stroke="#7d8d6b" stroke-width="38"/><use href="#armor" transform="translate(118 69) scale(.7)"/><path d="M63 53Q108 25 153 53" stroke="#b9edc8" stroke-opacity=".3" fill="none"/><text x="108" y="103" text-anchor="middle" font-size="22" font-weight="700" fill="#e4c27a">横扫 24</text><use href="#guanyu" transform="translate(108 145) scale(.45)"/><text x="108" y="190" text-anchor="middle" class="tiny">只显示一次最终击破</text></g>
+  </g>
+
+  <g id="fifteen-hero-index">
+    <rect x="48" y="1380" width="1504" height="396" rx="12" class="panel"/>
+    <text x="72" y="1424" class="section">06 十五位武将的色彩与武器索引</text>
+    <text x="1528" y="1424" text-anchor="end" class="small">演义架空 / 所属青绿标识独立 / 装备先做图标，不做组合换装</text>
+    <g id="wei-roster">
+      <g transform="translate(72 1449)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#365668"/><text x="38" y="34" class="name">曹操</text><text x="254" y="33" text-anchor="end" class="tiny">魏</text><text x="38" y="61" class="small">长披风 / 直剑 / 金色军令</text></g>
+      <g transform="translate(366 1449)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#5b6472"/><text x="38" y="34" class="name">夏侯惇</text><text x="254" y="33" text-anchor="end" class="tiny">魏</text><text x="38" y="61" class="small">斜额带 / 厚刀 / 赤橙短爆</text></g>
+      <g transform="translate(660 1449)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#4c6b8a"/><text x="38" y="34" class="name">张辽</text><text x="254" y="33" text-anchor="end" class="tiny">魏</text><text x="38" y="61" class="small">倒肩 / 钩刃 / 金白贯阵</text></g>
+      <g transform="translate(954 1449)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#9e8556"/><text x="38" y="34" class="name">许褚</text><text x="254" y="33" text-anchor="end" class="tiny">魏</text><text x="38" y="61" class="small">宽肩 / 重斧 / 前方扇击</text></g>
+      <g transform="translate(1248 1449)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#68537c"/><text x="38" y="34" class="name">司马懿</text><text x="254" y="33" text-anchor="end" class="tiny">魏</text><text x="38" y="61" class="small">瘦袍 / 羽扇 / 暗紫阵环</text></g>
+    </g>
+    <g id="shu-roster">
+      <g transform="translate(72 1547)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#6c8850"/><text x="38" y="34" class="name">刘备</text><text x="254" y="33" text-anchor="end" class="tiny">蜀</text><text x="38" y="61" class="small">中袍 / 双剑 / 金绿军心</text></g>
+      <g transform="translate(366 1547)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#276b57"/><text x="38" y="34" class="name">关羽</text><text x="254" y="33" text-anchor="end" class="tiny">蜀</text><text x="38" y="61" class="small">长髯 / 大刀 / 青白刀波</text></g>
+      <g transform="translate(660 1547)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#46504c"/><text x="38" y="34" class="name">张飞</text><text x="254" y="33" text-anchor="end" class="tiny">蜀</text><text x="38" y="61" class="small">宽肩 / 蛇矛 / 宽短声浪</text></g>
+      <g transform="translate(954 1547)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#8bafc4"/><text x="38" y="34" class="name">赵云</text><text x="254" y="33" text-anchor="end" class="tiny">蜀</text><text x="38" y="61" class="small">银甲 / 长枪 / 三道枪影</text></g>
+      <g transform="translate(1248 1547)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#81a899"/><text x="38" y="34" class="name">诸葛亮</text><text x="254" y="33" text-anchor="end" class="tiny">蜀</text><text x="38" y="61" class="small">宽袖 / 羽扇 / 玉色风阵</text></g>
+    </g>
+    <g id="wu-roster">
+      <g transform="translate(72 1645)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#805b74"/><text x="38" y="34" class="name">孙权</text><text x="254" y="33" text-anchor="end" class="tiny">吴</text><text x="38" y="61" class="small">宽袍 / 令剑 / 城关护壁</text></g>
+      <g transform="translate(366 1645)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#bb6245"/><text x="38" y="34" class="name">周瑜</text><text x="254" y="33" text-anchor="end" class="tiny">吴</text><text x="38" y="61" class="small">窄袍 / 火令 / 赤金火海</text></g>
+      <g transform="translate(660 1645)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#5e8481"/><text x="38" y="34" class="name">吕蒙</text><text x="254" y="33" text-anchor="end" class="tiny">吴</text><text x="38" y="61" class="small">短袖甲 / 短刀 / 四伏兵点</text></g>
+      <g transform="translate(954 1645)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#279292"/><text x="38" y="34" class="name">甘宁</text><text x="254" y="33" text-anchor="end" class="tiny">吴</text><text x="38" y="61" class="small">铃带 / 双戟 / 锁定箭雨</text></g>
+      <g transform="translate(1248 1645)"><rect width="278" height="83" rx="6" class="card"/><rect x="14" y="14" width="8" height="55" rx="2" fill="#af8f5f"/><text x="38" y="34" class="name">太史慈</text><text x="254" y="33" text-anchor="end" class="tiny">吴</text><text x="38" y="61" class="small">背箭囊 / 强弓 / 三目标金矢</text></g>
+    </g>
+    <text x="72" y="1757" class="tiny">12 母版分别支撑 4–7 关，共 60 关配置；6 类军阵 × 3 级；活动皮肤保持技能判定与所属提示。</text>
+  </g>
+  <text x="48" y="1811" class="small">可编辑原生 SVG / 无外部图片、字体或脚本 / 生产尺寸、动画帧与授权登记见 art-design.md</text>
+  <text x="1552" y="1811" text-anchor="end" class="small">2026-10-11 · 设计目标未视为已实现</text>
+</svg>

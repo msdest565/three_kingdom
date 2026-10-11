@@ -1,13 +1,22 @@
 {
   "name": "wushuang-guard-prototype",
-  "version": "0.1.0",
+  "version": "1.1.0-alpha.1",
   "private": true,
   "type": "module",
-  "description": "关羽单关竖屏塔防原型",
+  "description": "无双守关：三国十五将、六十关竖屏塔防",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
-    "test": "node --test"
+    "pretest": "node scripts/build-runtime-data.mjs",
+    "test": "node --test",
+    "data:build": "node scripts/build-runtime-data.mjs",
+    "audit:campaign": "node scripts/verify-campaign-progression.mjs",
+    "docs:levels": "node scripts/generate-level-design.mjs",
+    "docs:progression": "node scripts/generate-progression-docs.mjs",
+    "docs:validate": "node scripts/validate-v1-design.mjs",
+    "docs:build": "node scripts/build-design-docs.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

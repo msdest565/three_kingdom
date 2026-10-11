@@ -5,6 +5,12 @@ import { Game, CAMP_TYPES } from '../game-engine.js';
 const FRAME = 1 / 30;
 const finished = game => ['won', 'lost'].includes(game.state);
 const makeGame = onEvent => new Game({ rng: () => 0.42, onEvent });
+const seededRandom = seed => () => {
+  let value = seed += 0x6D2B79F5;
+  value = Math.imul(value ^ value >>> 15, value | 1);
+  value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+  return ((value ^ value >>> 14) >>> 0) / 4294967296;
+};
 
 function tickFor(game, seconds) {
   const frames = Math.round(seconds / FRAME);
@@ -21,7 +27,7 @@ function runUntil(game, predicate, act = () => {}, maxSeconds = 360) {
   assert.ok(predicate(game), `Condition not reached: ${JSON.stringify({ state: game.state, wave: game.wave, time: game.time, hp: game.hp })}`);
 }
 
-function sensiblePlay(game, { choose = true } = {}) {
+function sensiblePlay(game, { choose = true, ultimate = true } = {}) {
   if (game.state === 'choosing' && choose) {
     const preferred = ['archer_volley', 'archer_hunt', 'catapult_siege', 'shield_grasp'];
     const pick = preferred.map(id => game.upgradeChoices.find(choice => choice.id === id)).find(Boolean) || game.upgradeChoices[0];
@@ -40,7 +46,7 @@ function sensiblePlay(game, { choose = true } = {}) {
       break;
     }
   }
-  if (game.rage >= 100 && (game.ultimateTarget.count >= 15 || game.enemies.some(enemy => enemy.progress > 490))) game.castUltimate();
+  if (ultimate && game.rage >= 100 && (game.ultimateTarget.count >= 22 || game.enemies.some(enemy => enemy.progress > 490))) game.castUltimate();
 }
 
 function stationaryEnemy(id, type = 'infantry', hp = 28, progress = 360) {
@@ -101,8 +107,10 @@ test('invalid construction, duplicate construction and unaffordable upgrades nev
   assert.equal(game.upgrade(0).ok, false);
   assert.equal(game.food, 59);
   assert.equal(game.camps[0].level, 1);
-  game.food = 160;
+  game.food = 210;
+  assert.equal(game.getUpgradeCost(0), 80);
   assert.ok(game.upgrade(0).ok);
+  assert.equal(game.getUpgradeCost(0), 130);
   assert.ok(game.upgrade(0).ok);
   assert.equal(game.food, 0);
   assert.equal(game.camps[0].level, 3);
@@ -182,6 +190,7 @@ test('ultimate needs full rage, spends 100, awards each kill once and blocks rag
   tickFor(game, 0.8);
   assert.equal(game.kills, 20);
   assert.equal(game.stats.ultimateKills, 20);
+  assert.equal(game.stats.sourceStats.ultimate.kills, 20);
   assert.equal(game.bestBurst, 20);
   assert.equal(game.food, food + 20);
   assert.equal(new Set(kills.map(event => event.enemyId)).size, 20);
@@ -253,7 +262,7 @@ test('the final boss death cannot award victory while its surviving escort remai
   assert.equal(game.state, 'playing');
 });
 
-test('a basic actual strategy wins all eight waves around four minutes; doing nothing loses', () => {
+test('a basic actual strategy wins the denser eight-wave army; doing nothing loses', () => {
   const waves = [];
   const choices = [];
   const casts = [];
@@ -271,10 +280,14 @@ test('a basic actual strategy wins all eight waves around four minutes; doing no
   assert.ok(game.hp > 0);
   assert.equal(game.enemies.length, 0);
   assert.ok(game.food >= 0);
-  assert.ok(game.time >= 200 && game.time <= 300, `Combat lasted ${game.time}s`);
+  assert.ok(game.time >= 260 && game.time <= 360, `Combat lasted ${game.time}s`);
   assert.ok(casts[0] <= 20, `First ultimate at ${casts[0]}s`);
-  assert.ok(game.bestBurst >= 20, `Largest burst cleared ${game.bestBurst}`);
+  assert.ok(game.bestBurst >= 40, `Largest burst cleared ${game.bestBurst}`);
   assert.ok(game.stats.ultimates >= 5);
+  assert.equal(game.stats.scheduledEnemies, 999);
+  assert.equal(game.stats.spawned, 999);
+  assert.equal(game.kills + game.stats.escaped, 999);
+  assert.ok(game.stats.maxEnemies >= 100 && game.stats.maxEnemies <= 160);
   const idle = makeGame();
   idle.start();
   runUntil(idle, finished, current => {
@@ -282,4 +295,219 @@ test('a basic actual strategy wins all eight waves around four minutes; doing no
   });
   assert.equal(idle.state, 'lost');
   assert.equal(idle.hp, 0);
+});
+
+function quietBattle(enemies) {
+  const game = makeGame();
+  game.start();
+  isolateArmy(game);
+  game._spawnQueue = [];
+  game.enemies = enemies;
+  for (const enemy of enemies) game._positionEnemy(enemy);
+  return game;
+}
+
+function impactStone(game, damage = CAMP_TYPES.catapult.damage) {
+  const target = game.enemies[0];
+  game.projectiles.push({ id: 900000, type: 'stone', x: target.x, y: target.y, targetX: target.x, targetY: target.y, targetId: target.id, damage, speed: 225, life: 2.8, campType: 'catapult' });
+  game.update(FRAME);
+}
+
+test('catapult shots remain low-frequency and low-damage at both base and maximum level', () => {
+  for (const [level, damage, interval] of [[1, 14, 3], [3, 23.1, 2.7]]) {
+    const enemy = stationaryEnemy(10000, 'infantry', 1e6, 230);
+    const game = quietBattle([enemy]);
+    const attacks = [];
+    game.onEvent = event => { if (event.type === 'attack') attacks.push(event.time); };
+    assert.ok(game.build(2, 'catapult').ok);
+    game.camps[2].level = level;
+    tickFor(game, 4);
+    assert.equal(attacks.length, 2);
+    assert.ok(Math.abs(attacks[1] - attacks[0] - interval) < FRAME + 1e-8);
+    assert.ok(Math.abs(1e6 - enemy.hp - damage * 2) < 1e-7);
+    assert.equal(game.stats.sourceStats.catapult.kills, 0);
+  }
+});
+
+test('stone damage is capped at six soldiers while its weak timed slow covers the whole impact area', () => {
+  const enemies = Array.from({ length: 12 }, (_, index) => stationaryEnemy(10000 + index, 'infantry', 1000));
+  const game = quietBattle(enemies);
+  impactStone(game);
+  assert.equal(enemies.filter(enemy => enemy.hp === 986).length, 6);
+  assert.equal(enemies.filter(enemy => enemy.hp === 1000).length, 6);
+  assert.equal(game.stats.sourceStats.catapult.damage, 84);
+  for (const enemy of enemies) {
+    assert.equal(enemy.slowFactor, 0.8);
+    assert.equal(enemy.slowEffects.catapult.remaining, 1.5);
+    enemy.speed = 10;
+  }
+  const start = enemies[0].progress;
+  tickFor(game, 1.5);
+  assert.ok(Math.abs(enemies[0].progress - start - 12) < 1e-8);
+  assert.equal(enemies[0].slowTime, 0);
+  assert.equal(enemies[0].slow, 1);
+  tickFor(game, 0.5);
+  assert.ok(Math.abs(enemies[0].progress - start - 17) < 1e-8);
+});
+
+test('shock increases slow strength and duration without increasing stone damage or multiplying controls', () => {
+  const baseEnemy = stationaryEnemy(10000, 'infantry', 1000);
+  const shockEnemy = stationaryEnemy(10000, 'infantry', 1000);
+  const base = quietBattle([baseEnemy]), shock = quietBattle([shockEnemy]);
+  shock._modifiers.add('catapult_shock');
+  impactStone(base); impactStone(shock);
+  assert.equal(baseEnemy.hp, shockEnemy.hp);
+  assert.equal(shockEnemy.slowFactor, 0.65);
+  assert.equal(shockEnemy.slowEffects.catapult.remaining, 2.5);
+  tickFor(base, 1.6); tickFor(shock, 1.6);
+  assert.equal(baseEnemy.slow, 1);
+  assert.equal(shockEnemy.slow, 0.65);
+  tickFor(shock, 0.9);
+  assert.equal(shockEnemy.slow, 1);
+  assert.deepEqual(shockEnemy.slowEffects, {});
+});
+
+test('weak stones cannot refresh a real ultimate slow; both sources expire independently with armor resistance', () => {
+  const armor = stationaryEnemy(10000, 'armor', 1000);
+  const game = quietBattle([armor]);
+  game.rage = 100;
+  assert.ok(game.castUltimate().ok);
+  tickFor(game, 0.3);
+  assert.equal(armor.hp, 915);
+  assert.ok(Math.abs(armor.slowEffects.ultimate.factor - 0.685) < 1e-8);
+  const before = armor.slowEffects.ultimate.remaining;
+  impactStone(game);
+  assert.ok(Math.abs(armor.slowEffects.ultimate.remaining - (before - FRAME)) < 1e-8);
+  assert.ok(Math.abs(armor.slowEffects.catapult.factor - 0.86) < 1e-8);
+  for (let hit = 0; hit < 4; hit++) { tickFor(game, 0.2); impactStone(game); }
+  assert.equal(armor.slowEffects.ultimate, undefined);
+  assert.ok(Math.abs(armor.slowFactor - 0.86) < 1e-8);
+  tickFor(game, 1.5);
+  assert.deepEqual(armor.slowEffects, {});
+  assert.equal(armor.slow, 1);
+});
+
+test('shield slows are visible spatial auras, respect resistance and never stack into immobilization', () => {
+  const enemies = ['infantry', 'armor', 'boss'].map((type, index) => stationaryEnemy(10000 + index, type, 1e6, 420));
+  const game = quietBattle(enemies);
+  assert.ok(game.build(4, 'shield').ok);
+  game.camps[4].cooldown = 1e9;
+  game.update(FRAME);
+  for (const [index, factor] of [0.5, 0.65, 0.8].entries()) assert.ok(Math.abs(enemies[index].slow - factor) < 1e-8);
+  game._modifiers.add('shield_grasp');
+  assert.ok(game.build(5, 'shield').ok);
+  game.camps[5].cooldown = 1e9;
+  game.update(FRAME);
+  for (const [index, factor] of [0.35, 0.545, 0.74].entries()) assert.ok(Math.abs(enemies[index].slow - factor) < 1e-8);
+  for (const enemy of enemies) assert.ok(enemy.slow > 0.3);
+  game.camps.fill(null);
+  game.update(FRAME);
+  for (const enemy of enemies) assert.equal(enemy.slow, 1);
+});
+
+test('bow tactics add only one reduced-damage pierce and one weaker extra arrow', () => {
+  const target = stationaryEnemy(10000, 'infantry', 1000);
+  const game = quietBattle([target]);
+  assert.ok(game.build(2, 'archer').ok);
+  game._modifiers.add('archer_volley');
+  game._modifiers.add('archer_pierce');
+  game._attackCamp(game.camps[2], [target]);
+  assert.equal(game.projectiles.length, 2);
+  assert.equal(game.projectiles[0].damage, 12);
+  assert.ok(Math.abs(game.projectiles[1].damage - 7.2) < 1e-8);
+  const arrow = game.projectiles[0];
+  const aimX = target.x - arrow.fromX, aimY = target.y - arrow.fromY, length = Math.hypot(aimX, aimY);
+  const others = [20, 40, 60].map((distance, index) => ({ ...stationaryEnemy(10001 + index, 'infantry', 1000), x: target.x + aimX / length * distance, y: target.y + aimY / length * distance }));
+  game.enemies.push(...others);
+  game.projectiles = [{ ...arrow, x: target.x, y: target.y }];
+  game._tickProjectiles(FRAME);
+  assert.equal(target.hp, 988);
+  assert.ok(Math.abs(others[0].hp - 994.6) < 1e-8);
+  assert.equal(others[1].hp, 1000);
+  assert.equal(others[2].hp, 1000);
+});
+
+test('the 160-soldier capacity retains due spawns in order and prevents premature wave completion', () => {
+  const game = makeGame();
+  game.start(); isolateArmy(game);
+  game.enemies = Array.from({ length: 160 }, (_, index) => stationaryEnemy(10000 + index, 'armor', 1e6));
+  const queued = structuredClone(game._spawnQueue);
+  game._waveTime = 30;
+  game.update(FRAME);
+  assert.equal(game.activeEnemyCount, 160);
+  assert.equal(game.pendingEnemyCount, 70);
+  assert.deepEqual(game._spawnQueue, queued);
+  assert.equal(game._waveSpawned, 0);
+  assert.equal(game.stats.maxPendingSpawns, 70);
+  assert.equal(game.state, 'playing');
+  game.enemies.splice(0, 10);
+  game.update(FRAME);
+  assert.equal(game.activeEnemyCount, 160);
+  assert.equal(game.pendingEnemyCount, 60);
+  assert.deepEqual(game.enemies.slice(-10).map(enemy => enemy.pathSide), queued.slice(0, 10).map(spawn => spawn.side));
+  game.enemies = game.enemies.slice(-10);
+  game.update(FRAME);
+  assert.equal(game.activeEnemyCount, 70);
+  assert.equal(game.pendingEnemyCount, 0);
+  assert.equal(game._waveSpawned, 70);
+  assert.equal(game.stats.spawned, 70);
+  assert.equal(game.wave, 1);
+  assert.equal(game.state, 'playing');
+});
+
+test('ultimate targeting scales with a fixed direction set and never consumes enemy spawn randomness', () => {
+  let randomCalls = 0;
+  const game = new Game({ rng: () => { randomCalls++; return 0.42; } });
+  game.start(); isolateArmy(game);
+  let reads = 0;
+  game.enemies = Array.from({ length: 160 }, (_, index) => {
+    const enemy = stationaryEnemy(10000 + index);
+    Object.defineProperty(enemy, 'x', { get: () => { reads++; return 210; } });
+    return enemy;
+  });
+  const before = randomCalls;
+  const first = game._findUltimateTarget();
+  assert.equal(first.count, 160);
+  assert.ok(reads <= 160 * 50, `Targeting performed ${reads} x reads`);
+  assert.deepEqual(game._findUltimateTarget(), first);
+  assert.equal(randomCalls, before);
+});
+
+test('fixed-seed active sweeps win with a real dense army; the same construction policy without sweeps loses', () => {
+  for (const seed of [7, 42, 20261011]) {
+    let firstBurst = null;
+    const active = new Game({ rng: seededRandom(seed), onEvent: event => {
+      if (event.type === 'burst' && !firstBurst) firstBurst = { kills: event.kills, active: active.activeEnemyCount, pending: active.pendingEnemyCount };
+    } });
+    const passive = new Game({ rng: seededRandom(seed) });
+    active.start(); passive.start();
+    runUntil(active, finished, current => sensiblePlay(current));
+    runUntil(passive, finished, current => sensiblePlay(current, { ultimate: false }));
+    assert.equal(active.state, 'won', `Seed ${seed}`);
+    assert.ok(active.hp >= 50, `Seed ${seed}: active clear has ${active.hp} gate HP`);
+    assert.equal(active.stats.spawned, 999);
+    assert.ok(active.stats.maxEnemies >= 100 && active.stats.maxEnemies <= 160);
+    assert.ok(active.stats.ultimateKills > active.kills * 0.45);
+    assert.ok(firstBurst.kills >= 30 && firstBurst.active >= 5 && firstBurst.pending >= 5, JSON.stringify(firstBurst));
+    assert.equal(passive.state, 'lost');
+    assert.equal(passive.hp, 0);
+    assert.ok(passive.wave <= 4);
+    assert.equal(passive.stats.ultimates, 0);
+    assert.ok(active.stats.sourceStats.ultimate.kills === active.stats.ultimateKills);
+    const summedDamage = Object.values(active.stats.sourceStats).reduce((total, source) => total + source.damage, 0);
+    assert.ok(Math.abs(summedDamage - active.stats.damage) < 1e-6);
+  }
+});
+
+test('even a fully upgraded mixed army granted before wave one cannot automatically clear without the hero', () => {
+  const game = new Game({ rng: seededRandom(42) });
+  game.start(); game.food = 5000; // Deliberately stronger than any legal early-game economy.
+  for (const [slot, type] of [[3, 'archer'], [5, 'catapult'], [0, 'archer'], [1, 'catapult']]) assert.ok(game.build(slot, type).ok);
+  for (let slot = 0; slot < 6; slot++) { assert.ok(game.upgrade(slot).ok); assert.ok(game.upgrade(slot).ok); }
+  game.food = 0;
+  assert.ok(game.camps.every(camp => camp.level === 3));
+  runUntil(game, finished, current => sensiblePlay(current, { ultimate: false }));
+  assert.equal(game.state, 'lost');
+  assert.ok(game.wave >= 4 && game.wave < 8);
+  assert.equal(game.stats.ultimateKills, 0);
 });
