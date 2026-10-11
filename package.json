@@ -1,0 +1,13 @@
+{
+  "name": "wushuang-guard-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "关羽单关竖屏塔防原型",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=20" }
+}
