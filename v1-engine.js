@@ -1,4 +1,5 @@
 import { BALANCE as B, CONTENT } from './runtime-data.js';
+import { maximumCircleCoverage, maximumDirectionalCoverage } from './skill-targeting.js';
 
 // All rules below use combat seconds. Rendering and audio never decide a hit.
 const EPS = 1e-8;
@@ -379,14 +380,19 @@ export class V1Game {
   _damage(e, amount, source, cast = null, execute = false) {
     if (!alive(e) || e.invulnerable) return false;
     const vulnerability = Math.min(1.25, Math.max(1, ...e.vulnerability.map(v => v.factor)));
-    const inflicted = execute && e.type === 'infantry' && !e.executeImmune ? e.hp : amount * vulnerability * (e.damageTakenMultiplier || 1);
+    const executed = Boolean(execute && e.type === 'infantry' && !e.executeImmune);
+    const inflicted = executed ? e.hp : amount * vulnerability * (e.damageTakenMultiplier || 1);
+    if (!Number.isFinite(inflicted) || inflicted <= 0) return false;
     const actual = Math.min(e.hp, inflicted); e.hp -= actual; e.hitFlash = 0.1;
     const stats = this.stats.sourceStats[source] ||= { damage: 0, kills: 0 }; stats.damage += actual;
+    const heroId = cast?.heroId || (source.startsWith('hero_') ? source.slice(5) : undefined);
+    this._emit('damage', { enemyId: e.id, enemyType: e.type, x: e.x, y: e.y, amount: actual, source, heroId, castId: cast?.id, executed });
     if (e.hp > EPS) return false;
     e.hp = 0; this.kills++; stats.kills++; this.stats.killsByType[e.type] = (this.stats.killsByType[e.type] || 0) + 1;
     this.food += e.reward; this.stats.totalFoodEarned += e.reward;
     if (cast) { cast.kills++; this.stats.ultimateKills++; this.stats.perHero[cast.heroId].kills++; this.bestBurst = Math.max(this.bestBurst, cast.kills); }
-    this._emit('kill', { enemyId: e.id, enemyType: e.type, x: e.x, y: e.y, source, reward: e.reward, heroId: cast?.heroId }); return true;
+    this._emit('kill', { enemyId: e.id, enemyType: e.type, x: e.x, y: e.y, source, reward: e.reward, heroId,
+      amount: actual, radius: e.radius, facing: e.facing, castId: cast?.id, burstKills: cast?.kills, executed }); return true;
   }
 
   _friendlySpeed(unit) {
@@ -526,30 +532,34 @@ export class V1Game {
     if (['guan_yu', 'zhang_fei'].includes(h.id)) base.width += h.signatureBonuses.ultimateWidthAdd;
     if (h.id === 'zhou_yu' && this.tactics.has('zhou_yu_radius')) base.radius += 16;
     if (u.shape === 'lane_mines') {
-      const routes = this.paths.map(p => ({ id: p.id, score: enemies.filter(e => e.laneId === p.id).reduce((n, e) => n + this._score(e), 0) })).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+      const routes = this.paths.map(p => { const hit = enemies.filter(e => e.laneId === p.id); return { id: p.id, count: hit.length, score: hit.reduce((n, e) => n + this._score(e), 0), offset: Math.abs(this.pathPoint(p.id, p.length * .55).x - h.x) }; })
+        .sort((a, b) => b.count - a.count || b.score - a.score || a.offset - b.offset || a.id.localeCompare(b.id));
       base.laneIds = routes.slice(0, 2).map(p => p.id); base.targetIds = enemies.filter(e => base.laneIds.includes(e.laneId)).map(e => e.id);
     } else if (u.shape === 'three_distinct_target_snipes') {
       base.targetIds = enemies.filter(e => dist(h, e) <= u.range + e.radius).sort((a, b) => (classOf(b) === 'boss') - (classOf(a) === 'boss') || (classOf(b) === 'elite') - (classOf(a) === 'elite') || priority(a, b)).slice(0, 3).map(e => e.id);
     } else if (u.shape === 'lane_following_charge') {
-      const route = this.paths.map(p => ({ id: p.id, score: enemies.filter(e => this._inShape(e, { ...base, laneId: p.id }, u)).reduce((n, e) => n + this._score(e), 0) })).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))[0];
+      const route = this.paths.map(p => { const hit = enemies.filter(e => this._inShape(e, { ...base, laneId: p.id }, u)); return { id: p.id, count: hit.length, score: hit.reduce((n, e) => n + this._score(e), 0), offset: Math.abs(this.pathPoint(p.id, p.length * .55).x - h.x) }; })
+        .sort((a, b) => b.count - a.count || b.score - a.score || a.offset - b.offset || a.id.localeCompare(b.id))[0];
       base.laneId = route.id; base.targetIds = enemies.filter(e => this._inShape(e, base, u)).map(e => e.id);
     } else if (base.radius && ['allied_command_with_local_shock', 'circle_shock', 'recovery_with_circle_shock', 'barrier_with_circle_shock'].includes(u.shape)) {
       base.targetIds = enemies.filter(e => dist(h, e) <= base.radius + e.radius).map(e => e.id);
     } else if (base.radius) {
-      // Candidate centers are bounded independently of enemy count; circles are locked in world space.
-      const candidates = [{ x: h.x, y: Math.max(100, h.y - 145) }, ...enemies.filter((_, i) => i % Math.max(1, Math.ceil(enemies.length / 48)) === 0)];
-      let score = -1;
-      for (const point of candidates) {
-        const hit = enemies.filter(e => dist(point, e) <= base.radius + e.radius); const value = hit.reduce((n, e) => n + this._score(e), 0);
-        if (value > score + EPS) { score = value; base.x = point.x; base.y = point.y; base.targetIds = hit.map(e => e.id); }
-      }
+      const point = maximumCircleCoverage(enemies, base.radius, { x: h.x, y: Math.max(100, h.y - 145) }, e => this._score(e));
+      base.x = point.x; base.y = point.y;
+      base.targetIds = enemies.filter(e => this._inShape(e, base, u)).map(e => e.id);
     } else {
-      let score = -1;
-      for (let i = 0; i <= 20; i++) {
-        const angle = (u.angleMinRad ?? -Math.PI * 0.7) + ((u.angleMaxRad ?? -Math.PI * 0.3) - (u.angleMinRad ?? -Math.PI * 0.7)) * i / 20;
-        const candidate = { ...base, angle }; const hit = enemies.filter(e => this._inShape(e, candidate, u)); const value = hit.reduce((n, e) => n + this._score(e), 0);
-        if (value > score + EPS) { score = value; base.angle = angle; base.targetIds = hit.map(e => e.id); }
-      }
+      const aimUnits = u.shape === 'directional_swept_rectangle' && u.frontTravelSec ? enemies.map(e => {
+        // A traveling blade must cover where a unit can be when its front arrives,
+        // rather than grazing the unit's current collision edge and missing it later.
+        const arrival = Math.min(u.frontTravelSec, dist(h, e) / (base.length / u.frontTravelSec));
+        const banner = e.type === 'infantry' && enemies.some(v => v.type === 'banner' && dist(e, v) <= 50) ? 1.15 : 1;
+        const haste = e.bossTemplateId === 'charger' && e.bossAbilityRemaining > 0 ? 1.4 : 1;
+        const movement = e.speed * (e.slow || 1) * banner * haste * Math.max(0, arrival - e.stunRemaining);
+        if (!movement) return e;
+        return { ...e, ...this.pathPoint(e.laneId, Math.min(e.pathLength, e.progress + movement)) };
+      }) : enemies;
+      const choice = maximumDirectionalCoverage(aimUnits, h, u, base, e => this._score(e), (e, target) => this._inShape(e, target, u));
+      base.angle = choice.angle; base.targetIds = aimUnits.filter(e => this._inShape(e, base, u)).map(e => e.id);
     }
     const selected = enemies.filter(e => base.targetIds.includes(e.id)); base.count = selected.length;
     base.ordinaryCount = selected.filter(e => classOf(e) === 'ordinary').length;
@@ -564,12 +574,12 @@ export class V1Game {
       const projection = this._pathProjection(target.laneId, e); const path = this.paths.find(p => p.id === target.laneId);
       return projection.distance <= target.width / 2 + e.radius && projection.progress >= Math.max(0, path.length - target.length) - e.radius;
     }
-    if (target.radius) return dist(e, target) <= target.radius + e.radius;
+    if (target.radius) return dist(e, target) <= target.radius + e.radius + EPS;
     const dx = e.x - target.x; const dy = e.y - target.y;
     const forward = dx * Math.cos(target.angle) + dy * Math.sin(target.angle);
     const side = Math.abs(-dx * Math.sin(target.angle) + dy * Math.cos(target.angle));
-    if (u.shape === 'frontal_cone') return forward >= -e.radius && Math.hypot(dx, dy) <= u.range + e.radius && side <= Math.max(0, forward) * Math.tan(u.angleDegrees * Math.PI / 360) + e.radius;
-    return forward >= -e.radius && forward <= target.length + e.radius && side <= target.width / 2 + e.radius;
+    if (u.shape === 'frontal_cone') return forward >= -e.radius - EPS && Math.hypot(dx, dy) <= u.range + e.radius + EPS && side <= Math.max(0, forward) * Math.tan(u.angleDegrees * Math.PI / 360) + e.radius + EPS;
+    return forward >= -e.radius - EPS && forward <= target.length + e.radius + EPS && side <= target.width / 2 + e.radius + EPS;
   }
   _canAuto(h, target) {
     if (!target || !target.count) return false;

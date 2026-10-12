@@ -4,8 +4,8 @@ import { AudioSystem } from '../audio-system.js';
 import { Game } from '../game-engine.js';
 
 class FakeParam {
-  constructor(value = 0) { this.value = value; }
-  setValueAtTime(value) { this.value = value; }
+  constructor(value = 0) { this.value = value; this.values = []; }
+  setValueAtTime(value) { this.value = value; this.values.push(value); }
   linearRampToValueAtTime(value) { this.value = value; }
   exponentialRampToValueAtTime(value) { this.value = value; }
   cancelScheduledValues() {}
@@ -202,6 +202,98 @@ test('unavailable/rejected audio and a backgrounding race degrade to silence wit
   assert.equal(pending.context.started, 0);
   assert.equal(pending.context.state, 'suspended');
   pending.audio.destroy();
+});
+
+test('dense real hits and deaths are globally throttled with bounded deduplication and spatial voices', async () => {
+  const { audio, context } = makeAudio({ musicEnabled: false });
+  audio.setScene('battle');
+  await audio.unlock();
+  for (let id = 0; id < 160; id++) {
+    audio.handleEvent({ type: 'damage', enemyId: id, enemyType: 'infantry', amount: 20, source: 'ultimate_guan_yu', castId: 1, x: 0 });
+    audio.handleEvent({ type: 'kill', enemyId: id, enemyType: 'infantry', source: 'ultimate_guan_yu', castId: 1, x: 0 });
+  }
+  assert.equal(context.started, 4, 'one hit layer and one death layer for a simultaneous 160-enemy clear');
+  assert.ok(context.nodes.filter(n => n.type === 'panner').every(n => n.pan.value < 0));
+  context.advance(0.4);
+  const before = context.started;
+  audio.handleEvent({ type: 'kill', enemyId: 0, enemyType: 'infantry', x: 420 });
+  assert.equal(context.started, before, 'replayed death cannot ring again');
+  audio.handleEvent({ type: 'kill', enemyId: 160, enemyType: 'infantry', x: 420 });
+  assert.equal(context.started, before + 2);
+  assert.ok(context.nodes.filter(n => n.type === 'panner').slice(-2).every(n => n.pan.value > 0));
+  for (let id = 161; id < 1500; id++) audio.handleEvent({ type: 'kill', enemyId: id, enemyType: 'infantry' });
+  assert.ok(audio._combatEvents.size <= 512);
+  audio.destroy();
+});
+
+test('elite and boss deaths differ and cannot replace ultimate or result voices', async () => {
+  const { audio, context } = makeAudio({ musicEnabled: false });
+  audio.setScene('battle');
+  await audio.unlock();
+  audio.handleEvent({ type: 'kill', enemyId: 1, enemyType: 'elite' });
+  const elite = [...audio._voices];
+  assert.equal(elite.length, 2);
+  assert.ok(elite.every(v => v.priority === 1));
+  audio.handleEvent({ type: 'kill', enemyId: 2, enemyType: 'boss' });
+  const boss = [...audio._voices].slice(2);
+  assert.equal(boss.length, 3);
+  assert.ok(boss[0].end > elite[0].end);
+  assert.ok(boss[0].source.frequency.values[0] < elite[0].source.frequency.values[0]);
+  audio._stopVoices();
+  for (let i = 0; i < 18; i++) audio._tone(160, 1, 0.02, 32, 'triangle', { priority: 2 });
+  context.advance(0.3);
+  const protectedVoices = [...audio._voices];
+  const starts = context.started;
+  audio.handleEvent({ type: 'kill', enemyId: 3, enemyType: 'boss' });
+  audio.handleEvent({ type: 'damage', enemyId: 4, amount: 100, source: 'ultimate_guan_yu' });
+  assert.equal(context.started, starts);
+  assert.deepEqual([...audio._voices], protectedVoices);
+  audio.handleEvent({ type: 'win' });
+  assert.equal(audio._voices.size, 4);
+  assert.ok([...audio._voices].every(v => v.priority === 2));
+  audio.destroy();
+});
+
+test('paused retry start resets death deduplication for reused enemy IDs', async () => {
+  const { audio, context } = makeAudio();
+  audio.setScene('battle');
+  await audio.unlock();
+  const music = audio.musicSource;
+  audio.handleEvent({ type: 'kill', enemyId: 1, enemyType: 'infantry' });
+  audio.setScene('pause');
+  context.advance(0.3);
+  audio.handleEvent({ type: 'start' });
+  audio.setScene('battle');
+  const starts = context.started;
+  audio.handleEvent({ type: 'kill', enemyId: 1, enemyType: 'infantry' });
+  assert.equal(context.started, starts + 2);
+  assert.equal(audio.musicSource, music);
+  assert.equal(audio.musicEnabled, true);
+  assert.equal(audio.sfxEnabled, true);
+  audio.destroy();
+});
+
+test('hit and death layers respect mute, pause, choices and background and use audio wall time', async () => {
+  const { audio, context } = makeAudio({ musicEnabled: false });
+  audio.setScene('battle');
+  await audio.unlock();
+  const play = id => {
+    audio.handleEvent({ type: 'damage', enemyId: id, amount: 50, source: 'hero_guan_yu', x: 210, speed: 2, slowMotion: true });
+    audio.handleEvent({ type: 'kill', enemyId: id, enemyType: 'infantry', x: 210, speed: 2, slowMotion: true });
+  };
+  play(1);
+  const tones = context.nodes.filter(n => n.frequency.values.length);
+  assert.deepEqual(tones.map(n => n.frequency.values[0]), [195, 148]);
+  audio.setPreferences({ sfxEnabled: false });
+  const starts = context.started;
+  play(2);
+  audio.setPreferences({ sfxEnabled: true });
+  audio.setScene('pause'); play(3);
+  audio.setScene('choosing'); play(4);
+  audio.setScene('battle'); audio.setActive(false); play(5);
+  assert.equal(context.started, starts);
+  assert.equal(audio._voices.size, 0);
+  audio.destroy();
 });
 
 test('destroy is idempotent, clears all node graphs, and cannot restart later', async () => {

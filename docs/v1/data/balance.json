@@ -1163,7 +1163,7 @@
             "boss": 2.5
           },
           "progressWeight": 0.15,
-          "targetTieBreak": "stable_candidate_order",
+          "targetTieBreak": "maximum_coverage_then_value_then_center",
           "outsideShapeDamage": 0,
           "presentationLockSec": 0.9,
           "executeEnemyTypes": [
@@ -1452,7 +1452,7 @@
             "elite": 1.25,
             "boss": 2.5
           },
-          "targetTieBreak": "stable_candidate_order",
+          "targetTieBreak": "maximum_coverage_then_value_then_cluster_center",
           "outsideShapeDamage": 0,
           "presentationLockSec": 0.9,
           "fixedCooldownSec": 0,

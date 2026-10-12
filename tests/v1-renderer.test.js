@@ -108,3 +108,115 @@ test('six camps, fifteen hero silhouettes and skills use finite Canvas geometry'
   renderer.destroy();
   assert.equal(renderer.flash, null);
 });
+
+test('damage labels use actual event amounts, merge only tower hits in a short window, and stay bounded', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer();
+  const first = { type: 'damage', enemyId: 7, x: 120, y: 160, source: 'camp_archer', amount: 4.25 };
+  const before = structuredClone(first); renderer.handleEvent(first);
+  clock += 80; renderer.handleEvent({ ...first, amount: 6.25 });
+  assert.deepEqual(first, before);
+  assert.equal(renderer.damageLabels.length, 1);
+  assert.equal(renderer.damageLabels[0].amount, 10.5);
+  assert.equal(renderer.damageLabels[0].hits, 2);
+  renderer.handleEvent({ ...first, source: 'hero_guan_yu', amount: 17 });
+  renderer.handleEvent({ ...first, heroId: 'guan_yu', source: 'ultimate_guan_yu', castId: 2, amount: 28, executed: true });
+  assert.equal(renderer.damageLabels.length, 3);
+  assert.ok(renderer.damageLabels.slice(1).every(label => label.prominent));
+  renderer.drawDamageLabels(canvas.context, clock / 1000);
+  const labels = canvas.context.operations.filter(op => op[0] === 'fillText').map(op => op[1]);
+  assert.deepEqual(labels, ['10.5 ·2击', '17', '击破 28']);
+  clock += 60; renderer.handleEvent({ ...first, amount: 8 });
+  assert.equal(renderer.damageLabels.length, 4, 'merging window does not stretch indefinitely');
+  for (const amount of [0, -1, NaN, Infinity]) renderer.handleEvent({ ...first, amount });
+  assert.equal(renderer.damageLabels.length, 4);
+  for (let i = 0; i < 80; i++) renderer.handleEvent({ ...first, enemyId: i + 100, amount: i + 1 });
+  assert.equal(renderer.damageLabels.length, 48);
+  assert.equal(renderer.damageLabels.at(-1).amount, 80);
+  assert.equal(renderer.damageLabels.at(-1).hits, 1);
+});
+
+test('death snapshots draw separately from living units and never affect engine counts or stats', t => {
+  t.mock.method(globalThis.performance, 'now', () => 1000);
+  const { renderer } = makeRenderer();
+  const game = { map: content.maps[0], enemies: [{ id: 2, type: 'infantry', x: 170, y: 300, hp: 40, maxHp: 40 }],
+    heroes: [], camps: [], effects: [], kills: 1, stats: { ultimateKills: 1 }, hp: 100 };
+  const snapshot = structuredClone(game), live = [];
+  renderer.drawV1Enemy = (_ctx, enemy) => live.push(enemy.id);
+  const event = { type: 'kill', enemyId: 1, enemyType: 'armor', x: 150, y: 280, radius: 12, facing: Math.PI / 2 };
+  renderer.handleEvent(event); event.x = 999;
+  assert.equal(renderer.deathSnapshots[0].x, 150);
+  renderer.draw(game);
+  assert.deepEqual(live, [2]); assert.deepEqual(game, snapshot);
+  for (let i = 0; i < 100; i++) renderer.handleEvent({ ...event, enemyId: i + 3 });
+  assert.equal(renderer.deathSnapshots.length, 48);
+});
+
+test('feedback expires by wall time without catch-up playback and ignores hidden or destroyed scenes', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer } = makeRenderer();
+  const hit = { type: 'damage', enemyId: 1, x: 100, y: 150, amount: 25, heroId: 'guan_yu' };
+  renderer.handleEvent(hit); renderer.handleEvent({ ...hit, type: 'kill' });
+  clock += 5000;
+  renderer.draw({ heroes: [], enemies: [], camps: [], hp: 100 }, { realDt: 0 });
+  assert.equal(renderer.damageLabels.length, 0); assert.equal(renderer.deathSnapshots.length, 0);
+  globalThis.document.hidden = true; renderer.handleEvent(hit); assert.equal(renderer.damageLabels.length, 0);
+  globalThis.document.hidden = false; renderer.handleEvent(hit); renderer.flashUltimate({ heroId: 'guan_yu' });
+  renderer.resetFeedback(); assert.equal(renderer.damageLabels.length, 0); assert.equal(renderer.flash, null);
+  renderer.handleEvent(hit); renderer.destroy(); renderer.handleEvent(hit);
+  assert.equal(renderer.damageLabels.length, 0); assert.equal(renderer.deathSnapshots.length, 0);
+});
+
+test('Guan Yu blade front, preview origin, angle, and width match the locked engine geometry', () => {
+  const { renderer, canvas } = makeRenderer();
+  const hero = { heroId: 'guan_yu', definition: { ultimate: { frontTravelSec: 0.64 } } };
+  const effect = { heroId: 'guan_yu', shape: 'directional_swept_rectangle', x: 190, y: 480,
+    originX: 999, originY: 999, angle: -1.2, width: 208, length: 610, age: 0.32, life: 0.9 };
+  const before = structuredClone(effect);
+  canvas.context.operations.length = 0; renderer.drawSkillShape(canvas.context, effect, { game: { heroes: [hero] } });
+  const ops = canvas.context.operations;
+  assert.ok(ops.some(op => op[0] === 'translate' && op[1] === 190 && op[2] === 480));
+  assert.ok(ops.some(op => op[0] === 'rotate' && op[1] === -1.2));
+  assert.ok(ops.some(op => op[0] === 'rect' && op[1] === 0 && op[2] === -104 && op[3] === 610 && op[4] === 208));
+  assert.ok(ops.some(op => op[0] === 'quadraticCurveTo' && op[3] === 305 && op[4] === 104), 'front is halfway at .32/.64 seconds');
+  canvas.context.operations.length = 0; renderer.drawSkillShape(canvas.context, effect, { preview: true, game: { heroes: [hero] } });
+  assert.ok(canvas.context.operations.some(op => op[0] === 'rect' && op[2] === -104 && op[3] === 610 && op[4] === 208));
+  assert.deepEqual(effect, before);
+});
+
+test('reduced motion keeps skill markings and feedback positions static, without shake or moving corpses', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer(); renderer.reducedMotion = true;
+  const effect = { heroId: 'guan_yu', shape: 'directional_swept_rectangle', x: 210, y: 550, angle: -Math.PI / 2, width: 184, length: 610 };
+  const renderSkill = age => { canvas.context.operations.length = 0; renderer.drawSkillShape(canvas.context, { ...effect, age }); return structuredClone(canvas.context.operations); };
+  assert.deepEqual(renderSkill(0.05), renderSkill(0.65));
+  renderer.handleEvent({ type: 'damage', enemyId: 1, amount: 12, x: 120, y: 200 });
+  renderer.handleEvent({ type: 'kill', enemyId: 1, x: 120, y: 200 });
+  const renderFeedback = () => {
+    canvas.context.operations.length = 0; renderer.drawDeaths(canvas.context, clock / 1000); renderer.drawDamageLabels(canvas.context, clock / 1000);
+    return canvas.context.operations.filter(op => ['translate', 'rotate', 'scale'].includes(op[0]));
+  };
+  const first = structuredClone(renderFeedback()); clock += 250;
+  assert.deepEqual(renderFeedback(), first);
+  assert.ok(!first.some(op => op[0] === 'rotate'));
+  renderer.flashUltimate({ heroId: 'guan_yu' });
+  canvas.context.operations.length = 0; renderer.draw({ heroes: [], enemies: [], camps: [], hp: 100 });
+  const backgroundIndex = canvas.context.operations.findIndex(op => op[0] === 'drawImage');
+  assert.ok(!canvas.context.operations.slice(0, backgroundIndex).some(op => op[0] === 'translate'), 'no camera translation before the background');
+});
+
+test('fifteen skill geometries stay distinct and share a finite particle budget under dense casts', () => {
+  const { renderer, canvas } = makeRenderer();
+  const fingerprints = [];
+  for (const [id, definition] of Object.entries(balance.heroes)) {
+    const hero = { heroId: id, definition };
+    const effect = { ...definition.ultimate, heroId: id, type: id === 'lv_meng' ? 'mine' : 'ultimate', x: 210, y: 350,
+      angle: -Math.PI / 2, age: 1.1, life: 3, laneId: 'route_0', targets: [{ id: 1, x: 180, y: 220 }] };
+    canvas.context.operations.length = 0; renderer.particlesRemaining = 160;
+    renderer.drawSkillShape(canvas.context, effect, { game: { heroes: [hero] } });
+    fingerprints.push(JSON.stringify(canvas.context.operations));
+    for (let i = 0; i < 30; i++) renderer.drawSkillShape(canvas.context, effect, { game: { heroes: [hero] } });
+    assert.ok(renderer.particlesRemaining >= 0 && renderer.particlesRemaining <= 160);
+  }
+  assert.equal(new Set(fingerprints).size, 15);
+});

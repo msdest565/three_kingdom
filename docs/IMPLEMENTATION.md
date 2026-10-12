@@ -22,6 +22,7 @@ npm run dev
 | `campaign-app.js` / `campaign.css` | 主线选关、编队、科技/铁匠铺/背包、培养、开箱/结算、设置、导入预览与战斗 UI |
 | `campaign-state.js` | schema 3 存档及 schema 2 数值等价迁移、校验迁移、备份、培养扣款、首通/星差额/每日收益与幂等结算 |
 | `v1-engine.js` | 配置战斗、路线、六营、敌兵与首领、十五技能、三人怒气与队列、campTech 开战快照与专属效果；不写 DOM 或永久奖励 |
+| `skill-targeting.js` | 方向几何边界区间与圆覆盖扫描；选当前合法目标的最大覆盖，不消耗战斗随机源 |
 | `v1-renderer.js` / `hero-portraits.js` | 十二地图主题、固定阵位角色轮廓、六营、技能视觉及程序 SVG 头像 |
 | `combat-clock.js` / `tutorial.js` / `audio-system.js` | 固定时步、引导与 Web Audio；声音及反馈使用现实时间 |
 | `app.js` / `game-engine.js` / `renderer.js` | 保留原型与可复用绘制基础；原型参数不等于主线参数 |
@@ -32,6 +33,8 @@ npm run dev
 实际 `CampaignStore` 接口为 `getTechnologyCost()` / `researchTechnology()` / `getBattleTechnology()`、`getInventory()`、`getForgeCost()` / `forgeEquipment()`、`equipEquipment()`、`salvageEquipment()`、现有 `upgradeEquipment()` / `promoteEquipment()`。先检查报价与门槛，再由一次状态事务扣款并保存，不能由 UI 独立改资源。战前通过 `getBattleTechnology()` 获取副本，以 `campTech` 传入 `V1Game`，装备按队伍描述符传入；引擎固定开战快照，后续研究与换装不回写当前战斗。
 
 箱内抽取使用独立于战斗种子的随机源，在唯一胜利结算事务中生成物品、更新宝箱/统计账本并保存；揭示结果不再抽取。满仓仅回收本次新掉物。借将只在对应战斗有效，已有同名武将时使用自己的培养版本。每日材料收益仍采用本地日期软上限，不具备服务器防作弊能力。规则及全套数值表见 [成长扩展设计](v1/progression-design.md)。
+
+2026-10-12 体验补丁：引擎 damage 事件携带实际扣血、目标 ID 与施放 ID，kill 事件携带死亡位置快照；Canvas 以真实事件合并跳字并绘制独立死亡表现，不能向引擎添加尸体或替代活兵。Audio 的战斗去重在 start 事件清空，防止重新挑战时复用敌兵 ID 导致无声。实际 ultimate 事件触发 CombatClock 的短现实时间慢动作，保留 1×/1.5×/2× 偏好和全体同步，排队请求不触发演出；减少动态关闭慢动作和强闪震。协战技能为右侧独立触控列，原武将阵位与技能原点不移动。
 
 ## 数据与新增内容
 

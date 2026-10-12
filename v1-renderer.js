@@ -22,6 +22,8 @@ const DEFAULT_MAP = { id: 'wei_gate', name: '演武沙盘', campSlots: CAMP_SLOT
     [{ x: 320, y: -20 }, { x: 310, y: 160 }, { x: 210, y: 310 }, { x: 210, y: 530 }]] };
 const clamp = (n, min = 0, max = 1) => Math.min(max, Math.max(min, n));
 const nowSeconds = () => (globalThis.performance?.now?.() ?? Date.now()) / 1000;
+const FEEDBACK_LIMIT = 48;
+const PARTICLE_LIMIT = 160;
 function oval(ctx, x, y, rx, ry, color) {
   ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill();
 }
@@ -68,6 +70,10 @@ export class V1Renderer extends Renderer {
     this.visualTime = 0;
     this.cssIso = 1;
     this.spriteScaleX = this.spriteScaleY = 1;
+    this.damageLabels = [];
+    this.deathSnapshots = [];
+    this.particlesRemaining = PARTICLE_LIMIT;
+    this.impactStarted = -Infinity;
     this.setMap(DEFAULT_MAP);
   }
 
@@ -100,6 +106,95 @@ export class V1Renderer extends Renderer {
     }
     this.flash = { started: nowSeconds(), heroId: event.heroId ?? event.hero?.heroId ?? event.hero?.id,
       name: event.skillName ?? event.name, kills: event.kills ?? 0, resultAt: null };
+    this.impactStarted = this.flash.started;
+  }
+
+  pruneFeedback(now = nowSeconds()) {
+    this.damageLabels = this.damageLabels.filter(label => now - label.started < label.life);
+    this.deathSnapshots = this.deathSnapshots.filter(death => now - death.started < death.life);
+  }
+
+  handleEvent(event = {}) {
+    if (this.destroyed || globalThis.document?.hidden) return;
+    const now = nowSeconds();
+    this.pruneFeedback(now);
+    if (['ultimate', 'burst', 'ultimate_result'].includes(event.type)) { this.flashUltimate(event); return; }
+    if (!Number.isFinite(event.x) || !Number.isFinite(event.y)) return;
+    if (event.type === 'damage' && Number.isFinite(event.amount) && event.amount > 0) {
+      const prominent = Boolean(event.heroId) || /^(hero|ultimate)_/.test(event.source ?? '');
+      const merged = !prominent && this.damageLabels.find(label => !label.prominent && label.enemyId === event.enemyId
+        && event.enemyId != null && now - label.started <= 0.12);
+      if (merged) { merged.amount += event.amount; merged.hits++; }
+      else {
+        this.damageLabels.push({ enemyId: event.enemyId, x: event.x, y: event.y, amount: event.amount,
+          heroId: event.heroId, source: event.source, castId: event.castId, executed: Boolean(event.executed),
+          prominent, hits: 1, started: now, life: prominent ? 0.85 : 0.62 });
+        if (this.damageLabels.length > FEEDBACK_LIMIT) this.damageLabels.shift();
+      }
+    } else if (event.type === 'kill') {
+      this.deathSnapshots.push({ enemyId: event.enemyId, type: event.enemyType ?? 'infantry', x: event.x, y: event.y,
+        radius: clamp(Number(event.radius) || 10, 5, 28), facing: Number.isFinite(event.facing) ? event.facing : Math.PI / 2,
+        heroId: event.heroId, source: event.source, castId: event.castId, started: now, life: 0.72 });
+      if (this.deathSnapshots.length > FEEDBACK_LIMIT) this.deathSnapshots.shift();
+    }
+  }
+
+  resetFeedback() {
+    this.damageLabels = []; this.deathSnapshots = []; this.flash = null;
+    this.impactStarted = -Infinity; this.visualTime = 0;
+  }
+
+  destroy() {
+    this.resetFeedback(); this.destroyed = true; super.destroy();
+  }
+
+  // Fixed-size procedural particles share one per-frame budget across all effects.
+  sparks(ctx, count, radius, color, phase = 0) {
+    const permitted = Math.min(count, this.particlesRemaining);
+    this.particlesRemaining -= permitted;
+    for (let i = 0; i < permitted; i++) {
+      const angle = i * 2.39996, r = radius * (0.3 + (i % 7) / 10);
+      const drift = this.reducedMotion ? 0 : phase * 6;
+      const x = Math.cos(angle) * (r + drift), y = Math.sin(angle) * (r + drift);
+      polygon(ctx, [[x, y - 2], [x + 1.5, y], [x, y + 2], [x - 1.5, y]], color);
+    }
+  }
+
+  drawDeaths(ctx, now) {
+    for (const death of this.deathSnapshots) {
+      const progress = clamp((now - death.started) / death.life);
+      this.sprite(ctx, death.x, death.y, () => {
+        ctx.globalAlpha = 1 - progress;
+        if (!this.reducedMotion) {
+          const recoil = Math.sin(clamp(progress / 0.5) * Math.PI / 2) * 8;
+          ctx.translate(-Math.cos(death.facing) * recoil, -Math.sin(death.facing) * recoil);
+          ctx.rotate(Math.min(1, progress / 0.4) * 1.1);
+          ctx.scale(1, 1 - progress * 0.28);
+          oval(ctx, 0, 4, death.radius * 1.2, 4, '#26382d55');
+          const heavy = ['armor', 'siege', 'boss'].includes(death.type);
+          polygon(ctx, [[-death.radius * 0.65, 1], [-death.radius * 0.75, -13], [0, -19], [death.radius * 0.75, -13], [death.radius * 0.65, 1]], heavy ? '#81755b' : '#a38769', '#c8ac78');
+          oval(ctx, 0, -22, 4, 5, '#c7a37a');
+          if (death.type === 'cavalry') oval(ctx, 0, 0, death.radius * 1.6, 5, '#8a7153');
+          if (death.type === 'banner') line(ctx, [[8, 0], [8, -35], [20, -30]], '#d2a474', 2);
+        }
+        this.sparks(ctx, this.reducedMotion ? 3 : 7, death.radius * 1.2, '#ffe4a8', progress);
+      });
+    }
+  }
+
+  drawDamageLabels(ctx, now) {
+    for (const label of this.damageLabels) {
+      const progress = clamp((now - label.started) / label.life);
+      const amount = Number(label.amount.toFixed(1));
+      const value = `${label.executed ? '击破 ' : ''}${amount}${label.hits > 1 ? ` ·${label.hits}击` : ''}`;
+      this.sprite(ctx, label.x, label.y - 27 - (this.reducedMotion ? 0 : progress * 22), () => {
+        ctx.globalAlpha = clamp((1 - progress) / 0.3);
+        ctx.font = `800 ${Math.max(label.prominent ? 17 : 12, (label.prominent ? 15 : 11) / this.cssIso)}px "Microsoft YaHei", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3;
+        ctx.strokeStyle = '#1b302c'; ctx.strokeText(value, 0, 0);
+        ctx.fillStyle = label.prominent ? '#fff0a8' : '#e7e4cd'; ctx.fillText(value, 0, 0);
+      });
+    }
   }
 
   drawBackground(ctx) {
@@ -195,7 +290,9 @@ export class V1Renderer extends Renderer {
   }
 
   draw(game, { selectedSlot = -1, realDt = 1 / 60 } = {}) {
-    if (!game || !this.ctx) return;
+    if (!game || !this.ctx || this.destroyed) return;
+    const now = nowSeconds();
+    this.pruneFeedback(now); this.particlesRemaining = PARTICLE_LIMIT;
     if (game.map && game.map !== this.map) this.setMap(game.map);
     this.resize();
     this.visualTime += clamp(Number(realDt) || 0, 0, 0.1);
@@ -205,7 +302,13 @@ export class V1Renderer extends Renderer {
     this.spriteScaleX = iso / sx; this.spriteScaleY = iso / sy;
     const ctx = this.ctx, time = this.reducedMotion ? 0 : this.visualTime;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    const impactAge = now - this.impactStarted;
+    if (!this.reducedMotion && impactAge >= 0 && impactAge < 0.18) {
+      const strength = (1 - impactAge / 0.18) * 1.5;
+      ctx.translate(Math.sin(impactAge * 120) * strength, Math.cos(impactAge * 90) * strength * 0.5);
+    }
     ctx.globalAlpha = 1; ctx.drawImage(this.background, 0, 0, 420, 600);
+    this.drawDeaths(ctx, now);
     const slots = this.map.campSlots ?? CAMP_SLOTS, camps = game.camps ?? [];
     const selected = slots.find((slot, index) => (slot.slot ?? index) === selectedSlot);
     if (selected) {
@@ -244,17 +347,18 @@ export class V1Renderer extends Renderer {
       if (['ultimate', 'field', 'mine', 'telegraph', 'oil'].includes(effect.type)) this.drawSkillShape(ctx, effect, { game });
       else super.drawEffect(ctx, { ...effect, maxLife: effect.life, life: Math.max(0, effect.life - (effect.age ?? 0)) });
     }
+    this.drawDamageLabels(ctx, now);
     if ((game.hp ?? game.gateHp) < (game.maxHp ?? game.maxGateHp ?? 100) * 0.3) this.drawDanger(ctx, time);
     // World positions scale independently; text and actors use an isotropic transform.
     this.sprite(ctx, 210, 20, () => text(ctx, this.map.name ?? '演武沙盘', 0, 0, Math.max(11, 11 / this.cssIso), '#ead5a0'));
     if (this.flash) {
       const age = nowSeconds() - this.flash.started;
       if (age > 1.6) this.flash = null;
-      else this.sprite(ctx, 210, 55, () => {
+      else if (this.flash.resultAt == null) this.sprite(ctx, 210, 55, () => {
         ctx.globalAlpha = clamp((1.6 - age) / 0.3);
         const art = HERO_ART[this.flash.heroId];
-        const kills = this.flash.kills ? ` · ${this.flash.kills}击破` : '';
-        text(ctx, `${art?.name ?? '无双'} · ${this.flash.name ?? art?.skill ?? '无双发动'}${kills}`, 0, 0, Math.max(12, 12 / this.cssIso), '#d6ffdf');
+        // The DOM result popup owns final kill counts; this label is release-only.
+        text(ctx, `${art?.name ?? '无双'} · ${this.flash.name ?? art?.skill ?? '无双发动'}`, 0, 0, Math.max(12, 12 / this.cssIso), '#d6ffdf');
       });
     }
   }
@@ -424,23 +528,126 @@ export class V1Renderer extends Renderer {
     ctx.fillStyle = '#d18a66'; ctx.fillRect(-width / 2, y + 1, width * clamp(enemy.hp / enemy.maxHp), 2);
   }
 
+  drawSkillLayers(ctx, id, { age, radius = 125, width = 180, length = 400, definition = {} }) {
+    const pulse = clamp(age / 0.65), ring = (r, color, thickness = 2) => {
+      ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke();
+    };
+    if (id === 'guan_yu') {
+      const front = clamp(age / (definition.frontTravelSec ?? 0.64)) * length;
+      // The dragon and all blade layers trail the actual hit front, inside its locked rectangle.
+      ctx.fillStyle = '#21b69422'; ctx.fillRect(0, -width / 2, front, width);
+      for (const [offset, tint, thickness] of [[0, '#2bd9aa44', 18], [-5, '#68edb8', 7], [-9, '#e0ffe1', 2]]) {
+        ctx.strokeStyle = tint; ctx.lineWidth = thickness;
+        ctx.beginPath(); ctx.moveTo(front + offset, -width / 2);
+        ctx.quadraticCurveTo(Math.max(0, front - 34 + offset), 0, front + offset, width / 2); ctx.stroke();
+      }
+      const dragon = Array.from({ length: 13 }, (_, i) => [Math.max(0, front - i * 11), Math.sin(i * 0.9) * width * 0.15]);
+      line(ctx, dragon, '#87e5b8', 4); line(ctx, dragon, '#e2ffc4', 1);
+      polygon(ctx, [[front - 8, -8], [front - 30, -18], [front - 24, 0], [front - 32, 13], [front - 8, 7]], '#9ff2bd');
+      ctx.save(); ctx.translate(Math.max(0, front - 20), 0); this.sparks(ctx, 14, width * 0.42, '#bcffd4', pulse); ctx.restore();
+    } else if (id === 'zhang_fei') {
+      for (let i = 0; i < 4; i++) {
+        const x = length * clamp(pulse - i * 0.16);
+        line(ctx, [[x - 12, -width / 2], [x + 12, 0], [x - 12, width / 2]], i ? '#dab56e70' : '#ffe0a2', 6 - i);
+      }
+      polygon(ctx, [[0, -16], [length, -3], [length, 3], [0, 16]], '#e5bc6435');
+    } else if (id === 'zhao_yun') {
+      for (let i = 0; i < 3; i++) if (age >= (definition.passAtSec?.[i] ?? i * 0.25)) {
+        const y = (i - 1) * width / 4;
+        polygon(ctx, [[0, y - 6], [length, y], [0, y + 6]], ['#92ddef55', '#e6ffff70', '#9bc8ff55'][i]);
+        line(ctx, [[8, y], [length, y]], '#edffff', 1.5);
+      }
+    } else if (id === 'xu_chu') {
+      for (let i = 0; i < 3; i++) {
+        const r = length * clamp(pulse - i * 0.18);
+        ctx.strokeStyle = i ? '#c386465c' : '#f4c57f'; ctx.lineWidth = 8 - i * 2;
+        ctx.beginPath(); ctx.arc(0, 0, r, -(definition.angleDegrees ?? 70) * Math.PI / 360, (definition.angleDegrees ?? 70) * Math.PI / 360); ctx.stroke();
+      }
+      line(ctx, [[30, 0], [length * 0.45, -12], [length * 0.63, 11], [length, 0]], '#ffe0a7', 3);
+    } else if (id === 'sima_yi') {
+      ring(radius * 0.85, '#b08de955', 6); ring(radius * 0.63, '#d2bcec', 1);
+      if (age >= (definition.delaySec ?? 1)) {
+        for (let i = -1; i <= 1; i++) {
+          const x = i * radius * 0.4;
+          const bolt = [[x, -radius], [x - 13, -radius * 0.35], [x + 9, -radius * 0.4], [x - 5, radius * 0.25]];
+          line(ctx, bolt, '#9672d275', 10); line(ctx, bolt, '#f1e6ff', 3);
+        }
+        this.sparks(ctx, 12, radius * 0.7, '#d1baff', pulse);
+      }
+    } else if (id === 'zhou_yu') {
+      ring(radius * 0.92, '#b4493555', 9); ring(radius * 0.65, '#ffce8370', 3);
+      for (let i = 0; i < 12; i++) {
+        const angle = i * 2.39996, r = radius * (0.25 + i % 3 * 0.22);
+        const x = Math.cos(angle) * r, y = Math.sin(angle) * r, height = 15 + Math.sin(age * 9 + i) * 5;
+        polygon(ctx, [[x - 6, y + 4], [x - 3, y - height * 0.6], [x, y - height], [x + 6, y + 4]], '#e8773d');
+        polygon(ctx, [[x - 3, y + 3], [x + 1, y - height * 0.6], [x + 3, y + 3]], '#ffe1a2');
+      }
+      this.sparks(ctx, 12, radius * 0.6, '#ffbd6d', age % 1);
+    } else if (id === 'zhuge_liang') {
+      ring(radius * 0.88, '#8ddccf70', 3); ring(radius * 0.55, '#c7ebc780', 1);
+      ctx.save(); ctx.rotate(age * 0.4);
+      for (let i = 0; i < 8; i++) {
+        ctx.save(); ctx.rotate(i * Math.PI / 4);
+        for (let j = 0; j < 3; j++) line(ctx, [[radius * 0.7 + j * 4, -7], [radius * 0.7 + j * 4, 7]], '#d4f1c6', 1.5);
+        ctx.restore();
+      }
+      ctx.restore(); this.sparks(ctx, 8, radius * 0.5, '#b9edda', age % 1);
+    } else if (id === 'gan_ning') {
+      ring(radius * 0.9, '#7fd4d570', 2);
+      for (let i = 0; i < 12; i++) {
+        const angle = i * 2.39996, r = radius * Math.sqrt((i + 0.5) / 12) * 0.86;
+        const x = Math.cos(angle) * r, y = Math.sin(angle) * r;
+        const flight = (age * 3 + i / 12) % 1;
+        line(ctx, [[x - 8, y - 35 * (1 - flight)], [x, y]], '#d1ebe784', 2);
+        if (flight > 0.6) { ctx.save(); ctx.translate(x, y); ring(4 + flight * 4, '#abdcd355', 1); ctx.restore(); }
+      }
+    } else if (id === 'lv_meng') {
+      ring(Math.min(radius, 20), '#ebefda', 2);
+      for (let i = 0; i < 4; i++) { ctx.save(); ctx.rotate(i * Math.PI / 2); line(ctx, [[8, -8], [15, -15], [23, -15]], '#dae5bc', 2); ctx.restore(); }
+      this.sparks(ctx, 6, radius * 0.5, '#eaf3cf', pulse);
+    } else if (id === 'xiahou_dun') {
+      ring(radius * pulse, '#eeb17a66', 11); ring(radius * pulse * 0.9, '#ffdc9c', 2);
+      for (let i = 0; i < 8; i++) {
+        ctx.save(); ctx.rotate(i * TAU / 8);
+        line(ctx, [[radius * 0.3, 0], [radius * 0.5, 6], [radius * 0.6, -4], [radius * 0.83, 0]], '#dbad72', 2); ctx.restore();
+      }
+    } else if (['cao_cao', 'liu_bei', 'sun_quan'].includes(id)) {
+      const tint = id === 'liu_bei' ? '#c5efb6' : id === 'sun_quan' ? '#f2da8f' : '#e1c080';
+      ring(radius * 0.87, `${tint}55`, 5); ring(radius * (0.35 + pulse * 0.45), `${tint}90`, 2);
+      for (let i = 0; i < 6; i++) {
+        ctx.save(); ctx.rotate(i * TAU / 6); ctx.translate(radius * 0.64, 0);
+        if (id === 'cao_cao') { polygon(ctx, [[-5, 9], [-5, -13], [9, -10], [5, -3], [-5, -3]], '#dfc582'); }
+        else if (id === 'liu_bei') { line(ctx, [[-5, 0], [5, 0]], tint, 2); line(ctx, [[0, -5], [0, 5]], tint, 2); }
+        else polygon(ctx, [[-6, -8], [6, -8], [5, 3], [0, 8], [-5, 3]], '#cfaa4944', tint);
+        ctx.restore();
+      }
+      this.sparks(ctx, 8, radius * 0.5, tint, pulse);
+    }
+  }
+
   drawSkillShape(ctx, effect, { preview = false, ground = false, game } = {}) {
     const id = effect.heroId, shape = effect.shape ?? (effect.type === 'mine' ? 'lane_mines' : 'circle');
+    const definition = game?.heroes?.find(h => (h.heroId ?? h.id) === id)?.definition?.ultimate ?? {};
     const art = HERO_ART[id], age = effect.age ?? effect.time ?? 0;
     const lifeRatio = effect.life == null ? 1 : clamp(1 - age / (effect.life || 1));
-    const x = effect.originX ?? effect.x ?? 210, y = effect.originY ?? effect.y ?? 550;
+    const x = effect.x ?? effect.originX ?? 210, y = effect.y ?? effect.originY ?? 550;
     const radius = effect.radius ?? effect.range ?? 125;
     const color = id === 'zhou_yu' || effect.type === 'oil' ? '#efb066' : id === 'sima_yi' ? '#c6b5de' : id === 'gan_ning' ? '#90d7d0' : '#d8dfa6';
     // Mine placement is represented only at real map positions, never at the hero.
     if (id === 'lv_meng' && effect.type === 'ultimate') return;
+    if (this.reducedMotion && !preview && !ground) {
+      this.drawSkillShape(ctx, effect, { preview: true, game });
+      this.sprite(ctx, x, y - 24, () => text(ctx, art?.skill ?? '技能范围', 0, 0, Math.max(11, 11 / this.cssIso), color));
+      return;
+    }
     ctx.save(); ctx.globalAlpha = preview ? 0.2 : ground ? 0.17 : Math.min(0.75, 0.35 + lifeRatio * 0.4);
     ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = preview ? 1 : 2;
-    if (preview || effect.type === 'telegraph' || id === 'sima_yi' && age < 1) ctx.setLineDash([5, 7]);
+    if (preview || effect.type === 'telegraph' || id === 'sima_yi' && age < (definition.delaySec ?? 1)) ctx.setLineDash([5, 7]);
     const lane = shape.includes('lane_following') || id === 'zhang_liao';
     const rect = shape.includes('rectangle') || shape.includes('rect') || ['guan_yu', 'zhang_fei', 'zhao_yun'].includes(id);
     const cone = shape.includes('cone') || id === 'xu_chu';
     const snipe = shape.includes('snipes') || id === 'taishi_ci';
-    if (shape === 'lane_mines' && preview) {
+    if (shape === 'lane_mines' && preview && effect.type !== 'mine') {
       for (const laneId of effect.laneIds ?? ['route_0', 'route_1']) {
         const index = Number(String(laneId).replace('route_', '')) || 0, path = this.map.paths[index];
         if (!path) continue;
@@ -453,18 +660,27 @@ export class V1Renderer extends Renderer {
     } else if (lane) {
       const index = Number(String(effect.laneId ?? '0').replace('route_', '')) || 0;
       const path = this.map.paths[index] ?? this.map.paths[0];
-      roadPath(ctx, path); ctx.lineWidth = preview ? effect.width ?? 100 : 2; ctx.stroke();
+      const total = path.slice(1).reduce((sum, p, i) => sum + Math.hypot(p.x - path[i].x, p.y - path[i].y), 0);
+      const coverage = partialPath([...path].reverse(), Math.min(1, (effect.length ?? definition.length ?? total) / total));
+      roadPath(ctx, coverage); ctx.lineWidth = preview ? effect.width ?? definition.width ?? 100 : 2; ctx.stroke();
       if (!preview) {
-        const hero = game?.heroes?.find(h => (h.heroId ?? h.id) === id);
-        const trail = partialPath([...path].reverse(), age / (hero?.definition?.ultimate?.frontTravelSec ?? 0.8));
-        roadPath(ctx, trail); ctx.lineWidth = 7; ctx.strokeStyle = '#e6d39c'; ctx.stroke();
+        const trail = partialPath(coverage, age / (definition.frontTravelSec ?? 0.8));
+        for (const [width, tint] of [[14, '#d8ba6245'], [7, '#e6d39c'], [2, '#fff7c8']]) {
+          roadPath(ctx, trail); ctx.lineWidth = width; ctx.strokeStyle = tint; ctx.stroke();
+        }
         const front = trail[trail.length - 1]; oval(ctx, front.x, front.y, 6, 6, '#fff2ba');
+        ctx.save(); ctx.translate(front.x, front.y); this.sparks(ctx, 8, 13, '#f5d587', age); ctx.restore();
       }
     } else if (snipe) {
       for (const enemy of effect.targets ?? (game?.enemies ?? []).filter(e => (effect.targetIds ?? []).includes(e.id))) {
         ctx.beginPath(); ctx.arc(enemy.x, enemy.y - 5, 14, 0, TAU); ctx.stroke();
         line(ctx, [[enemy.x, enemy.y - 28], [enemy.x, enemy.y - 7]], '#f6e6b4', 2);
         if (!preview) polygon(ctx, [[enemy.x, enemy.y], [enemy.x - 4, enemy.y - 8], [enemy.x + 4, enemy.y - 8]], '#f6e6b4');
+        if (!preview) {
+          line(ctx, [[x, y - 15], [enemy.x, enemy.y - 5]], '#eacd8055', 5);
+          line(ctx, [[enemy.x - 18, enemy.y - 5], [enemy.x + 18, enemy.y - 5]], '#fff0bf', 1);
+          ctx.save(); ctx.translate(enemy.x, enemy.y); this.sparks(ctx, 6, 12, '#fff0bf', age); ctx.restore();
+        }
       }
     } else if (rect || cone) {
       const width = effect.width ?? (id === 'zhao_yun' ? 110 : 180), length = effect.length ?? effect.range ?? 400;
@@ -475,15 +691,18 @@ export class V1Renderer extends Renderer {
       } else { ctx.beginPath(); ctx.rect(0, -width / 2, length, width); }
       ctx.stroke();
       if (preview || ground) { ctx.globalAlpha *= 0.24; ctx.fill(); }
-      else if (id === 'guan_yu') {
-        const front = effect.front ?? clamp(age / 0.8) * length;
+      if (!preview && !ground) {
+        ctx.save(); ctx.clip(); this.drawSkillLayers(ctx, id, { age, width, length, definition, cone }); ctx.restore();
+      }
+      if (!preview && !ground && id === 'guan_yu') {
+        const front = clamp(age / (definition.frontTravelSec ?? 0.64)) * length;
         ctx.strokeStyle = '#d6ffdf'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(front, -width / 2); ctx.quadraticCurveTo(front + 20, 0, front, width / 2); ctx.stroke();
-      } else if (id === 'zhao_yun') {
-        for (let i = 0; i < 3; i++) if (age >= i * 0.25) line(ctx, [[8, (i - 1) * width / 4], [length, (i - 1) * width / 4]], '#c4edf2', 3 - i * 0.5);
-      } else if (id === 'zhang_fei') {
+        ctx.beginPath(); ctx.moveTo(front, -width / 2); ctx.quadraticCurveTo(front - 20, 0, front, width / 2); ctx.stroke();
+      } else if (!preview && !ground && id === 'zhao_yun') {
+        for (let i = 0; i < 3; i++) if (age >= (definition.passAtSec?.[i] ?? i * 0.25)) line(ctx, [[8, (i - 1) * width / 4], [length, (i - 1) * width / 4]], '#c4edf2', 3 - i * 0.5);
+      } else if (!preview && !ground && id === 'zhang_fei') {
         for (let i = 0; i < 3; i++) line(ctx, [[length * (0.3 + i * 0.25), -width * 0.42], [length * (0.3 + i * 0.25) + 15, 0], [length * (0.3 + i * 0.25), width * 0.42]], '#ecd093', 2);
-      } else if (cone) {
+      } else if (!preview && !ground && cone) {
         for (let i = -2; i <= 2; i++) line(ctx, [[25, i * 8], [length * 0.75, i * length * 0.13]], '#e3c68b', 2);
       }
     } else {
@@ -492,13 +711,14 @@ export class V1Renderer extends Renderer {
       if (ground || preview) { ctx.globalAlpha *= 0.25; ctx.fill(); }
       if (!ground && !preview) {
         ctx.setLineDash([]);
+        ctx.save(); ctx.clip(); this.drawSkillLayers(ctx, id, { age, radius, definition }); ctx.restore();
         if (effect.type === 'mine' || id === 'lv_meng') {
           line(ctx, [[-9, -9], [9, 9]], '#d8e5cf', 3); line(ctx, [[9, -9], [-9, 9]], '#d8e5cf', 3);
           ctx.strokeStyle = '#d8e5cf'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, TAU); ctx.stroke();
         } else if (id === 'sima_yi') {
-          const delayed = age < 1;
+          const delayed = age < (definition.delaySec ?? 1);
           if (delayed) {
-            ctx.beginPath(); ctx.arc(0, 0, radius * 0.7, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(age)); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.7, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(age / (definition.delaySec ?? 1))); ctx.stroke();
             text(ctx, '落雷预告', 0, -radius - 12, 11, '#e1d4ed');
           } else for (const offset of [-radius / 3, radius / 3]) line(ctx, [[offset, -radius * 0.8], [offset - 8, -20], [offset + 9, -27], [offset, 5]], '#ded2f3', 3);
         } else if (id === 'zhou_yu' || effect.type === 'oil') {

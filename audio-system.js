@@ -36,6 +36,7 @@ export class AudioSystem {
     this._voices = new Set();
     this._buffers = new Map();
     this._lastSound = new Map();
+    this._combatEvents = new Map();
     this._musicKey = null;
     this._lastMusicalScene = 'menu';
     this._resumePromise = null;
@@ -66,6 +67,7 @@ export class AudioSystem {
     if (!SCENES.has(next) || this.destroyed) return;
     if (this.scene === next) return;
     this.scene = next;
+    if (next === 'menu' || (next === 'battle' && ['menu', 'result'].includes(this._lastMusicalScene))) this._combatEvents.clear();
     if (['menu', 'battle', 'boss', 'result'].includes(next)) this._lastMusicalScene = next;
     if (next === 'pause' || next === 'choosing') this._stopVoices();
     this._syncMusic();
@@ -92,6 +94,8 @@ export class AudioSystem {
   }
 
   handleEvent(event = {}) {
+    // Enemy IDs restart in each battle, including retries requested while paused or muted.
+    if (event.type === 'start') this._combatEvents.clear();
     if (!this._canSound()) return;
     const inBattle = this.scene === 'battle' || this.scene === 'boss';
     const pan = Number.isFinite(event.x) ? clamp((event.x - 210) / 250, -0.7, 0.7) : 0;
@@ -113,6 +117,26 @@ export class AudioSystem {
         this._tone(92, 0.23, 0.13, 34, 'sine', { pan });
         this._noise(0.18, 0.076, 1050, { pan });
         break;
+      case 'damage': {
+        if (!inBattle || !(event.amount > 0) || !this._freshCombatEvent(event, false)) return;
+        const skill = String(event.source || '').startsWith('ultimate_') || event.castId != null;
+        if (!this._allow([['enemyDamage', skill ? 0.10 : 0.075]])) return;
+        this._tone(skill ? 118 : 195, skill ? 0.12 : 0.065, skill ? 0.055 : 0.025, skill ? 43 : 88, 'triangle', { pan });
+        this._noise(skill ? 0.065 : 0.035, skill ? 0.026 : 0.016, skill ? 1500 : 2100, { pan });
+        break;
+      }
+      case 'kill': {
+        if (!inBattle || !this._freshCombatEvent(event, true)) return;
+        const boss = event.enemyType === 'boss';
+        const heavy = boss || ['elite', 'armor', 'ranged', 'banner', 'siege'].includes(event.enemyType);
+        // Global buckets preserve a heavy death arriving after a soldier crowd, without one voice per enemy.
+        if (!this._allow([[boss ? 'death:boss' : heavy ? 'death:heavy' : 'death:soldier', boss ? 0.28 : heavy ? 0.18 : 0.12]])) return;
+        const options = { pan, priority: heavy ? 1 : 0 };
+        this._tone(boss ? 82 : heavy ? 108 : 148, boss ? 0.27 : heavy ? 0.18 : 0.105, boss ? 0.095 : heavy ? 0.064 : 0.036, boss ? 26 : heavy ? 35 : 54, 'triangle', options);
+        this._noise(boss ? 0.15 : heavy ? 0.11 : 0.065, boss ? 0.048 : heavy ? 0.034 : 0.022, boss ? 580 : heavy ? 870 : 1250, options);
+        if (boss) this._tone(245, 0.11, 0.026, 93, 'sine', { ...options, delay: 0.025 });
+        break;
+      }
       case 'heroAttack':
         if (!inBattle || !this._allow([['hero', 0.25]])) return;
         {
@@ -163,7 +187,7 @@ export class AudioSystem {
         this._tone(196, 0.85, 0.065, 73.42, 'triangle', { priority: 2 });
         this._tone(146.83, 0.72, 0.044, 55, 'sine', { delay: 0.12, priority: 2 });
         break;
-      default: break; // Per-enemy hits/kills deliberately do not add voices to dense battles.
+      default: break;
     }
   }
 
@@ -178,6 +202,7 @@ export class AudioSystem {
     }
     this._buffers.clear();
     this._lastSound.clear();
+    this._combatEvents.clear();
     this._noiseBuffer = null;
     try { Promise.resolve(this.context?.close()).catch(() => {}); } catch { /* Context may already be closed. */ }
   }
@@ -314,6 +339,19 @@ export class AudioSystem {
     const now = this.context.currentTime;
     if (keys.some(([key, gap]) => now - (this._lastSound.get(key) ?? -Infinity) < gap)) return false;
     for (const [key] of keys) this._lastSound.set(key, now);
+    return true;
+  }
+
+  _freshCombatEvent(event, death) {
+    if (event.enemyId == null) return true;
+    const key = `${death ? 'kill' : 'damage'}:${event.enemyId}`;
+    const now = this.context.currentTime;
+    const previous = this._combatEvents.get(key);
+    if (previous != null && (death || now - previous < 0.06)) return false;
+    this._combatEvents.delete(key);
+    this._combatEvents.set(key, now);
+    // Bounded history exceeds the simultaneous enemy budget and never schedules delayed crowd sounds.
+    if (this._combatEvents.size > 512) this._combatEvents.delete(this._combatEvents.keys().next().value);
     return true;
   }
 

@@ -127,6 +127,25 @@ test('long background gaps leave no queued catch-up; reset forgets fractions', (
   assert.ok(Math.abs(battleTime - 0.2) < 1e-10);
 });
 
+test('impact slows battle simulation in wall time while preserving the selected speed', () => {
+  const clock = new CombatClock(); let battleSeconds = 0;
+  clock.triggerImpact(0.35, 0.25);
+  for (let i = 0; i < 4; i++) clock.advance(0.1, 2, () => true, dt => battleSeconds += dt);
+  assert.ok(battleSeconds >= 0.25 && battleSeconds < 0.3, `0.35s impact at 2× then normal 2× advances about 0.28 battle seconds, got ${battleSeconds}`);
+  clock.clearImpact();
+  const before = battleSeconds; clock.advance(0.1, 2, () => true, dt => battleSeconds += dt);
+  assert.ok(Math.abs(battleSeconds - before - 0.2) < 1 / 60, 'clearing impact restores the existing 2× preference');
+});
+
+test('an automatic impact stops old-speed substeps in the frame that triggers it', () => {
+  const clock = new CombatClock(); let ticks = 0;
+  clock.advance(0.1, 2, () => true, () => { ticks++; clock.triggerImpact(0.35, 0.25); });
+  assert.equal(ticks, 1);
+  assert.equal(clock.accumulator, 0);
+  clock.advance(0.1, 2, () => true, () => ticks++);
+  assert.equal(ticks, 4, 'the next 0.1 real seconds add three 1/60 battle steps at 2× × 0.25');
+});
+
 test('speed preference is independent, cycles predictably, and rejects invalid or unavailable storage', () => {
   const values = new Map([['wushuang-guard-v1', JSON.stringify({ bestBurst: 52 })]]);
   const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };

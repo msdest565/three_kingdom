@@ -289,7 +289,7 @@ test('Wei 1 story, real camp deployment and first ultimate complete the event-dr
   for (let i = 0; i < 500 && env.api.tutorial.step === 'gather'; i++) env.advance(0.1);
   assert.equal(env.api.tutorial.step, 'ultimate'); assert.ok(env.api.game.enemies.length > 0);
   const readyTime = env.api.game.time; env.advance(2); assert.equal(env.api.game.time, readyTime);
-  env.clickText('关羽', env.get('hero-commands')); assert.equal(env.api.tutorial.step, 'burst'); assert.equal(env.api.game.stats.ultimateCasts, 1);
+  env.clickText('关羽', env.get('lead-command')); assert.equal(env.api.tutorial.step, 'burst'); assert.equal(env.api.game.stats.ultimateCasts, 1);
   env.advance(1.2); assert.equal(env.api.tutorial.step, 'complete'); assert.ok(env.api.tutorial.burstKills > 0);
   assert.match(env.get('burst-number').textContent, /关羽.*击破/);
   const finishTime = env.api.game.time; env.advance(1); assert.equal(env.api.game.time, finishTime);
@@ -298,6 +298,62 @@ test('Wei 1 story, real camp deployment and first ultimate complete the event-dr
   assert.equal(env.get('speed-button').textContent, '2×'); assert.equal(env.get('speed-button').disabled, false);
   env.advance(0.5); assert.ok(Math.abs(env.api.game.time - finishTime - 1) < 1 / 60);
   assert.equal(env.errors.length, 0); env.destroy();
+});
+
+test('support skill rail stays separate from the lead row and burst feedback reports only real kills', () => {
+  const env = boot(); startUnguided(env);
+  assert.equal(env.get('hero-commands').children.length, Math.max(0, env.api.game.heroes.length - 1));
+  assert.equal(env.get('lead-command').children.length, 1);
+  const lead = env.api.game.heroes[0], leadButton = env.get('lead-command').querySelector('button');
+  lead.rage = 50; env.advance(0.05);
+  assert.equal(leadButton.disabled, true); assert.equal(leadButton.classList.contains('is-ready'), false);
+  env.api.renderer.reducedMotion = true;
+  env.api.game.onEvent({ type:'ultimate',heroId:lead.id });
+  assert.equal(env.api.combatClock.impactRemaining, 0, 'reduced motion disables gameplay slow motion too');
+  env.api.renderer.reducedMotion = false;
+  env.api.game.onEvent({ type:'ultimate',heroId:lead.id });
+  assert.equal(env.api.combatClock.impactRemaining, 0.35, 'an actual skill execution begins the slow motion');
+  env.api.combatClock.clearImpact();
+  env.api.game.onEvent({ type:'burst',heroId:lead.id,burstKills:0 });
+  assert.equal(env.get('burst-number').textContent, lead.definition.ultimate.name);
+  assert.doesNotMatch(env.get('burst-number').textContent, /击破\s*0/);
+  assert.equal(env.get('burst-kills').hidden, true);
+  env.api.game.onEvent({ type:'burst',heroId:lead.id,burstKills:3 });
+  assert.match(env.get('burst-number').textContent, /击破 3/);
+  assert.equal(env.get('burst-kills').textContent, '3'); assert.equal(env.get('burst-kills').hidden, false);
+  assert.equal(env.api.combatClock.impactRemaining, 0, 'burst result emphasis does not start a second slow motion');
+  env.destroy();
+});
+
+test('two-hero battle keeps Cao Cao in the support rail and queued clicks preserve rage', () => {
+  const storage = new Map(); let env = boot({ storage });
+  for (const levelId of ['wei_001','wei_002','wei_003']) {
+    const result = env.api.store.settleBattle({ battleId:env.api.store.createBattleId(),levelId,won:true,hp:100,maxHp:100,kills:0,bestBurst:0,time:1,casts:0 });
+    assert.equal(result.ok, true, `settle ${levelId}`);
+  }
+  assert.ok(env.api.store.getHero('cao_cao'));
+  assert.equal(env.api.store.setParty(['guan_yu','cao_cao']).ok, true);
+  env.destroy(); env = boot({ storage }); startUnguided(env);
+  const game = env.api.game, lead = game.heroes[0], support = game.heroes[1];
+  assert.equal(support.id, 'cao_cao');
+  const leadButton = env.get('lead-command').querySelector('button');
+  const supportButton = env.get('hero-commands').querySelector('button');
+  assert.equal(leadButton.parentElement.id, 'lead-command');
+  assert.equal(supportButton.parentElement.id, 'hero-commands');
+  assert.match(supportButton.getAttribute('aria-label'), /曹操/);
+  const css = readFileSync(path.join(root,'campaign.css'),'utf8');
+  assert.match(css, /\.v1-battle \.hero-command\{[^}]*width:44px;[^}]*min-height:52px/);
+  lead.rage = 100; support.rage = 100; env.advance(0.1);
+  assert.equal(leadButton.disabled, false, JSON.stringify({state:game.state,rage:lead.rage,recovery:lead.rageRecovery,reserved:lead.reserved})); assert.equal(leadButton.classList.contains('is-ready'), true);
+  assert.equal(supportButton.disabled, false, JSON.stringify({state:game.state,rage:support.rage,recovery:support.rageRecovery,reserved:support.reserved})); assert.equal(supportButton.classList.contains('is-ready'), true);
+  leadButton.click();
+  assert.equal(game.heroes[0].rage, 0); assert.equal(env.api.combatClock.impactRemaining, 0.35, 'a real player cast starts wall-clock slow motion');
+  env.api.combatClock.clearImpact(); supportButton.click();
+  assert.equal(support.reserved, true); assert.equal(support.rage, 100); assert.equal(game.stats.queuedSkills, 2);
+  supportButton.click();
+  assert.equal(support.rage, 100); assert.equal(game.stats.queuedSkills, 2, 'disabled queued skill cannot consume rage twice');
+  assert.equal(env.api.combatClock.impactRemaining, 0, 'waiting in the queue does not trigger slow motion');
+  env.destroy();
 });
 
 function startUnguided(env) {
@@ -351,7 +407,7 @@ function playPublicUi(env) {
       const hero = game.heroes[0], target = hero.target;
       const urgent = game.enemies.some(e => e.hp > 0 && e.progress / e.pathLength > 0.82 && target?.targetIds.includes(e.id));
       const boss = game.enemies.some(e => e.hp > 0 && e.type === 'boss' && target?.targetIds.includes(e.id));
-      if (hero.rage >= 100 && (target?.ordinaryCount >= 10 || urgent || boss)) env.clickText(hero.name, env.get('hero-commands'));
+      if (hero.rage >= 100 && (target?.ordinaryCount >= 10 || urgent || boss)) env.clickText(hero.name, env.get(hero.role === 'lead' ? 'lead-command' : 'hero-commands'));
     }
     env.advance(0.3, 0.1);
   }
