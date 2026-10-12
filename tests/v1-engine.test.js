@@ -98,6 +98,24 @@ test('pause and choice freeze movement, queues, rage recovery, fields and simula
   g.resume(); g._offerTactics(); assert.equal(g.state, 'choosing'); const before = g.time; g.update(4); assert.equal(g.time, before);
 });
 
+test('wave upgrades wait for the current release and queued skills to finish their opening', () => {
+  for (const ids of [['guan_yu'], ['guan_yu', 'cao_cao']]) {
+    const g = fixture(ids); g.wave = g.level.choiceAfterWaves[0]; g._between = 0; g._spawnQueue = []; g._spawnIndex = 0;
+    enemy(g, 'infantry', g.paths[0].length - 40);
+    for (const h of g.heroes) filled(h);
+    for (const id of ids) assert.equal(g.castUltimate(id).ok, true);
+    g.update(.2); assert.equal(g.activeEnemyCount, 0); assert.equal(g.state, 'playing', 'clearing enemies does not freeze a blade mid-release');
+    if (ids.length === 1) {
+      g.update(.69); assert.equal(g.state, 'playing'); g.update(.03);
+    } else {
+      g.update(.81); assert.equal(g.stats.ultimateCasts, 2); assert.equal(g.state, 'playing');
+      g.update(.85); assert.equal(g.state, 'playing'); g.update(.08);
+    }
+    assert.equal(g.state, 'choosing'); assert.equal(g.skillQueue.length, 0);
+    assert.ok(g.heroes.every(h => !h.casting)); assert.equal(g.wave, g.level.choiceAfterWaves[0]);
+  }
+});
+
 test('Guan Yu executes only infantry inside the locked sweep and cannot mint kill rage', () => {
   const g = fixture(); const inf = enemy(g, 'infantry', 420, 0, { hp: 10000 });
   const cavalry = enemy(g, 'cavalry', 420, 0, { hp: 10000, maxHp: 10000 });

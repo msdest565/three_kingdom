@@ -346,7 +346,12 @@ export class V1Game {
     this.enemies = this.enemies.filter(alive);
     if (this._between <= 0 && !this.pendingEnemyCount && !this.enemies.length && !this._casts.some(c => c.kind === 'delayed')) {
       if (this.wave === this.waveCount) this._finish('won');
-      else if (this.level.choiceAfterWaves.includes(this.wave) && this._selectedWave !== this.wave) { this._selectedWave = this.wave; this._offerTactics(); }
+      else if (this.level.choiceAfterWaves.includes(this.wave) && this._selectedWave !== this.wave) {
+        // Let current releases and already-requested skills finish their opening
+        // before freezing combat for an upgrade choice. Long ground fields persist.
+        if (this.heroes.some(h => h.casting) || this.skillQueue.length) return;
+        this._selectedWave = this.wave; this._offerTactics();
+      }
       else this._beginIntermission();
     }
   }

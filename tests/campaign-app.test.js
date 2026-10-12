@@ -300,10 +300,11 @@ test('Wei 1 story, real camp deployment and first ultimate complete the event-dr
   assert.equal(env.errors.length, 0); env.destroy();
 });
 
-test('support skill rail stays separate from the lead row and burst feedback reports only real kills', () => {
+test('compact support avatars stay separate from the lead row and burst feedback reports only real kills', () => {
   const env = boot(); startUnguided(env);
   assert.equal(env.get('hero-commands').children.length, Math.max(0, env.api.game.heroes.length - 1));
   assert.equal(env.get('lead-command').children.length, 1);
+  assert.equal(env.get('hero-commands').parentElement.classList.contains('field-stage'), true, 'avatars overlay the full-width stage');
   const lead = env.api.game.heroes[0], leadButton = env.get('lead-command').querySelector('button');
   lead.rage = 50; env.advance(0.05);
   assert.equal(leadButton.disabled, true); assert.equal(leadButton.classList.contains('is-ready'), false);
@@ -325,7 +326,7 @@ test('support skill rail stays separate from the lead row and burst feedback rep
   env.destroy();
 });
 
-test('two-hero battle keeps Cao Cao in the support rail and queued clicks preserve rage', () => {
+test('two-hero battle keeps Cao Cao in the corner avatar group and queued clicks preserve rage', () => {
   const storage = new Map(); let env = boot({ storage });
   for (const levelId of ['wei_001','wei_002','wei_003']) {
     const result = env.api.store.settleBattle({ battleId:env.api.store.createBattleId(),levelId,won:true,hp:100,maxHp:100,kills:0,bestBurst:0,time:1,casts:0 });
@@ -341,8 +342,7 @@ test('two-hero battle keeps Cao Cao in the support rail and queued clicks preser
   assert.equal(leadButton.parentElement.id, 'lead-command');
   assert.equal(supportButton.parentElement.id, 'hero-commands');
   assert.match(supportButton.getAttribute('aria-label'), /曹操/);
-  const css = readFileSync(path.join(root,'campaign.css'),'utf8');
-  assert.match(css, /\.v1-battle \.hero-command\{[^}]*width:44px;[^}]*min-height:52px/);
+  assert.equal(supportButton.parentElement.parentElement.classList.contains('field-stage'), true);
   lead.rage = 100; support.rage = 100; env.advance(0.1);
   assert.equal(leadButton.disabled, false, JSON.stringify({state:game.state,rage:lead.rage,recovery:lead.rageRecovery,reserved:lead.reserved})); assert.equal(leadButton.classList.contains('is-ready'), true);
   assert.equal(supportButton.disabled, false, JSON.stringify({state:game.state,rage:support.rage,recovery:support.rageRecovery,reserved:support.reserved})); assert.equal(supportButton.classList.contains('is-ready'), true);
@@ -359,6 +359,46 @@ test('two-hero battle keeps Cao Cao in the support rail and queued clicks preser
 function startUnguided(env) {
   env.click('campaign-start'); env.click('story-skip'); if (env.api.tutorial.active) env.click('tutorial-skip');
 }
+
+function finishChoiceWave(env) {
+  const game = env.api.game;
+  game.wave = game.level.choiceAfterWaves[0]; game._between = 0;
+  game.enemies = []; game._spawnQueue = []; game._spawnIndex = 0;
+  game.update(1 / 60);
+  assert.equal(game.state, 'choosing');
+}
+
+test('upgrade choice waits one visible real second at every player speed while combat remains frozen', () => {
+  for (const speed of [1, 1.5, 2]) {
+    const env = boot(); startUnguided(env); env.api.store.setSetting('speed', speed);
+    finishChoiceWave(env); const before = env.api.game.time;
+    env.advance(.9);
+    assert.equal(env.get('choice-overlay').hidden, true, `${speed}x cannot reveal early`);
+    assert.equal(env.get('upgrade-choices').children.length, 0, 'no hidden interactive upgrade cards during the viewing interval');
+    assert.equal(env.api.game.time, before); assert.equal(env.api.game.wave, env.api.game.level.choiceAfterWaves[0]);
+    env.advance(.15);
+    assert.equal(env.get('choice-overlay').hidden, false); assert.equal(env.get('upgrade-choices').children.length, 3);
+    assert.equal(env.api.game.time, before);
+    env.clickText(env.api.game.upgrades[0].name, env.get('upgrade-choices'));
+    assert.equal(env.api.game.state, 'playing'); assert.equal(env.get('choice-overlay').hidden, true);
+    assert.equal(env.errors.length, 0); env.destroy();
+  }
+});
+
+test('backgrounding during upgrade reveal preserves the remaining viewing time without catch-up', () => {
+  for (const lifecycle of ['visibility', 'page']) {
+    const env = boot(); startUnguided(env); finishChoiceWave(env); env.advance(.4);
+    const before = env.api.game.time;
+    if (lifecycle === 'visibility') { env.document.hidden = true; env.document.dispatch('visibilitychange'); }
+    else env.window.dispatch('pagehide');
+    env.advance(30, 30); assert.equal(env.get('choice-overlay').hidden, true); assert.equal(env.api.game.time, before);
+    if (lifecycle === 'visibility') { env.document.hidden = false; env.document.dispatch('visibilitychange'); }
+    else env.window.dispatch('pageshow');
+    env.advance(.5); assert.equal(env.get('choice-overlay').hidden, true, 'still has viewing time left after foregrounding');
+    env.advance(.15); assert.equal(env.get('choice-overlay').hidden, false);
+    assert.equal(env.api.game.time, before); assert.equal(env.errors.length, 0); env.destroy();
+  }
+});
 
 test('2× uses battle time; camp panels, pause and background lifecycle freeze without deferred simulation or automatic resume', async () => {
   const env = boot(); startUnguided(env); env.click('speed-button'); env.click('speed-button'); await env.flush();
@@ -393,6 +433,7 @@ function playPublicUi(env) {
   while (!['won', 'lost'].includes(env.api.game.state) && iterations++ < 1500) {
     const game = env.api.game;
     if (game.state === 'choosing') {
+      if (env.get('choice-overlay').hidden) { env.advance(.1); continue; }
       const choice = preference.map(id => game.upgrades.find(c => c.id === id)).find(Boolean) ?? game.upgrades[0];
       env.clickText(choice.name, env.get('upgrade-choices'));
     }

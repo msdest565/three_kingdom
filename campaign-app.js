@@ -62,6 +62,8 @@ let tutorialKey = '';
 let audioActive = null;
 let last = performance.now();
 let elapsedUi = 0;
+let choiceRevealRemaining = 0;
+let choiceRevealFrame = null;
 let toastTimer, bannerTimer, burstTimer;
 let modalFocus = null;
 const commandNodes = new Map();
@@ -288,6 +290,7 @@ function handleBattleEvent(event) {
   if (event.type === 'wave') banner(event.boss ? '敌将压境 · 注意军报' : `第 ${event.wave} 波 · 敌潮来袭`);
   else if (event.type === 'bossWarning') banner(event.name ? `${event.name}即将入阵` : '敌将将至 · 准备无双');
   else if (event.type === 'reinforcementWarning') banner(`${event.name} · ${event.seconds}秒后入阵`);
+  else if (event.type === 'choice') { choiceRevealRemaining = 1; choiceRevealFrame = last; choicesKey = ''; $('upgrade-choices').replaceChildren(); }
   else if (event.type === 'ultimate') { if (!renderer.reducedMotion && mode === 'battle' && !document.hidden && !pageSuspended) combatClock.triggerImpact(0.35,0.25); }
   else if (event.type === 'burst') { const kills = Math.max(0,Math.floor(Number(event.burstKills ?? event.kills) || 0)); const skillName = BALANCE.heroes[event.heroId]?.ultimate.name || '无双破阵'; $('burst-label').textContent = kills ? `${skillName} · ${heroName(event.heroId)} 击破 ` : skillName; $('burst-kills').textContent = kills ? String(kills) : ''; $('burst-kills').hidden = kills === 0; $('burst-number').classList.add('is-visible'); clearTimeout(burstTimer); burstTimer = setTimeout(() => $('burst-number').classList.remove('is-visible'),1300); }
   else if (event.type === 'skillQueued' && event.queuePosition > 1) toast(`${event.name}已待命 · 技能依次施放`);
@@ -299,7 +302,7 @@ function enterBattle(levelId = selectedLevelId, guide = false) {
   if (!store.isLevelUnlocked(levelId)) { toast('先通关上一阵'); return; }
   const party = store.getPartyForLevel(levelId); if (!party.length || store.readOnly) { toast('当前存档无法开始战斗'); return; }
   battleId = store.createBattleId(); if (!battleId) { toast('暂时无法开始新局，请先导出存档备份'); return; }
-  selectedLevelId = levelId; selectedChapter = store.getLevel(levelId).chapterId; settlement = null; lootRevealed = false; selectedSlot = -1; formationCursor = -1;
+  selectedLevelId = levelId; selectedChapter = store.getLevel(levelId).chapterId; settlement = null; lootRevealed = false; selectedSlot = -1; formationCursor = -1; choiceRevealRemaining = 0; choiceRevealFrame = null;
   game = new V1Game({levelId,party,unlockedCamps:store.state.unlockedCamps,campTech:store.getBattleTechnology(),onEvent:handleBattleEvent});
   mode = 'battle'; forceGuide = guide || store.state.settings.tutorialVersion < 1; tutorial.reset(false); storyVisible = !store.state.levels[levelId]?.cleared; renderer.resetFeedback?.(); combatClock.clearImpact();
   $('lobby-view').hidden = true; $('battle-view').hidden = false; $('battle-level-title').textContent = `${factionNames[game.level.chapterId]} ${game.level.order} · ${game.level.name}`; $('battle-seal').textContent = factionNames[game.level.chapterId];
@@ -310,7 +313,7 @@ function enterBattle(levelId = selectedLevelId, guide = false) {
   resetClock(); void sound.unlock(); sound.setScene('battle'); if (!storyVisible) beginCombat(); syncBattle(true);
 }
 function beginCombat() { if (!game || game.state !== 'ready') return; storyVisible = false; tutorial.reset(forceGuide); game.start(); resetClock(); syncBattle(true); }
-function returnHome() { mode = 'lobby'; selectedSlot = -1; tutorial.skip(); storyVisible = false; renderer.resetFeedback?.(); combatClock.clearImpact(); $('burst-number').classList.remove('is-visible'); $('battle-view').hidden = true; $('lobby-view').hidden = false; closeModal(); sound.setScene('menu'); resetClock(); renderCampaign(); }
+function returnHome() { mode = 'lobby'; selectedSlot = -1; tutorial.skip(); storyVisible = false; choiceRevealRemaining = 0; choiceRevealFrame = null; renderer.resetFeedback?.(); combatClock.clearImpact(); $('burst-number').classList.remove('is-visible'); $('battle-view').hidden = true; $('lobby-view').hidden = false; closeModal(); sound.setScene('menu'); resetClock(); renderCampaign(); }
 function closeCamp() { selectedSlot = -1; $('camp-panel').hidden = true; resetClock(); if (game) syncBattle(); }
 function openCamp(slot) {
   if (!game || game.state !== 'playing' || storyVisible) return;
@@ -329,7 +332,7 @@ function renderCommands() {
   const key = game.heroes.map(h => h.id).join('|'); if (key === commandsKey) return; commandsKey = key; $('hero-commands').replaceChildren(); $('lead-command').replaceChildren(); commandNodes.clear();
   for (const [index,hero] of game.heroes.entries()) { const lead = index === 0; const node = button('',`hero-command ${lead ? 'is-lead' : 'is-support'}`,() => cast(hero.id)); node.setAttribute('aria-label',`${hero.name} · ${hero.definition.ultimate.name} · 无双技能`); node.setAttribute('title',`${hero.name} · ${hero.definition.ultimate.name}`); const fill = make('span','','rage-fill'); fill.setAttribute('aria-hidden','true'); const copy = make('span','','skill-copy'); const name = make('strong',`${hero.name} · ${hero.definition.ultimate.name}`); const sub = make('small'); const state = make('span','','skill-state'); copy.append(name,sub); node.append(fill,portrait(hero.id),copy,state); (lead ? $('lead-command') : $('hero-commands')).append(node); commandNodes.set(hero.id,{node,fill,sub,state}); }
 }
-function renderChoices() { const key = game.upgrades.map(t => t.id).join('|'); if (key === choicesKey) return; choicesKey = key; $('upgrade-choices').replaceChildren(); for (const choice of game.upgrades) { const node = button('','upgrade-choice',() => { notify(game.selectUpgrade(choice.id),'战术已整备'); resetClock(); syncBattle(true); }); node.append(make('strong',choice.name),make('span',choice.description || tacticCopy(choice.id))); $('upgrade-choices').append(node); } }
+function renderChoices() { const key = game.upgrades.map(t => t.id).join('|'); if (key === choicesKey) return; choicesKey = key; $('upgrade-choices').replaceChildren(); for (const choice of game.upgrades) { const node = button('','upgrade-choice',() => { if (choiceRevealRemaining > 0 || $('choice-overlay').hidden) return; notify(game.selectUpgrade(choice.id),'战术已整备'); resetClock(); syncBattle(true); }); node.append(make('strong',choice.name),make('span',choice.description || tacticCopy(choice.id))); $('upgrade-choices').append(node); } }
 function tacticCopy(id) { const def = BALANCE.tactics[id]; if (def?.camp) return `${BALANCE.camps[def.camp].name} · 强化${campCopy[def.camp]}，本局有效`; if (def?.hero) return `${heroName(def.hero)} · 强化无双，本局有效`; return '强化本局阵势'; }
 function renderLootResult() {
   const loot = settlement?.ok && game.state === 'won' ? settlement.loot : null;
@@ -342,7 +345,7 @@ function syncBattle(force = false) {
   if (!game || mode !== 'battle') return;
   const changed = force || previousState !== game.state; if (changed) resetClock();
   $('story-overlay').hidden = !storyVisible;
-  $('pause-overlay').hidden = game.state !== 'paused'; $('choice-overlay').hidden = game.state !== 'choosing'; $('result-overlay').hidden = !['won','lost'].includes(game.state); $('camp-panel').hidden = selectedSlot < 0;
+  $('pause-overlay').hidden = game.state !== 'paused'; $('choice-overlay').hidden = game.state !== 'choosing' || choiceRevealRemaining > 1e-8; $('result-overlay').hidden = !['won','lost'].includes(game.state); $('camp-panel').hidden = selectedSlot < 0;
   $('pause-button').disabled = !['playing','paused'].includes(game.state); $('formation-button').disabled = game.state !== 'playing'; $('hp-value').textContent = `${Math.ceil(game.hp)} / ${game.maxHp}`; $('hp-fill').style.width = `${Math.max(0,game.hp / game.maxHp * 100)}%`; $('hp-fill').parentElement.setAttribute('aria-valuenow',String(Math.ceil(game.hp))); $('hp-fill').parentElement.setAttribute('aria-valuemax',String(game.maxHp)); $('battle-view').classList.toggle('is-critical',game.hp / game.maxHp < .3);
   $('food-value').textContent = Math.floor(game.food); $('enemy-count').textContent = game.activeEnemyCount; $('pending-count').textContent = `本波待入场 ${game.pendingEnemyCount}`; $('enemy-pressure').setAttribute('aria-label',`在场敌军${game.activeEnemyCount}人，本波待入场${game.pendingEnemyCount}人`); $('enemy-pressure').classList.toggle('is-dense',game.activeEnemyCount >= 35);
   $('wave-label').textContent = `第 ${Math.max(1,game.wave)} / ${game.waveCount} 波`; $('time-value').textContent = formatTime(game.time); $('field-hint').textContent = `${game.map.name} · ${game.map.rule.copy}`;
@@ -353,10 +356,19 @@ function syncBattle(force = false) {
   for (const hero of game.heroes) { const ui = commandNodes.get(hero.id); const canCast = game.state === 'playing' && hero.rage >= 100 - 1e-8 && hero.rageRecovery <= 1e-8 && !hero.reserved; ui.fill.style.width = Math.min(100,hero.rage) + '%'; ui.node.disabled = !canCast; ui.node.classList.toggle('is-ready',canCast); ui.sub.textContent = hero.reserved ? '技能排队中' : hero.rageRecovery > 0 ? `冷却 ${Math.ceil(hero.rageRecovery)} 秒` : canCast ? `预计覆盖 ${hero.target?.count || 0} 人` : `蓄怒 ${Math.floor(hero.rage)} / 100`; ui.state.textContent = hero.reserved ? '队列' : hero.rageRecovery > 0 ? '冷却' : canCast ? '就绪' : hero.auto ? '自动' : hero.role === 'lead' ? '领衔' : '协战'; ui.node.setAttribute('aria-label',`${hero.name} · ${hero.definition.ultimate.name} · ${hero.reserved ? '技能排队中' : hero.rageRecovery > 0 ? `冷却 ${Math.ceil(hero.rageRecovery)} 秒` : canCast ? '可施放' : `蓄怒 ${Math.floor(hero.rage)} / 100`}`); }
   const guideVisible = tutorial.active && game.state === 'playing' && selectedSlot < 0 && !storyVisible; $('tutorial-card').hidden = !guideVisible; const view = guideVisible ? tutorial.view : null; const guideKey = `${guideVisible}/${tutorial.step}/${tutorial.burstKills}`;
   if (guideKey !== tutorialKey && view) { $('tutorial-progress').textContent = `学习守关 · ${view.number} / 4`; $('tutorial-title').textContent = view.title; $('tutorial-copy').textContent = view.copy.replaceAll('关羽',game.heroes[0].name).replace('投石营轰击成群敌军。','投石营降低敌速，为无双留出空间。'); $('tutorial-action').textContent = view.action; $('tutorial-action').hidden = !view.action; $('tutorial-status').textContent = tutorial.freezesBattle ? '战斗已暂停 · 操作后继续' : '实战中 · 军阵自动迎敌'; } tutorialKey = guideKey; $('field-hint').hidden = guideVisible;
-  if (game.state === 'choosing') renderChoices(); if (changed && ['won','lost'].includes(game.state)) renderResult(); previousState = game.state;
+  if (game.state === 'choosing' && choiceRevealRemaining <= 1e-8) renderChoices(); if (changed && ['won','lost'].includes(game.state)) renderResult(); previousState = game.state;
   syncAudio();
 }
-function syncAudio() { const active = !document.hidden && !pageSuspended; if (active !== audioActive) { audioActive = active; sound.setActive(active); } if (mode === 'lobby') sound.setScene('menu'); else sound.setScene(game?.state === 'playing' ? game.enemies.some(e => e.type === 'boss') ? 'boss' : 'battle' : game?.state === 'ready' ? 'pause' : game?.state || 'menu'); }
+function syncAudio() { const active = !document.hidden && !pageSuspended; if (active !== audioActive) { audioActive = active; sound.setActive(active); } if (mode === 'lobby') sound.setScene('menu'); else sound.setScene(game?.state === 'playing' || game?.state === 'choosing' && choiceRevealRemaining > 1e-8 ? game.enemies.some(e => e.type === 'boss') ? 'boss' : 'battle' : game?.state === 'ready' ? 'pause' : game?.state || 'menu'); }
+function advanceChoiceReveal(realDt, now) {
+  if (mode !== 'battle' || game?.state !== 'choosing') { choiceRevealRemaining = 0; choiceRevealFrame = null; return; }
+  const visible = !document.hidden && !pageSuspended && !storyVisible && !tutorial.freezesBattle && $('lobby-modal').hidden;
+  if (visible && choiceRevealRemaining > 0 && choiceRevealFrame !== now) {
+    choiceRevealRemaining = Math.max(0, choiceRevealRemaining - Math.min(.1, Math.max(0, realDt)));
+    if (choiceRevealRemaining <= 1e-8) { choiceRevealRemaining = 0; syncBattle(); }
+  }
+  choiceRevealFrame = now;
+}
 function togglePause() { if (!game || !['playing','paused'].includes(game.state)) return; selectedSlot = -1; game.state === 'paused' ? game.resume() : game.pause(); resetClock(); syncBattle(true); }
 function battleCanAdvance() { return mode === 'battle' && game?.state === 'playing' && selectedSlot < 0 && !storyVisible && !tutorial.freezesBattle && !document.hidden && !pageSuspended && $('lobby-modal').hidden; }
 
@@ -381,6 +393,7 @@ function frame(now) {
   const realDt = Math.max(0,(now-last) / 1000); last = now;
   try {
     combatClock.advance(realDt,tutorial.active ? 1 : store.state.settings.speed,battleCanAdvance,step => { game.update(step); tutorial.update({state:game.state,rage:game.rage,maxRage:100,enemyCount:game.activeEnemyCount}); });
+    advanceChoiceReveal(realDt, now);
     if (mode === 'battle' && game) { tutorial.update({state:game.state,rage:game.rage,maxRage:100,enemyCount:game.activeEnemyCount}); renderer.draw(game,{selectedSlot,realDt:Math.min(.1,realDt)}); elapsedUi += Math.min(.1,realDt); if (elapsedUi >= .08) { syncBattle(); elapsedUi = 0; } }
     else syncAudio();
   } catch (error) { $('fatal-message').hidden = false; $('fatal-message').textContent = '战场暂时无法继续。当前进度保留在军帐存档中，请刷新后再试。'; console.error(error); return; }
