@@ -195,7 +195,15 @@ test('default portable entry opens the campaign; every chapter and locked level 
   const env = boot();
   assert.equal(env.api.mode, 'lobby'); assert.equal(env.api.game, null);
   assert.equal(env.audioContexts.length, 0, 'no autoplay before a gesture');
+  // The march map is the campaign home: the whole chapter route is visible with one primary button.
+  assert.equal(env.get('chapter-body').hidden, false);
   assert.equal(env.get('level-grid').querySelectorAll('button').length, 20);
+  assert.equal(env.get('march-route').querySelectorAll('path').length, 2, 'cleared route and remaining route');
+  assert.equal(env.get('level-grid').querySelectorAll('button').filter(b => b.classList.contains('is-current')).length, 1);
+  // Pre-battle intel opens as a sheet (long-press on touch; the 情报 button keeps it keyboard reachable).
+  assert.equal(env.get('level-intel').hidden, true); env.click('intel-button');
+  assert.equal(env.get('level-intel').hidden, false); assert.match(env.get('intel-title').textContent, /乡野初阵/);
+  env.click('intel-close'); assert.equal(env.get('level-intel').hidden, true);
   assert.equal(env.get('chapter-tabs').querySelectorAll('button').length, 3);
   assert.equal(env.get('hero-roster').querySelectorAll('button').length, 15);
   assert.match(env.get('campaign-progress').textContent, /0 \/ 60/);
@@ -277,9 +285,12 @@ test('Wei 1 story, real camp deployment and first ultimate complete the event-dr
   assert.equal(env.api.mode, 'battle'); assert.equal(env.api.game.level.id, 'wei_001'); assert.equal(env.api.game.state, 'ready');
   assert.equal(env.get('story-overlay').hidden, false); assert.ok(env.get('story-lines').querySelectorAll('p').length > 0);
   env.advance(1); assert.equal(env.api.game.time, 0);
-  env.click('story-start'); assert.equal(env.api.tutorial.step, 'intro'); assert.equal(env.get('speed-button').textContent, '1×');
+  // First run: the story sheet carries the goal, so one tap lands on the deploy step (no separate intro card).
+  assert.match(env.get('story-lines').textContent, /守住下方城关/); assert.equal(env.get('story-start').textContent, '布阵迎敌');
+  env.click('story-start'); assert.equal(env.api.tutorial.step, 'deploy'); assert.equal(env.get('speed-button').textContent, '1×');
   assert.equal(env.get('speed-button').disabled, true); env.advance(1); assert.equal(env.api.game.time, 0);
-  env.click('tutorial-action'); assert.equal(env.api.tutorial.step, 'deploy'); env.click('tutorial-action');
+  assert.equal(env.get('tutorial-card').dataset.step, 'deploy', 'coach is anchored at the bottom, away from enemy entries');
+  env.click('tutorial-action');
   assert.equal(env.get('camp-panel').hidden, false); assert.equal(env.get('tutorial-card').hidden, true);
   const initialFood = env.api.game.food, initialCamps = env.api.game.camps.length;
   assert.equal(env.get('camp-options').querySelectorAll('button').length, 2, 'only unlocked shield and archer camps appear');
@@ -290,13 +301,17 @@ test('Wei 1 story, real camp deployment and first ultimate complete the event-dr
   assert.equal(env.api.tutorial.step, 'ultimate'); assert.ok(env.api.game.enemies.length > 0);
   const readyTime = env.api.game.time; env.advance(2); assert.equal(env.api.game.time, readyTime);
   env.clickText('关羽', env.get('lead-command')); assert.equal(env.api.tutorial.step, 'burst'); assert.equal(env.api.game.stats.ultimateCasts, 1);
+  assert.equal(env.get('tutorial-card').hidden, true, 'nothing covers the sweep while it plays');
   env.advance(1.2); assert.equal(env.api.tutorial.step, 'complete'); assert.ok(env.api.tutorial.burstKills > 0);
   assert.match(env.get('burst-number').textContent, /关羽.*击破/);
-  const finishTime = env.api.game.time; env.advance(1); assert.equal(env.api.game.time, finishTime);
+  // Design change: the completion line no longer freezes combat (it was a third consecutive pause).
+  const finishTime = env.api.game.time; env.advance(1); assert.ok(env.api.game.time > finishTime, 'combat continues under the completion line');
   env.click('tutorial-action'); assert.equal(env.api.tutorial.step, 'off');
   assert.equal(env.saved().settings.tutorialCompleted, true); assert.equal(env.saved().settings.tutorialVersion, 1);
   assert.equal(env.get('speed-button').textContent, '2×'); assert.equal(env.get('speed-button').disabled, false);
-  env.advance(0.5); assert.ok(Math.abs(env.api.game.time - finishTime - 1) < 1 / 60);
+  const afterGuide = env.api.game.time; env.advance(0.5); assert.ok(Math.abs(env.api.game.time - afterGuide - 1) < 1 / 60, 'preferred 2× restored');
+  const events = JSON.parse(env.storage.get('wushuang-guard-telemetry-v1'));
+  for (const type of ['first_interactive','battle_entry','first_deploy','first_ultimate','tutorial_complete']) assert.ok(events.some(e => e.type === type), `telemetry records ${type}`);
   assert.equal(env.errors.length, 0); env.destroy();
 });
 
@@ -507,7 +522,7 @@ test('workshop research, forging, same-slot transfer and manual salvage use real
   assert.equal(env.api.store.state.technology.shield, 1); assert.equal(env.saved().technology.shield, 1);
   assert.match(env.get('technology-list').textContent, /主线第 6 阵开放/);
   const beforeForge = env.api.store.state.inventory.length;
-  env.clickText('锻造白色',env.get('forge-list'));
+  env.click('ws-tab-forge'); env.clickText('锻造白色',env.get('forge-list'));
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1);
   const forged = env.api.store.state.inventory.find(item => !item.equippedHeroId && item.templateId === 'basic_weapon');
   assert.ok(forged); assert.equal(env.get('inventory-list').querySelectorAll('.salvage-button').length, 1, 'equipped items do not offer salvage');
@@ -524,7 +539,7 @@ test('workshop research, forging, same-slot transfer and manual salvage use real
   env.click('modal-close'); env.clickText('曹操',env.get('hero-roster'));
   assert.match(env.get('modal-body').textContent, /武器 · 未装备/);
   assert.equal(env.get('modal-body').querySelectorAll('.gear-row')[0].querySelectorAll('button').length, 1, 'empty slot only offers the picker');
-  env.click('modal-close'); env.click('workshop-tab');
+  env.click('modal-close'); env.click('workshop-tab'); env.click('ws-tab-bag');
   const idle = env.api.store.state.inventory.filter(item => !item.equippedHeroId);
   env.clickText('分解',env.get('inventory-list'));
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1, 'opening manual salvage does not remove an item');

@@ -226,6 +226,23 @@ test('boss variants warn and activate real haste, summons, guard and disruption'
   }
 });
 
+test('presentation events: leak carries position and max HP; lastEnemy and waveClear fire once per wave', () => {
+  const g = fixture(); const events = []; g.onEvent = e => events.push(e);
+  g._spawnQueue = []; g._spawnIndex = 0;
+  const a = enemy(g, 'infantry', 100, 0, { speed: 0 }), b = enemy(g, 'infantry', 120, 0, { speed: 0 });
+  g.update(1 / 60); assert.equal(events.filter(e => ['lastEnemy', 'waveClear'].includes(e.type)).length, 0);
+  g._damage(a, 1e6, 'test'); g.update(1 / 60); g.update(1 / 60);
+  assert.deepEqual(events.filter(e => e.type === 'lastEnemy').map(e => [e.wave, e.enemyId]), [[g.wave, b.id]]);
+  const leaker = enemy(g, 'infantry', g.paths[0].length - 0.01, 0);
+  const hp = g.hp; g._damage(b, 1e6, 'test'); g.update(1 / 60);
+  const leak = events.find(e => e.type === 'leak');
+  assert.equal(leak.enemyId, leaker.id); assert.ok(Number.isFinite(leak.x) && Number.isFinite(leak.y));
+  assert.equal(leak.maxHp, g.maxHp); assert.equal(leak.amount, leak.damage); assert.ok(Math.abs(hp - leak.damage - g.hp) < 1e-9);
+  for (let i = 0; i < 5; i++) g.update(1 / 60);
+  assert.equal(events.filter(e => e.type === 'waveClear' && e.wave === g.wave).length, 1);
+  assert.equal(events.filter(e => e.type === 'lastEnemy').length, 1);
+});
+
 test('fire-oil fields are one per camp, refresh without resetting ticks; drum overlap does not stack rage', () => {
   const g = fixture(); g.food = 1000; g.build(5, 'fire_oil'); const c = g.camps[0];
   c.field = { x: 200, y: 400, radius: 58, remaining: 1, tick: .5 };

@@ -1,3 +1,22 @@
+/**
+ * V1Renderer: canvas presentation layer for 无双守关 battles. It reads the engine state and never writes it.
+ *
+ * DOM integration: `renderer.consumeUiEvents()` returns the queued UI cues in order and clears the queue.
+ * Each fact is reported at most once. It may come from a forwarded engine event (`handleEvent`) or from the
+ * per-frame diff that `draw()` runs on the game state, so cues still arrive when the caller forwards only some
+ * engine events. The queue is bounded (UI_EVENT_LIMIT, oldest dropped). After a long gap (hidden tab) or a new
+ * game object, the diff rebaselines silently, so cues are never replayed in a burst. Coordinates are world units (420 × 600).
+ *   { type: 'gateHit', amount, hp, maxHp, ratio, x, y }    gate lost HP (enemy leak)
+ *   { type: 'gateStage', stage, previous, ratio }          gate damage state changed: 0 intact, 1 ≤70%, 2 ≤40%, 3 ≤15%
+ *   { type: 'build', slot, campType, level, x, y }         a camp was placed
+ *   { type: 'upgrade', slot, campType, level, x, y }       a camp gained a level
+ *   { type: 'waveClear', wave, final }                     every enemy of the wave is gone
+ *   { type: 'lastEnemy', wave, enemyId, x, y }             one enemy left and nothing pending
+ *   { type: 'shake', strength, duration, source }          source 'ultimate' (6px / 0.38s) or 'gate' (3px / 0.2s);
+ *                                                           never queued with reduced motion
+ * Reduced motion removes shake, zoom punch, flashes, pop scaling and drop/bounce. It keeps ranges, numbers,
+ * cracks and ink blots.
+ */
 import { Renderer, CAMP_SLOTS, WORLD_WIDTH, WORLD_HEIGHT } from './renderer.js';
 import { HERO_ART } from './hero-portraits.js';
 
@@ -24,6 +43,17 @@ const clamp = (n, min = 0, max = 1) => Math.min(max, Math.max(min, n));
 const nowSeconds = () => (globalThis.performance?.now?.() ?? Date.now()) / 1000;
 const FEEDBACK_LIMIT = 48;
 const PARTICLE_LIMIT = 160;
+const UI_EVENT_LIMIT = 64;
+const TRACK_LIMIT = 400;
+const SHAKE = { ultimate: { strength: 6, duration: 0.38 }, gate: { strength: 3, duration: 0.2 } };
+const PUNCH = { scale: 1.03, duration: 0.22 };
+const GATE_STAGES = [0.7, 0.4, 0.15];
+const BUILD_ANIM = 0.32, UPGRADE_ANIM = 0.45, RANGE_RING = 1, SPAWN_ANIM = 0.35, HIT_FLASH = 0.08, GATE_FLASH = 0.5;
+const DEATH_LIFE = 1.2, CORPSE_LIFE = 0.72, SPATTER_LIFE = 0.6, EDGE_FLASH = 0.35, GATE_LABEL_LIFE = 0.9;
+const gateStage = ratio => GATE_STAGES.filter(t => ratio <= t).length;
+const easeOutBack = t => { const c = 1.70158; return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2; };
+const easeOutCubic = t => 1 - (1 - t) ** 3;
+const round1 = n => Math.round(n * 10) / 10;
 function oval(ctx, x, y, rx, ry, color) {
   ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill();
 }
@@ -74,7 +104,45 @@ export class V1Renderer extends Renderer {
     this.deathSnapshots = [];
     this.particlesRemaining = PARTICLE_LIMIT;
     this.impactStarted = -Infinity;
+    // 'low' halves decorative particles and drops ambient motion; units, threat rings and hit shapes are untouched.
+    this.quality = 'high';
+    // The DOM #field-hint shows the map name and rule, so the canvas no longer draws a second label at the top.
+    this.mapLabel = false;
+    this.initFeedbackState();
     this.setMap(DEFAULT_MAP);
+  }
+
+  initFeedbackState() {
+    this.uiEvents = [];
+    this.campAnims = new Map();   // slot -> { kind: 'build' | 'upgrade', started, level }
+    this.spawnAnims = new Map();  // enemyId -> { started, x, y }
+    this.hitFlashes = new Map();  // enemyId -> started
+    this.shakes = [];
+    this.punchStarted = -Infinity;
+    this.edgeFlashStarted = -Infinity;
+    this.gateFx = { flashStarted: -Infinity, labels: [], stage: 0, lastShake: -Infinity };
+    this.lastEnemy = null;
+    this.tracked = null;
+    this.lastDrawAt = -Infinity;
+  }
+
+  /** Returns and clears the queued DOM cues. See the comment at the top of this file. */
+  consumeUiEvents() {
+    const events = this.uiEvents; this.uiEvents = []; return events;
+  }
+
+  pushUi(cue) {
+    if (this.destroyed) return;
+    this.uiEvents.push(cue);
+    if (this.uiEvents.length > UI_EVENT_LIMIT) this.uiEvents.splice(0, this.uiEvents.length - UI_EVENT_LIMIT);
+  }
+
+  shake(source, now = nowSeconds()) {
+    if (this.reducedMotion) return;
+    const spec = SHAKE[source]; if (!spec) return;
+    this.shakes.push({ ...spec, source, started: now });
+    if (this.shakes.length > 4) this.shakes.shift();
+    this.pushUi({ type: 'shake', strength: spec.strength, duration: spec.duration, source });
   }
 
   setMap(map) {
@@ -107,11 +175,71 @@ export class V1Renderer extends Renderer {
     this.flash = { started: nowSeconds(), heroId: event.heroId ?? event.hero?.heroId ?? event.hero?.id,
       name: event.skillName ?? event.name, kills: event.kills ?? 0, resultAt: null };
     this.impactStarted = this.flash.started;
+    // "无双震屏请大胆优先": 6px shake decaying over 0.38s, a 1.03 zoom punch and a chromatic edge flash.
+    // The DOM cut-in owns the hero/skill title, so the canvas adds no second title here.
+    if (!this.reducedMotion && !this.destroyed) {
+      this.shake('ultimate', this.flash.started);
+      this.punchStarted = this.edgeFlashStarted = this.flash.started;
+    }
   }
 
   pruneFeedback(now = nowSeconds()) {
     this.damageLabels = this.damageLabels.filter(label => now - label.started < label.life);
     this.deathSnapshots = this.deathSnapshots.filter(death => now - death.started < death.life);
+    this.gateFx.labels = this.gateFx.labels.filter(label => now - label.started < GATE_LABEL_LIFE);
+    this.shakes = this.shakes.filter(s => now - s.started < s.duration);
+    for (const [id, started] of this.hitFlashes) if (now - started > HIT_FLASH) this.hitFlashes.delete(id);
+  }
+
+  gateHit(amount, { hp, maxHp, x, y } = {}, now = nowSeconds()) {
+    if (!(amount > 0) || !Number.isFinite(amount)) return;
+    const max = maxHp > 0 ? maxHp : this.tracked?.maxHp ?? 100;
+    const current = Number.isFinite(hp) ? hp : Math.max(0, (this.tracked?.hp ?? max) - amount);
+    if (this.tracked) this.tracked.hp = current;
+    this.gateFx.flashStarted = now;
+    const labelX = Number.isFinite(x) ? clamp(x, 175, 245) : 210;
+    this.gateFx.labels.push({ amount: round1(amount), x: labelX, started: now });
+    if (this.gateFx.labels.length > 6) this.gateFx.labels.shift();
+    this.pushUi({ type: 'gateHit', amount: round1(amount), hp: current, maxHp: max, ratio: clamp(current / max), x: labelX, y: 530 });
+    // Leaks can arrive in clusters; one 3px shake per 0.15s keeps it readable.
+    if (now - this.gateFx.lastShake > 0.15) { this.gateFx.lastShake = now; this.shake('gate', now); }
+    this.updateGateStage(current / max);
+  }
+
+  updateGateStage(ratio) {
+    const stage = gateStage(clamp(ratio));
+    if (stage !== this.gateFx.stage) {
+      this.pushUi({ type: 'gateStage', stage, previous: this.gateFx.stage, ratio: clamp(ratio) });
+      this.gateFx.stage = stage;
+    }
+  }
+
+  campCue(kind, slot, camp, now = nowSeconds()) {
+    if (!Number.isFinite(slot)) return;
+    const level = clamp(camp?.level ?? 1, 1, 3), position = (this.map?.campSlots ?? CAMP_SLOTS).find((s, i) => (s.slot ?? i) === slot);
+    this.campAnims.set(slot, { kind, started: now, level });
+    if (this.tracked) this.tracked.camps.set(slot, `${camp?.type}:${level}`);
+    this.pushUi({ type: kind, slot, campType: camp?.type, level, x: camp?.x ?? position?.x, y: camp?.y ?? position?.y });
+  }
+
+  spawnCue(enemy, now = nowSeconds()) {
+    if (enemy?.id == null || this.tracked?.seen.has(enemy.id)) return;
+    this.tracked?.seen.add(enemy.id);
+    if (!Number.isFinite(enemy.x) || !Number.isFinite(enemy.y)) return;
+    this.spawnAnims.set(enemy.id, { started: now, x: enemy.x, y: enemy.y });
+    if (this.spawnAnims.size > TRACK_LIMIT) this.spawnAnims.delete(this.spawnAnims.keys().next().value);
+  }
+
+  waveClearCue(wave, final = false) {
+    if (this.tracked) { if (this.tracked.clearedWave === wave) return; this.tracked.clearedWave = wave; }
+    this.lastEnemy = null;
+    this.pushUi({ type: 'waveClear', wave, final: Boolean(final) });
+  }
+
+  lastEnemyCue(wave, enemy, now = nowSeconds()) {
+    if (this.tracked) { if (this.tracked.lastEnemyWave === wave) return; this.tracked.lastEnemyWave = wave; }
+    this.lastEnemy = { enemyId: enemy?.id ?? enemy?.enemyId, started: now };
+    this.pushUi({ type: 'lastEnemy', wave, enemyId: this.lastEnemy.enemyId, x: enemy?.x, y: enemy?.y });
   }
 
   handleEvent(event = {}) {
@@ -119,29 +247,89 @@ export class V1Renderer extends Renderer {
     const now = nowSeconds();
     this.pruneFeedback(now);
     if (['ultimate', 'burst', 'ultimate_result'].includes(event.type)) { this.flashUltimate(event); return; }
+    if (event.type === 'leak') { this.gateHit(Number(event.damage ?? event.amount), event, now); return; }
+    if (event.type === 'heal') { if (this.tracked && Number.isFinite(event.heal)) this.tracked.hp = Math.min(this.tracked.maxHp, this.tracked.hp + event.heal); return; }
+    if (event.type === 'build' || event.type === 'upgrade') { this.campCue(event.type, event.slot, event.camp, now); return; }
+    if (event.type === 'spawn') { this.spawnCue(event.enemy, now); return; }
+    if (event.type === 'waveClear') { this.waveClearCue(event.wave, event.final); return; }
+    if (event.type === 'lastEnemy') { this.lastEnemyCue(event.wave, { id: event.enemyId, x: event.x, y: event.y }, now); return; }
     if (!Number.isFinite(event.x) || !Number.isFinite(event.y)) return;
+    if (event.type === 'damage' && event.enemyId != null && Number.isFinite(event.amount) && event.amount > 0) {
+      this.hitFlashes.set(event.enemyId, now);
+      if (this.hitFlashes.size > TRACK_LIMIT) this.hitFlashes.delete(this.hitFlashes.keys().next().value);
+    }
     if (event.type === 'damage' && Number.isFinite(event.amount) && event.amount > 0) {
+      const skill = event.castId != null || /^ultimate_/.test(event.source ?? '');
+      const heavy = ['elite', 'boss'].includes(event.enemyClass) || ['armor', 'siege', 'boss', 'banner'].includes(event.enemyType);
+      // A Peerless crowd clear reads through death snapshots and the single burst count. Per-soldier skill
+      // numbers stacked into an unreadable pile (40+ labels), so only elites/bosses keep a skill label.
+      if (skill && !heavy) return;
       const prominent = Boolean(event.heroId) || /^(hero|ultimate)_/.test(event.source ?? '');
+      const survivor = skill && heavy && Number.isFinite(event.hpAfter) && event.hpAfter > 0 && event.maxHp > 0 ? Math.max(1, Math.round(event.hpAfter / event.maxHp * 100)) : null;
       const merged = !prominent && this.damageLabels.find(label => !label.prominent && label.enemyId === event.enemyId
         && event.enemyId != null && now - label.started <= 0.12);
       if (merged) { merged.amount += event.amount; merged.hits++; }
       else {
         this.damageLabels.push({ enemyId: event.enemyId, x: event.x, y: event.y, amount: event.amount,
           heroId: event.heroId, source: event.source, castId: event.castId, executed: Boolean(event.executed),
-          prominent, hits: 1, started: now, life: prominent ? 0.85 : 0.62 });
+          prominent, survivor, hits: 1, started: now, life: survivor ? 1.15 : prominent ? 0.95 : 0.7 });
         if (this.damageLabels.length > FEEDBACK_LIMIT) this.damageLabels.shift();
       }
     } else if (event.type === 'kill') {
       this.deathSnapshots.push({ enemyId: event.enemyId, type: event.enemyType ?? 'infantry', x: event.x, y: event.y,
         radius: clamp(Number(event.radius) || 10, 5, 28), facing: Number.isFinite(event.facing) ? event.facing : Math.PI / 2,
-        heroId: event.heroId, source: event.source, castId: event.castId, started: now, life: 0.72 });
+        heroId: event.heroId, source: event.source, castId: event.castId, started: now, life: DEATH_LIFE });
       if (this.deathSnapshots.length > FEEDBACK_LIMIT) this.deathSnapshots.shift();
+      this.hitFlashes.delete(event.enemyId); this.spawnAnims.delete(event.enemyId);
     }
   }
 
   resetFeedback() {
     this.damageLabels = []; this.deathSnapshots = []; this.flash = null;
     this.impactStarted = -Infinity; this.visualTime = 0;
+    this.initFeedbackState();
+  }
+
+  /**
+   * Diffs the engine state against the last frame so build/upgrade/leak/spawn/wave cues work even when the
+   * caller forwards only some engine events. Read-only: game objects are never written.
+   */
+  observe(game, now = nowSeconds()) {
+    const max = game.maxHp ?? game.maxGateHp ?? 100, hp = game.hp ?? game.gateHp ?? max;
+    const enemies = game.enemies ?? [], living = enemies.filter(e => e.hp > 0 && !e.escaped);
+    const pending = Number.isFinite(game.pendingEnemyCount) ? game.pendingEnemyCount : null;
+    const camps = new Map((game.camps ?? []).map(c => [c.slot, c]));
+    const gap = now - this.lastDrawAt; this.lastDrawAt = now;
+    // New game objects and long gaps (hidden tab, resume) rebaseline silently, without catch-up playback.
+    if (!this.tracked || this.tracked.game !== game || gap > 0.5) {
+      const seen = this.tracked?.game === game ? this.tracked.seen : new Set();
+      for (const e of enemies) seen.add(e.id);
+      this.tracked = { game, hp, maxHp: max, seen, living: living.length,
+        camps: new Map([...camps].map(([slot, c]) => [slot, `${c.type}:${clamp(c.level ?? 1, 1, 3)}`])),
+        clearedWave: this.tracked?.game === game ? this.tracked.clearedWave : null,
+        lastEnemyWave: this.tracked?.game === game ? this.tracked.lastEnemyWave : null };
+      this.gateFx.stage = gateStage(clamp(hp / max));
+      return;
+    }
+    const t = this.tracked; t.maxHp = max;
+    if (hp < t.hp - 1e-6) this.gateHit(t.hp - hp, { hp, maxHp: max }, now);
+    else if (hp > t.hp) { t.hp = hp; this.updateGateStage(hp / max); }
+    for (const [slot, camp] of camps) {
+      const key = `${camp.type}:${clamp(camp.level ?? 1, 1, 3)}`, known = t.camps.get(slot);
+      if (known === key) continue;
+      this.campCue(known && known.split(':')[0] === camp.type ? 'upgrade' : 'build', slot, camp, now);
+    }
+    for (const slot of [...t.camps.keys()]) if (!camps.has(slot)) { t.camps.delete(slot); this.campAnims.delete(slot); }
+    for (const e of living) if (!t.seen.has(e.id)) this.spawnCue(e, now);
+    // Bounded: only ids still present in the engine list are remembered.
+    if (t.seen.size > enemies.length) { const ids = new Set(enemies.map(e => e.id)); for (const id of t.seen) if (!ids.has(id)) t.seen.delete(id); }
+    for (const id of this.spawnAnims.keys()) if (now - this.spawnAnims.get(id).started > SPAWN_ANIM) this.spawnAnims.delete(id);
+    for (const [slot, anim] of this.campAnims) if (now - anim.started > RANGE_RING) this.campAnims.delete(slot);
+    if (pending === 0 && Number.isFinite(game.wave) && game.wave > 0) {
+      if (living.length === 1 && t.living > 1) this.lastEnemyCue(game.wave, living[0], now);
+      if (living.length === 0 && t.living > 0) this.waveClearCue(game.wave, game.wave === game.waveCount);
+    }
+    t.living = living.length;
   }
 
   destroy() {
@@ -160,10 +348,40 @@ export class V1Renderer extends Renderer {
     }
   }
 
+  takeParticles(count) {
+    const permitted = Math.max(0, Math.min(count, this.particlesRemaining));
+    this.particlesRemaining -= permitted; return permitted;
+  }
+
+  // Ink-splash death: a deterministic dark blot that fades over DEATH_LIFE, plus spatter that flies out for 0.6s.
+  drawInk(ctx, death, age) {
+    const id = Number(death.enemyId) || 0, r = death.radius;
+    const heavy = ['armor', 'siege', 'boss'].includes(death.type);
+    ctx.save(); ctx.globalAlpha = 0.55 * (1 - clamp(age / death.life));
+    oval(ctx, 0, 3, r * 1.15, r * 0.55, '#141c18');
+    for (let i = 0; i < 3; i++) {
+      const a = (id * 1.7 + i * 2.1) % TAU;
+      oval(ctx, Math.cos(a) * r * 1.2, 3 + Math.sin(a) * r * 0.5, r * 0.32, r * 0.2, '#141c18');
+    }
+    ctx.restore();
+    if (this.reducedMotion || age >= SPATTER_LIFE) return;
+    const t = age / SPATTER_LIFE, wanted = (heavy ? 10 : 4) * (this.quality === 'low' ? 0.5 : 1);
+    const count = this.takeParticles(Math.round(wanted));
+    ctx.save(); ctx.globalAlpha = 0.8 * (1 - t);
+    for (let i = 0; i < count; i++) {
+      const a = (id * 0.9 + i * 2.39996) % TAU, d = r * (0.6 + easeOutCubic(t) * (1.4 + (i % 3) * 0.5));
+      const size = (2.4 - (i % 3) * 0.5) * (1 - t * 0.5);
+      oval(ctx, Math.cos(a) * d, 2 + Math.sin(a) * d * 0.6 - Math.sin(t * Math.PI) * 6, size, size, '#1b2520');
+    }
+    ctx.restore();
+  }
+
   drawDeaths(ctx, now) {
     for (const death of this.deathSnapshots) {
-      const progress = clamp((now - death.started) / death.life);
+      const age = now - death.started, progress = clamp(age / CORPSE_LIFE);
       this.sprite(ctx, death.x, death.y, () => {
+        this.drawInk(ctx, death, age);
+        if (progress >= 1) return;
         ctx.globalAlpha = 1 - progress;
         if (!this.reducedMotion) {
           const recoil = Math.sin(clamp(progress / 0.5) * Math.PI / 2) * 8;
@@ -186,13 +404,20 @@ export class V1Renderer extends Renderer {
     for (const label of this.damageLabels) {
       const progress = clamp((now - label.started) / label.life);
       const amount = Number(label.amount.toFixed(1));
-      const value = `${label.executed ? '击破 ' : ''}${amount}${label.hits > 1 ? ` ·${label.hits}击` : ''}`;
-      this.sprite(ctx, label.x, label.y - 27 - (this.reducedMotion ? 0 : progress * 22), () => {
+      // Elites that survive a Peerless show their real remaining health, so "why is it still alive" is answered.
+      const value = label.survivor ? `${amount} · 余${label.survivor}%` : `${label.executed ? '击破 ' : ''}${amount}${label.hits > 1 ? ` ·${label.hits}击` : ''}`;
+      const age = now - label.started;
+      this.sprite(ctx, label.x, label.y - 27 - (this.reducedMotion ? 0 : easeOutCubic(progress) * 22), () => {
         ctx.globalAlpha = clamp((1 - progress) / 0.3);
-        ctx.font = `800 ${Math.max(label.prominent ? 17 : 12, (label.prominent ? 15 : 11) / this.cssIso)}px "Microsoft YaHei", sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3;
-        ctx.strokeStyle = '#1b302c'; ctx.strokeText(value, 0, 0);
-        ctx.fillStyle = label.prominent ? '#fff0a8' : '#e7e4cd'; ctx.fillText(value, 0, 0);
+        // Hero hits pop 1.6 → 1 over 120ms (crit-style gold); tower hits pop gently 1.3 → 1. Reduced motion: no pop.
+        if (!this.reducedMotion && age < 0.12) {
+          const pop = 1 + ((label.prominent ? 1.6 : 1.3) - 1) * (1 - easeOutCubic(age / 0.12));
+          ctx.scale(pop, pop);
+        }
+        ctx.font = `${label.prominent ? 900 : 800} ${Math.max(label.prominent ? 19 : 12, (label.prominent ? 17 : 11) / this.cssIso)}px "Microsoft YaHei", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = label.prominent ? 4 : 3;
+        ctx.strokeStyle = label.prominent ? '#3a2208' : '#1b302c'; ctx.strokeText(value, 0, 0);
+        ctx.fillStyle = label.survivor ? '#ffc58a' : label.prominent ? '#ffd257' : '#e7e4cd'; ctx.fillText(value, 0, 0);
       });
     }
   }
@@ -289,10 +514,31 @@ export class V1Renderer extends Renderer {
     ctx.save(); ctx.translate(x, y); ctx.scale(this.spriteScaleX, this.spriteScaleY); callback(); ctx.restore();
   }
 
-  draw(game, { selectedSlot = -1, realDt = 1 / 60 } = {}) {
+  /**
+   * Subtle environment motion (wind dust, water glints, snow, embers). Decorative only: the first layer dropped
+   * under the low-quality budget and frozen with reduced motion, so it never competes with threat cues.
+   */
+  drawAmbient(ctx, time) {
+    if (this.reducedMotion || this.quality === 'low') return;
+    const env = ENVIRONMENTS[this.map?.id] ?? ENVIRONMENTS.wei_gate;
+    const kind = env.prop === 'snow' ? 'snow' : ['charred'].includes(env.prop) ? 'ember' : env.water ? 'glint' : 'dust';
+    ctx.save();
+    for (let i = 0; i < 14; i++) {
+      const seed = i * 97.31, speed = kind === 'snow' ? 18 : kind === 'ember' ? -14 : 9;
+      const x = (seed * 7.7 + time * (kind === 'dust' ? 16 : 5) + Math.sin(time * 0.7 + i) * 8) % 420;
+      const y = kind === 'glint' ? 40 + (i * 37) % 460 : ((seed * 3.1 + time * speed) % 520 + 520) % 520;
+      if (kind === 'glint') { if (x > 55 && x < 365) continue; ctx.globalAlpha = 0.25 + 0.25 * Math.sin(time * 2 + i); line(ctx, [[x, y], [x + 7, y]], '#e3f4ec', 1); }
+      else if (kind === 'snow') { ctx.globalAlpha = 0.55; oval(ctx, x, y, 1.6, 1.6, '#f3f6ee'); }
+      else if (kind === 'ember') { ctx.globalAlpha = 0.5 + 0.3 * Math.sin(time * 4 + i); oval(ctx, x, y, 1.4, 1.4, '#ffb36b'); }
+      else { ctx.globalAlpha = 0.18; oval(ctx, x, y, 2.4, 1, '#efe2bb'); }
+    }
+    ctx.restore();
+  }
+
+  draw(game, { selectedSlot = -1, guideSlot = -1, realDt = 1 / 60 } = {}) {
     if (!game || !this.ctx || this.destroyed) return;
     const now = nowSeconds();
-    this.pruneFeedback(now); this.particlesRemaining = PARTICLE_LIMIT;
+    this.pruneFeedback(now); this.particlesRemaining = this.quality === 'low' ? PARTICLE_LIMIT / 2 : PARTICLE_LIMIT;
     if (game.map && game.map !== this.map) this.setMap(game.map);
     this.resize();
     this.visualTime += clamp(Number(realDt) || 0, 0, 0.1);
@@ -301,14 +547,15 @@ export class V1Renderer extends Renderer {
     this.cssIso = Math.max(0.1, Math.min(rect.width / 420, rect.height / 600));
     this.spriteScaleX = iso / sx; this.spriteScaleY = iso / sy;
     const ctx = this.ctx, time = this.reducedMotion ? 0 : this.visualTime;
+    this.observe(game, now);
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
-    const impactAge = now - this.impactStarted;
-    if (!this.reducedMotion && impactAge >= 0 && impactAge < 0.18) {
-      const strength = (1 - impactAge / 0.18) * 1.5;
-      ctx.translate(Math.sin(impactAge * 120) * strength, Math.cos(impactAge * 90) * strength * 0.5);
-    }
-    ctx.globalAlpha = 1; ctx.drawImage(this.background, 0, 0, 420, 600);
+    // Edges exposed by shake/zoom read as dark ink rather than stale pixels.
+    ctx.globalAlpha = 1; ctx.fillStyle = '#0d1b16'; ctx.fillRect(0, 0, 420, 600);
+    this.applyCamera(ctx, now);
+    ctx.drawImage(this.background, 0, 0, 420, 600);
+    this.drawGate(ctx, game, now, time);
     this.drawDeaths(ctx, now);
+    this.drawSpawnDust(ctx, now);
     const slots = this.map.campSlots ?? CAMP_SLOTS, camps = game.camps ?? [];
     const selected = slots.find((slot, index) => (slot.slot ?? index) === selectedSlot);
     if (selected) {
@@ -316,6 +563,7 @@ export class V1Renderer extends Renderer {
       ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = '#e9d7a38c'; ctx.fillStyle = '#9ddb9415';
       ctx.beginPath(); ctx.arc(selected.x, selected.y, camp?.range ?? 44, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore();
     }
+    this.drawCampGround(ctx, camps, slots, now);
     for (const hero of game.heroes ?? []) {
       if ((hero.role === 'lead' || hero === game.heroes[0]) && hero.rage >= 100 && hero.target) this.drawSkillShape(ctx, { ...hero.target, heroId: hero.heroId ?? hero.id }, { preview: true, game });
     }
@@ -323,6 +571,17 @@ export class V1Renderer extends Renderer {
     slots.forEach((slot, index) => {
       if (!camps.some(c => c.slot === (slot.slot ?? index))) this.sprite(ctx, slot.x, slot.y, () => this.drawEmptyCamp(ctx, { x: 0, y: 0 }, (slot.slot ?? index) === selectedSlot, time));
     });
+    // Tutorial pointer at a real, tappable slot (never a decorative location).
+    const guide = slots.find((slot, index) => (slot.slot ?? index) === guideSlot);
+    if (guide && selectedSlot < 0) this.sprite(ctx, guide.x, guide.y, () => {
+      const pulse = this.reducedMotion ? 0.5 : (Math.sin(this.visualTime * 5) + 1) / 2;
+      ctx.strokeStyle = '#ffe08f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 2, 30 + pulse * 6, 22 + pulse * 4, 0, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#ffe08f66'; ctx.lineWidth = 7; ctx.beginPath(); ctx.ellipse(0, 2, 36 + pulse * 6, 27 + pulse * 4, 0, 0, TAU); ctx.stroke();
+      const bob = this.reducedMotion ? 0 : pulse * 6;
+      polygon(ctx, [[-11, -50 - bob], [11, -50 - bob], [0, -34 - bob]], '#ffe08f', '#5a3c17');
+      text(ctx, '点这里', 0, -62 - bob, Math.max(12, 12 / this.cssIso), '#ffe9b0');
+    });
+    this.drawAmbient(ctx, time);
     const units = [
       ...camps.map(c => { const slot = slots.find((s, i) => (s.slot ?? i) === c.slot); return { ...c, kind: 'camp', x: c.x ?? slot?.x, y: c.y ?? slot?.y }; }),
       ...(game.enemies ?? []).filter(e => e.hp > 0 && !e.escaped).map(e => ({ ...e, kind: 'enemy' })),
@@ -331,11 +590,17 @@ export class V1Renderer extends Renderer {
     for (const unit of units) {
       if (!Number.isFinite(unit.x) || !Number.isFinite(unit.y)) continue;
       this.sprite(ctx, unit.x, unit.y, () => {
-        if (unit.kind === 'camp') this.drawV1Camp(ctx, unit, selectedSlot === unit.slot, time);
+        if (unit.kind === 'camp') { this.applyCampAnim(ctx, unit.slot, now); this.drawV1Camp(ctx, unit, selectedSlot === unit.slot, time); }
         else if (unit.kind === 'hero') this.drawV1Hero(ctx, unit, time);
-        else this.drawV1Enemy(ctx, unit, time);
+        else {
+          this.applySpawnAnim(ctx, unit.id, now);
+          this.drawV1Enemy(ctx, unit, time);
+          this.drawHitFlash(ctx, unit, now);
+          if (this.lastEnemy && this.lastEnemy.enemyId === unit.id) this.drawLastEnemyMark(ctx, now);
+        }
       });
     }
+    this.drawCampBursts(ctx, camps, slots, now);
     for (const projectile of game.projectiles ?? []) this.sprite(ctx, projectile.x, projectile.y, () => {
       if (projectile.type === 'fire_oil') {
         oval(ctx, 0, 0, 4, 5, '#ae7649'); line(ctx, [[-2, -6], [1, -6]], '#dfbd74', 2);
@@ -348,18 +613,246 @@ export class V1Renderer extends Renderer {
       else super.drawEffect(ctx, { ...effect, maxLife: effect.life, life: Math.max(0, effect.life - (effect.age ?? 0)) });
     }
     this.drawDamageLabels(ctx, now);
+    this.drawGateLabels(ctx, now);
     if ((game.hp ?? game.gateHp) < (game.maxHp ?? game.maxGateHp ?? 100) * 0.3) this.drawDanger(ctx, time);
     // World positions scale independently; text and actors use an isotropic transform.
-    this.sprite(ctx, 210, 20, () => text(ctx, this.map.name ?? '演武沙盘', 0, 0, Math.max(11, 11 / this.cssIso), '#ead5a0'));
+    // The DOM #field-hint owns the map name; `mapLabel = true` restores the canvas label for standalone pages.
+    if (this.mapLabel) this.sprite(ctx, 210, 20, () => text(ctx, this.map.name ?? '演武沙盘', 0, 0, Math.max(11, 11 / this.cssIso), '#ead5a0'));
+    ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    this.drawEdgeFlash(ctx, now);
     if (this.flash) {
       const age = nowSeconds() - this.flash.started;
       if (age > 1.6) this.flash = null;
-      else if (this.flash.resultAt == null) this.sprite(ctx, 210, 55, () => {
+      else if (this.flash.resultAt == null && this.releaseLabel !== false) this.sprite(ctx, 210, 55, () => {
         ctx.globalAlpha = clamp((1.6 - age) / 0.3);
         const art = HERO_ART[this.flash.heroId];
         // The DOM result popup owns final kill counts; this label is release-only.
         text(ctx, `${art?.name ?? '无双'} · ${this.flash.name ?? art?.skill ?? '无双发动'}`, 0, 0, Math.max(12, 12 / this.cssIso), '#d6ffdf');
       });
+    }
+  }
+
+  // Camera: decaying shake (max of active sources) and a short zoom punch around the field centre.
+  applyCamera(ctx, now) {
+    if (this.reducedMotion) return;
+    let strength = 0, source = null;
+    for (const s of this.shakes) {
+      const age = now - s.started;
+      if (age >= 0 && age < s.duration) { const v = s.strength * (1 - age / s.duration) ** 1.6; if (v > strength) { strength = v; source = s; } }
+    }
+    const punchAge = now - this.punchStarted;
+    if (punchAge >= 0 && punchAge < PUNCH.duration) {
+      const k = punchAge < 0.06 ? punchAge / 0.06 : 1 - (punchAge - 0.06) / (PUNCH.duration - 0.06);
+      const zoom = 1 + (PUNCH.scale - 1) * clamp(k);
+      ctx.translate(210, 300); ctx.scale(zoom, zoom); ctx.translate(-210, -300);
+    }
+    if (strength > 0.05) {
+      const age = now - source.started;
+      ctx.translate(Math.sin(age * 118) * strength, Math.cos(age * 91) * strength * 0.7);
+    }
+  }
+
+  // Brief jade/cinnabar chromatic rim on Peerless release; screen-space, edge only (no full-screen white).
+  drawEdgeFlash(ctx, now) {
+    const age = now - this.edgeFlashStarted;
+    if (this.reducedMotion || !(age >= 0 && age < EDGE_FLASH)) return;
+    const a = 1 - age / EDGE_FLASH;
+    ctx.save();
+    const glow = ctx.createRadialGradient(210, 300, 170, 210, 300, 390);
+    glow.addColorStop(0, 'rgba(255, 231, 166, 0)'); glow.addColorStop(1, `rgba(255, 231, 166, ${0.42 * a})`);
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, 420, 600);
+    for (const [color, offset] of [['#7ff0c4', -3 * a], ['#e2493b', 3 * a]]) {
+      ctx.globalAlpha = 0.3 * a; ctx.fillStyle = color;
+      ctx.fillRect(offset, 0, 12, 600); ctx.fillRect(408 + offset, 0, 12, 600);
+      ctx.fillRect(0, offset, 420, 8); ctx.fillRect(0, 592 + offset, 420, 8);
+    }
+    ctx.restore();
+  }
+
+  // Gate damage states follow real HP: cracks at ≤70%, split door and chipped merlons at ≤40%, breach at ≤15%.
+  drawGate(ctx, game, now, time) {
+    const max = game.maxHp ?? game.maxGateHp ?? 100, hp = game.hp ?? game.gateHp ?? max;
+    const stage = gateStage(clamp(hp / max));
+    ctx.save();
+    if (stage >= 1) {
+      line(ctx, [[176, 556], [183, 548], [181, 538], [188, 530]], '#1d2a24', 1.4);
+      line(ctx, [[244, 560], [238, 551], [242, 543]], '#1d2a24', 1.2);
+      line(ctx, [[96, 552], [104, 562], [99, 572]], '#2a3a33', 1);
+    }
+    if (stage >= 2) {
+      line(ctx, [[201, 513], [206, 522], [202, 532], [209, 540]], '#1d2a24', 1.6);
+      line(ctx, [[188, 566], [196, 578], [192, 592]], '#1f1912', 1.8);
+      line(ctx, [[318, 548], [326, 557], [321, 569], [330, 578]], '#2a3a33', 1.2);
+      polygon(ctx, [[150, 524], [158, 524], [154, 531]], '#2c3e36'); polygon(ctx, [[275, 524], [284, 524], [281, 532]], '#2c3e36');
+    }
+    if (stage >= 3) {
+      polygon(ctx, [[214, 563], [227, 563], [223, 586], [211, 581]], '#16110c');
+      line(ctx, [[170, 552], [160, 566], [166, 580], [158, 596]], '#1a2620', 2);
+      line(ctx, [[250, 552], [262, 568], [256, 584]], '#1a2620', 2);
+      oval(ctx, 196, 597, 12, 3, '#6d6a5a'); oval(ctx, 233, 596, 9, 3, '#6d6a5a');
+      if (!this.reducedMotion && this.quality !== 'low') for (let i = 0; i < 3; i++) {
+        const rise = (time * 0.5 + i / 3) % 1;
+        ctx.globalAlpha = 0.35 * (1 - rise);
+        oval(ctx, 196 + i * 14 + Math.sin(time + i) * 4, 540 - rise * 40, 6 + rise * 8, 4 + rise * 5, '#3b3a35');
+      }
+      ctx.globalAlpha = 1;
+    }
+    const age = now - this.gateFx.flashStarted;
+    if (age >= 0 && age < GATE_FLASH) {
+      const k = 1 - age / GATE_FLASH, white = !this.reducedMotion && age < HIT_FLASH;
+      ctx.globalAlpha = this.reducedMotion ? 0.3 * k : white ? 0.7 : 0.5 * k;
+      ctx.fillStyle = white ? '#fff4dc' : '#e2493b';
+      ctx.beginPath(); ctx.moveTo(170, 600); ctx.lineTo(170, 552); ctx.arc(210, 552, 40, Math.PI, 0); ctx.lineTo(250, 600); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha *= 0.5; ctx.fillRect(0, 536, 420, 7);
+    }
+    ctx.restore();
+  }
+
+  drawGateLabels(ctx, now) {
+    this.gateFx.labels.forEach((label, index) => {
+      const age = now - label.started, p = clamp(age / GATE_LABEL_LIFE);
+      const y = this.reducedMotion ? 500 - index * 16 : 500 - easeOutCubic(p) * 26;
+      this.sprite(ctx, label.x, y, () => {
+        ctx.globalAlpha = clamp((1 - p) / 0.35);
+        if (!this.reducedMotion && age < 0.12) { const pop = 1 + 0.5 * (1 - age / 0.12); ctx.scale(pop, pop); }
+        ctx.font = `900 ${Math.max(16, 15 / this.cssIso)}px "Microsoft YaHei", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 4;
+        const value = `-${label.amount}`;
+        ctx.strokeStyle = '#2a0d09'; ctx.strokeText(value, 0, 0); ctx.fillStyle = '#ff6a55'; ctx.fillText(value, 0, 0);
+      });
+    });
+  }
+
+  // Enemies fade and rise in at their entry point instead of popping.
+  applySpawnAnim(ctx, id, now) {
+    const anim = this.spawnAnims.get(id); if (!anim) return;
+    const p = easeOutCubic(clamp((now - anim.started) / SPAWN_ANIM));
+    ctx.globalAlpha = 0.15 + 0.85 * p;
+    if (!this.reducedMotion) ctx.translate(0, (1 - p) * 8);
+  }
+
+  drawSpawnDust(ctx, now) {
+    if (this.reducedMotion) return;
+    for (const anim of this.spawnAnims.values()) {
+      const p = clamp((now - anim.started) / SPAWN_ANIM); if (p >= 1) continue;
+      const count = this.takeParticles(this.quality === 'low' ? 2 : 3); if (!count) break;
+      this.sprite(ctx, anim.x, anim.y, () => {
+        ctx.globalAlpha = 0.45 * (1 - p);
+        for (let i = 0; i < count; i++) oval(ctx, (i - (count - 1) / 2) * (6 + p * 10), 4 - p * 3, 4 + p * 6, 2 + p * 2, '#e3d6ad');
+      });
+    }
+  }
+
+  // 80ms white silhouette on every real hit (engine hitFlash or a forwarded damage event).
+  drawHitFlash(ctx, enemy, now) {
+    const started = this.hitFlashes.get(enemy.id), age = started == null ? Infinity : now - started;
+    const k = Math.max(age < HIT_FLASH ? 1 - age / HIT_FLASH : 0, clamp((Number(enemy.hitFlash) || 0) / 0.1) * 0.8);
+    if (!(k > 0)) return;
+    const boss = enemy.type === 'boss' || enemy.class === 'boss', s = boss ? 1.5 : enemy.type === 'armor' ? 1.13 : 1;
+    ctx.save(); ctx.globalAlpha = 0.7 * k; ctx.fillStyle = '#ffffff';
+    if (enemy.type === 'siege') ctx.fillRect(-17, -29, 34, 34);
+    else {
+      ctx.beginPath(); ctx.ellipse(0, -6 * s, 6.5 * s, 8 * s, 0, 0, TAU); ctx.fill();
+      oval(ctx, 0, -15 * s, 4.5 * s, 4.5 * s, '#ffffff');
+      if (enemy.type === 'cavalry') oval(ctx, 0, 0, 10, 5, '#ffffff');
+    }
+    ctx.restore();
+  }
+
+  drawLastEnemyMark(ctx, now) {
+    const pulse = this.reducedMotion ? 0.5 : (Math.sin((now - this.lastEnemy.started) * 6) + 1) / 2;
+    ctx.save(); ctx.strokeStyle = '#ffe7a6'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.ellipse(0, 5, 20 + pulse * 4, 8 + pulse * 1.5, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    polygon(ctx, [[-5, -48 - pulse * 3], [5, -48 - pulse * 3], [0, -40 - pulse * 3]], '#ffe7a6', '#5a3c17');
+    ctx.restore();
+  }
+
+  // Build-in: drop from above, squash on landing, spring back (0.32s). Reduced motion: plain fade-in.
+  applyCampAnim(ctx, slot, now) {
+    const anim = this.campAnims.get(slot); if (!anim || anim.kind !== 'build') return;
+    const p = clamp((now - anim.started) / BUILD_ANIM); if (p >= 1) return;
+    if (this.reducedMotion) { ctx.globalAlpha = 0.2 + 0.8 * p; return; }
+    const fall = clamp(p / 0.55), settle = clamp((p - 0.55) / 0.45), spring = easeOutBack(settle);
+    const scaleX = fall < 1 ? 0.92 : 1.12 - 0.12 * spring, scaleY = fall < 1 ? 1.08 : 0.86 + 0.14 * spring;
+    ctx.translate(0, -60 * (1 - fall * fall)); ctx.scale(scaleX, scaleY);
+  }
+
+  campPosition(camps, slots, slot) {
+    const camp = camps.find(c => c.slot === slot); if (!camp) return null;
+    const pos = slots.find((s, i) => (s.slot ?? i) === slot), x = camp.x ?? pos?.x, y = camp.y ?? pos?.y;
+    return Number.isFinite(x) && Number.isFinite(y) ? { camp, x, y } : null;
+  }
+
+  // Under units: 1s range ring after placing/upgrading, and the landing dust ring.
+  drawCampGround(ctx, camps, slots, now) {
+    for (const [slot, anim] of this.campAnims) {
+      const found = this.campPosition(camps, slots, slot); if (!found) continue;
+      const { camp, x, y } = found, age = now - anim.started, range = camp.range > 0 ? camp.range : 44;
+      if (age >= 0 && age < RANGE_RING) {
+        ctx.save(); ctx.globalAlpha = 0.6 * clamp((RANGE_RING - age) / 0.3);
+        ctx.setLineDash([5, 5]); ctx.strokeStyle = '#e9d7a3'; ctx.fillStyle = '#9ddb9412'; ctx.lineWidth = 1.5;
+        const grow = this.reducedMotion ? 1 : 0.85 + 0.15 * easeOutCubic(clamp(age / 0.25));
+        ctx.beginPath(); ctx.arc(x, y, range * grow, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      if (anim.kind !== 'build' || this.reducedMotion) continue;
+      const t = (age - BUILD_ANIM * 0.55) / 0.4;
+      if (t >= 0 && t < 1) this.sprite(ctx, x, y, () => {
+        ctx.globalAlpha = 0.55 * (1 - t); ctx.strokeStyle = '#e8dcb4'; ctx.lineWidth = 3 * (1 - t) + 0.5;
+        ctx.beginPath(); ctx.ellipse(0, 8, 20 + t * 26, 8 + t * 10, 0, 0, TAU); ctx.stroke();
+        const count = this.takeParticles(this.quality === 'low' ? 3 : 6);
+        for (let i = 0; i < count; i++) {
+          const a = i / count * TAU;
+          oval(ctx, Math.cos(a) * (22 + t * 24), 8 + Math.sin(a) * (9 + t * 9) - t * 4, 3 * (1 - t) + 1, 2 * (1 - t) + 0.6, '#d9caa0');
+        }
+      });
+    }
+  }
+
+  // Above units: upgrade ring burst and rising level chevrons.
+  drawCampBursts(ctx, camps, slots, now) {
+    for (const [slot, anim] of this.campAnims) {
+      if (anim.kind !== 'upgrade') continue;
+      const found = this.campPosition(camps, slots, slot); if (!found) continue;
+      const t = (now - anim.started) / UPGRADE_ANIM; if (t < 0 || t >= 1.6) continue;
+      this.sprite(ctx, found.x, found.y, () => {
+        if (t < 1) {
+          const r = this.reducedMotion ? 30 : 18 + easeOutCubic(t) * 26;
+          ctx.globalAlpha = (this.reducedMotion ? 0.5 : 0.9) * (1 - t);
+          ctx.strokeStyle = '#ffe7a6'; ctx.lineWidth = this.reducedMotion ? 2 : 4 * (1 - t) + 1;
+          ctx.beginPath(); ctx.ellipse(0, 2, r, r * 0.74, 0, 0, TAU); ctx.stroke();
+          if (!this.reducedMotion) { ctx.save(); ctx.translate(0, -6); this.sparks(ctx, 8, r * 0.8, '#ffe7a6', t); ctx.restore(); }
+        }
+        ctx.globalAlpha = clamp((1.6 - t) / 0.5);
+        for (let i = 0; i < anim.level; i++) {
+          const rise = this.reducedMotion ? 0 : easeOutCubic(clamp(t / 1.2 - i * 0.12)) * 18, y = -44 - i * 6 - rise;
+          line(ctx, [[-7, y], [0, y - 6], [7, y]], '#ffd257', 2.5);
+        }
+      });
+    }
+  }
+
+  // Five boss archetypes (balance bossTemplates) get their own headgear and weapon over the shared boss body.
+  drawBossGear(ctx, template) {
+    if (template === 'rammer') {
+      polygon(ctx, [[-5, -17], [-11, -26], [-6, -18]], '#d8cfae'); polygon(ctx, [[5, -17], [11, -26], [6, -18]], '#d8cfae');
+      line(ctx, [[9, 4], [9, -18]], '#6b5236', 2.2);
+      ctx.fillStyle = '#5d5f58'; ctx.fillRect(5, -25, 9, 8); line(ctx, [[5, -21], [14, -21]], '#c9b37a', 1);
+    } else if (template === 'charger') {
+      line(ctx, [[-2, -19], [-8, -30], [-16, -36]], '#e8c46c', 1.2); line(ctx, [[2, -19], [6, -31], [2, -40]], '#e8c46c', 1.2);
+      line(ctx, [[10, 5], [10, -30]], '#b89a64', 1.4); polygon(ctx, [[10, -37], [8, -30], [12, -30]], '#e6eee0');
+      oval(ctx, 10, -28, 2.2, 1.6, '#c8402f');
+    } else if (template === 'banner_lord') {
+      ctx.fillStyle = '#3b2f2a'; ctx.fillRect(-4, -27, 8, 8); line(ctx, [[-5, -27], [5, -27]], '#d6b062', 1.2);
+      for (const x of [-7, -3]) { line(ctx, [[x, -6], [x, -33]], '#cdb27a', 1); polygon(ctx, [[x, -33], [x - 6, -31], [x - 6, -26], [x, -27]], '#b8382d'); }
+      line(ctx, [[8, 0], [12, -12]], '#d8b56a', 1.6);
+    } else if (template === 'guardian') {
+      polygon(ctx, [[-9, -17], [9, -17], [5, -21], [-5, -21]], '#585e57', '#c2b393');
+      ctx.fillStyle = '#6d7464'; ctx.fillRect(-13, -14, 7, 17);
+      ctx.strokeStyle = '#d6c79c'; ctx.lineWidth = 0.8; ctx.strokeRect(-13, -14, 7, 17); oval(ctx, -9.5, -5.5, 1.5, 1.5, '#d6c79c');
+      line(ctx, [[8, 2], [8, -12]], '#c9e4d1', 1.6);
+    } else if (template === 'siege_lord') {
+      polygon(ctx, [[-1.5, -19], [0, -34], [2, -19]], '#c8402f'); line(ctx, [[-4, -18], [4, -18]], '#d5b367', 1.2);
+      line(ctx, [[10, 5], [10, -26]], '#6b5236', 1.8); polygon(ctx, [[10, -25], [18, -29], [19, -17], [10, -20]], '#c8c3a6', '#8e866a');
     }
   }
 
@@ -413,13 +906,31 @@ export class V1Renderer extends Renderer {
   drawV1Hero(ctx, hero, time) {
     const id = hero.heroId ?? hero.id, art = HERO_ART[id] ?? HERO_ART.guan_yu;
     const ready = hero.rage >= 100, support = hero.role === 'support';
+    // Animation states read from real engine fields: casting 0.9 s → windup (first 0.25 s), cast, then recovery.
+    const castT = hero.casting ? clamp(1 - (hero.castingRemaining ?? 0) / 0.9) : -1;
+    const phase = castT < 0 ? (hero.rageRecovery > 0 ? 'recovery' : ready ? 'ready' : 'idle') : castT < 0.28 ? 'windup' : 'cast';
+    const aura = { wei: '#8fb5e0', shu: '#9ff2bd', wu: '#ffb08a' }[art.faction] ?? '#d8dfa6';
     ctx.save(); ctx.scale(support ? 0.9 : 1, support ? 0.9 : 1);
     oval(ctx, 0, 6, 16, 6, '#142b2760');
-    ctx.strokeStyle = ready ? '#ccf6c6' : '#77c5a1'; ctx.lineWidth = ready ? 2.3 : 1;
+    if (phase === 'windup' || phase === 'cast') {
+      const grow = phase === 'windup' ? castT / 0.28 : 1 - (castT - 0.28) / 0.72;
+      ctx.save(); ctx.globalAlpha = 0.25 + grow * 0.45; oval(ctx, 0, 4, 22 + grow * 12, 9 + grow * 4, aura + '66');
+      ctx.strokeStyle = aura; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 4, 24 + grow * 12, 10 + grow * 4, 0, 0, TAU); ctx.stroke(); ctx.restore();
+    }
+    ctx.strokeStyle = ready ? '#ccf6c6' : phase === 'recovery' ? '#5d8b78' : '#77c5a1'; ctx.lineWidth = ready ? 2.3 : 1;
     ctx.beginPath(); ctx.ellipse(0, 4, 20, 9, 0, 0, TAU); ctx.stroke();
+    // Rage arc on the ground ring: the gauge lives on the hero as well as the button.
+    if (!ready && phase !== 'recovery' && hero.rage > 0) {
+      ctx.strokeStyle = '#e8cf8a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 4, 20, 9, 0, Math.PI / 2, Math.PI / 2 + TAU * clamp(hero.rage / 100)); ctx.stroke();
+    }
     // Jade ownership chevrons remain common even for red/purple-clad allies.
     polygon(ctx, [[-3, 9], [0, 13], [3, 9]], '#82c9a9');
-    if (!this.reducedMotion) ctx.translate(0, Math.sin(time * 2.5) * 0.35);
+    if (!this.reducedMotion) {
+      if (phase === 'windup') ctx.translate(0, 2 * (castT / 0.28));
+      else if (phase === 'cast') ctx.translate(0, -4 * Math.sin(Math.min(1, (castT - 0.28) / 0.25) * Math.PI / 2) + 2);
+      else if (phase === 'ready') ctx.translate(0, Math.sin(time * 5) * 0.8);
+      else ctx.translate(0, Math.sin(time * 2.5) * 0.35);
+    }
     const wide = ['broad', 'wide-beard', 'sleeves', 'crown'].includes(art.silhouette), half = wide ? 13 : 8;
     if (['cloak', 'silver'].includes(art.silhouette)) polygon(ctx, [[-9, -17], [10, -17], [18, 9], [-16, 9]], art.silhouette === 'silver' ? '#d8e5de' : '#263b43');
     polygon(ctx, [[-half, -15], [half, -15], [half + 4, 6], [-half - 3, 6]], art.accent, '#17382e');
@@ -451,13 +962,20 @@ export class V1Renderer extends Renderer {
     if (art.silhouette === 'beard') polygon(ctx, [[-5, -20], [5, -20], [4, -9], [0, -3], [-4, -10]], '#233129');
     if (art.silhouette === 'wide-beard') polygon(ctx, [[-7, -21], [-11, -17], [-5, -9], [0, -10], [8, -12], [11, -18], [6, -21]], '#25352d');
     if (art.silhouette === 'crown') polygon(ctx, [[-5, -20], [5, -20], [3, -11], [-2, -12]], '#5b3d55');
-    this.drawHeroGear(ctx, art.gear, Boolean(hero.attackFlash > 0 || hero.casting));
+    this.drawHeroGear(ctx, art.gear, Boolean(hero.attackFlash > 0 || hero.casting), phase, castT);
     ctx.restore();
-    text(ctx, art.name, 0, 25, Math.max(11, 11 / this.cssIso), '#f0d99a');
+    text(ctx, art.name, 0, 25, Math.max(11, 11 / this.cssIso), ready ? '#fff2bd' : '#f0d99a');
   }
 
-  drawHeroGear(ctx, gear, attacking) {
-    ctx.save(); if (attacking && !this.reducedMotion) ctx.rotate(-0.12);
+  drawHeroGear(ctx, gear, attacking, phase = 'idle', castT = -1) {
+    ctx.save();
+    if (!this.reducedMotion) {
+      // Windup draws the weapon back, the cast swings it through, recovery lets it hang low.
+      if (phase === 'windup') ctx.rotate(0.35 * (castT / 0.28));
+      else if (phase === 'cast') ctx.rotate(0.35 - 0.95 * Math.min(1, (castT - 0.28) / 0.22));
+      else if (phase === 'recovery') ctx.rotate(0.12);
+      else if (attacking) ctx.rotate(-0.12);
+    }
     const shaft = '#d4c190', blade = '#c9e4d1';
     if (['crescent', 'spear', 'hook', 'serpent', 'axe'].includes(gear)) {
       line(ctx, [[15, 10], [15, -44]], shaft, 2.6);
@@ -494,8 +1012,19 @@ export class V1Renderer extends Renderer {
 
   drawV1Enemy(ctx, enemy, time) {
     const local = { ...enemy, x: 0, y: 0 };
+    // Threat ground rings: bosses red and pulsing, elites amber, anything about to breach the gate gets a red rim.
+    const boss = enemy.type === 'boss' || enemy.class === 'boss';
+    const elite = !boss && (enemy.class === 'elite' || ['armor', 'siege', 'banner'].includes(enemy.type));
+    const breaching = enemy.pathLength > 0 && enemy.progress / enemy.pathLength > 0.85;
+    if (boss || elite || breaching) {
+      const pulse = this.reducedMotion ? 0 : (Math.sin(time * 5) + 1) / 2;
+      ctx.strokeStyle = boss ? `rgba(232, 92, 70, ${0.55 + pulse * 0.35})` : elite ? '#e8b25fb0' : '#e05a46a0';
+      ctx.lineWidth = boss ? 2.5 : 1.6;
+      ctx.beginPath(); ctx.ellipse(0, 5, boss ? 26 + pulse * 3 : 15, boss ? 9 + pulse : 6, 0, 0, TAU); ctx.stroke();
+    }
     if (!['ranged', 'banner', 'siege'].includes(enemy.type)) {
       super.drawEnemy(ctx, local, time);
+      if (boss && enemy.bossTemplateId) { ctx.save(); ctx.scale(1.5, 1.5); this.drawBossGear(ctx, enemy.bossTemplateId); ctx.restore(); }
     } else if (enemy.type === 'siege') {
       oval(ctx, 0, 5, 22, 7, '#323a3040');
       for (const x of [-16, 16]) for (const y of [-2, 8]) oval(ctx, x, y, 5, 5, '#333d35');

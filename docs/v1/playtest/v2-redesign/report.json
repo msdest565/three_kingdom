@@ -1,0 +1,392 @@
+{
+  "label": "v2-redesign",
+  "startedAt": "2026-10-13T17:27:07.207Z",
+  "build": "dev server",
+  "steps": [
+    {
+      "name": "first_screen_interactive",
+      "domContentLoadedMs": 171,
+      "loadMs": 175,
+      "interactiveMs": 279,
+      "wallMs": 286
+    },
+    {
+      "name": "battle_entry",
+      "taps": 1,
+      "msFromTap": 1278
+    },
+    {
+      "name": "first_deploy",
+      "taps": 4,
+      "wallMsFromCombat": 1334,
+      "combatSec": 0
+    },
+    {
+      "name": "first_ultimate_cast",
+      "taps": 5,
+      "wallMsFromCombat": 19146,
+      "combatSec": 17.62
+    },
+    {
+      "name": "tutorial_end",
+      "wallMsFromCombat": 23766,
+      "combatSec": 21.9
+    },
+    {
+      "name": "returning_lobby",
+      "progress": "8 / 60 阵",
+      "start": "出阵",
+      "sub": "关羽 · 曹操 · 夏侯惇 出战",
+      "gridVisible": true
+    }
+  ],
+  "layout": [
+    {
+      "screen": "lobby-new-390",
+      "smallCount": 2,
+      "small": [
+        {
+          "text": "情报",
+          "fs": 11
+        },
+        {
+          "text": "1",
+          "fs": 11
+        }
+      ],
+      "targetCount": 1,
+      "targets": [
+        {
+          "id": "intel-button",
+          "text": "情报",
+          "w": 138,
+          "h": 26
+        }
+      ],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "battle-tutorial-390",
+      "smallCount": 1,
+      "small": [
+        {
+          "text": "跳过引导",
+          "fs": 11
+        }
+      ],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "battle-320x568",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 320,
+      "vh": 568
+    },
+    {
+      "screen": "battle-360x640",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 360,
+      "vh": 640
+    },
+    {
+      "screen": "battle-390x844",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "battle-430x932",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 430,
+      "vh": 932
+    },
+    {
+      "screen": "battle-844x390",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 844,
+      "vh": 390
+    },
+    {
+      "screen": "battle-390x844",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "lobby-returning-390",
+      "smallCount": 4,
+      "small": [
+        {
+          "text": "情报",
+          "fs": 11
+        },
+        {
+          "text": "9",
+          "fs": 11
+        },
+        {
+          "text": "8",
+          "fs": 11
+        },
+        {
+          "text": "2",
+          "fs": 11
+        }
+      ],
+      "targetCount": 1,
+      "targets": [
+        {
+          "id": "intel-button",
+          "text": "情报",
+          "w": 50,
+          "h": 26
+        }
+      ],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "lobby-320x568",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 320,
+      "vh": 568
+    },
+    {
+      "screen": "lobby-430x932",
+      "smallCount": 4,
+      "small": [
+        {
+          "text": "情报",
+          "fs": 11
+        },
+        {
+          "text": "9",
+          "fs": 11
+        },
+        {
+          "text": "8",
+          "fs": 11
+        },
+        {
+          "text": "2",
+          "fs": 11
+        }
+      ],
+      "targetCount": 1,
+      "targets": [
+        {
+          "id": "intel-button",
+          "text": "情报",
+          "w": 50,
+          "h": 26
+        }
+      ],
+      "horizontalOverflow": false,
+      "vw": 430,
+      "vh": 932
+    },
+    {
+      "screen": "heroes-390",
+      "smallCount": 4,
+      "small": [
+        {
+          "text": "8",
+          "fs": 11
+        },
+        {
+          "text": "2",
+          "fs": 11
+        },
+        {
+          "text": "3",
+          "fs": 11
+        },
+        {
+          "text": "9",
+          "fs": 11
+        }
+      ],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "workshop-390",
+      "smallCount": 12,
+      "small": [
+        {
+          "text": "伤 +2.5%",
+          "fs": 11
+        },
+        {
+          "text": "距 +1.5",
+          "fs": 11
+        },
+        {
+          "text": "伤 +2.5%",
+          "fs": 11
+        },
+        {
+          "text": "距 +1.5",
+          "fs": 11
+        },
+        {
+          "text": "伤 +2.5%",
+          "fs": 11
+        },
+        {
+          "text": "距 +1.5",
+          "fs": 11
+        },
+        {
+          "text": "伤 +2.5%",
+          "fs": 11
+        },
+        {
+          "text": "距 +1.5",
+          "fs": 11
+        },
+        {
+          "text": "伤 +2.5%",
+          "fs": 11
+        },
+        {
+          "text": "距 +1.5",
+          "fs": 11
+        },
+        {
+          "text": "距 +1.5",
+          "fs": 11
+        },
+        {
+          "text": "阵 +0.2%",
+          "fs": 11
+        }
+      ],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "settings-390",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "vw": 390,
+      "vh": 844
+    }
+  ],
+  "perf": [],
+  "errors": [],
+  "browser": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  "tutorial": [
+    {
+      "step": "deploy",
+      "hidden": false,
+      "title": "在发光的营位布一座军营",
+      "camp": false,
+      "time": 0,
+      "off": false,
+      "wallMs": 628
+    },
+    {
+      "step": "deploy",
+      "hidden": true,
+      "title": "在发光的营位布一座军营",
+      "camp": true,
+      "time": 0,
+      "off": false,
+      "wallMs": 994
+    },
+    {
+      "step": "gather",
+      "hidden": false,
+      "title": "等敌潮聚起来",
+      "camp": false,
+      "time": 0.32,
+      "off": false,
+      "wallMs": 1600
+    },
+    {
+      "step": "ultimate",
+      "hidden": false,
+      "title": "点按金色无双",
+      "camp": false,
+      "time": 17.62,
+      "off": false,
+      "wallMs": 18963
+    },
+    {
+      "step": "complete",
+      "hidden": false,
+      "title": "这一刀，横扫 37 人",
+      "camp": false,
+      "time": 19.22,
+      "off": false,
+      "wallMs": 21052
+    },
+    {
+      "step": "complete",
+      "hidden": true,
+      "title": "这一刀，横扫 37 人",
+      "camp": false,
+      "time": 21.92,
+      "off": true,
+      "wallMs": 23766
+    }
+  ],
+  "returning": {
+    "progress": "8 / 60 阵",
+    "start": "出阵",
+    "sub": "关羽 · 曹操 · 夏侯惇 出战",
+    "gridVisible": true
+  },
+  "console": []
+}

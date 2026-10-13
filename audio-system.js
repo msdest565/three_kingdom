@@ -21,9 +21,11 @@ export const AUDIO_TIMBRES = Object.freeze({
 });
 
 export class AudioSystem {
-  constructor({ musicEnabled = true, sfxEnabled = true, heroId = 'guan_yu', timbres = {}, contextFactory = audioFactory } = {}) {
+  constructor({ musicEnabled = true, sfxEnabled = true, musicVolume = 0.8, sfxVolume = 0.8, heroId = 'guan_yu', timbres = {}, contextFactory = audioFactory } = {}) {
     this.musicEnabled = Boolean(musicEnabled);
     this.sfxEnabled = Boolean(sfxEnabled);
+    this.musicLevel = Number.isFinite(musicVolume) ? clamp(musicVolume, 0, 1) : 0.8;
+    this.sfxLevel = Number.isFinite(sfxVolume) ? clamp(sfxVolume, 0, 1) : 0.8;
     this.heroId = heroId;
     this.timbres = timbres && typeof timbres === 'object' ? timbres : {};
     this.scene = 'menu';
@@ -51,9 +53,11 @@ export class AudioSystem {
     return this._activate();
   }
 
-  setPreferences({ musicEnabled, sfxEnabled } = {}) {
+  setPreferences({ musicEnabled, sfxEnabled, musicVolume, sfxVolume } = {}) {
     if (typeof musicEnabled === 'boolean') this.musicEnabled = musicEnabled;
     if (typeof sfxEnabled === 'boolean') this.sfxEnabled = sfxEnabled;
+    if (Number.isFinite(musicVolume)) this.musicLevel = clamp(musicVolume, 0, 1);
+    if (Number.isFinite(sfxVolume)) this.sfxLevel = clamp(sfxVolume, 0, 1);
     if (!this.sfxEnabled) this._stopVoices();
     if (!this.musicEnabled) this._stopMusic();
     this._applyChannelLevels();
@@ -90,7 +94,9 @@ export class AudioSystem {
 
   click() {
     if (!this._canSound() || !this._allow([['click', 0.055]])) return;
-    this._tone(650, 0.07, 0.034, 420, 'triangle');
+    // A soft wooden tick with three alternating pitches avoids a machine-gun feel in menus.
+    this._clickIndex = ((this._clickIndex ?? 0) + 1) % 3;
+    this._tone(600 + this._clickIndex * 28, 0.06, 0.024, 380, 'triangle');
   }
 
   handleEvent(event = {}) {
@@ -146,18 +152,53 @@ export class AudioSystem {
           this._tone(profile.frequency, profile.duration, profile.volume, profile.endFrequency, 'triangle');
         }
         break;
-      case 'ultimate':
+      case 'skillQueued': {
+        // Tap acknowledgement / windup: a short rising draw so the press is heard even if the queue waits.
+        if (!this._allow([['skillQueued', 0.12]])) return;
+        this._tone(220, 0.14, 0.05, 520, 'triangle', { priority: 2 });
+        this._noise(0.09, 0.03, 3200, { priority: 1 });
+        break;
+      }
+      case 'rageReady': {
+        // Ready cue: a two-stroke bronze gong, quiet enough to repeat across a long battle.
+        if (!this._allow([['rageReady', 2.5]])) return;
+        this._tone(392, 0.42, 0.034, 392, 'sine', { priority: 1 });
+        this._tone(587.33, 0.5, 0.028, 587.33, 'sine', { delay: 0.11, priority: 1 });
+        break;
+      }
+      case 'leak': {
+        // Gate damage: low wooden thud, panned to the gate; merged so a breaching crowd is one alarm, not a drumroll.
+        if (!inBattle || !this._allow([['gateHit', 0.22]])) return;
+        this._tone(68, 0.26, 0.11, 30, 'triangle', { priority: 1 });
+        this._noise(0.12, 0.045, 640, { priority: 1 });
+        break;
+      }
+      case 'ultimate': {
         if (!this._allow([['ultimate', 0.35]])) return;
         this._duckMusic();
-        this._noise(0.32, 0.22, 2400, { priority: 2 });
-        this._tone(160, 0.48, 0.22, 32, 'triangle', { priority: 2 });
-        this._tone(740, 0.22, 0.074, 170, 'sawtooth', { priority: 2 });
+        // Shared weight (noise + low body) plus a per-hero signature pitch, so each general's ultimate sounds distinct.
+        const hero = { ...AUDIO_TIMBRES.heroes.guan_yu, ...AUDIO_TIMBRES.heroes[event.heroId], ...this.timbres.heroes?.[event.heroId] };
+        const lift = hero.frequency / AUDIO_TIMBRES.heroes.guan_yu.frequency;
+        this._noise(0.32, 0.2, clamp(hero.cutoff * 1.25, 1400, 3600), { priority: 2 });
+        this._tone(160, 0.48, 0.2, 32, 'triangle', { priority: 2 });
+        this._tone(740 * lift, 0.24, 0.066, 170 * lift, 'sawtooth', { priority: 2 });
         break;
+      }
       case 'burst':
         if ((event.kills ?? event.count ?? 0) < 12 || !this._allow([['burst', 0.4]])) return;
         this._tone(587.33, 0.32, 0.045, 587.33, 'sine', { priority: 1 });
         this._tone(880, 0.3, 0.028, 880, 'sine', { delay: 0.05, priority: 1 });
+        // A large clear earns a third, higher stroke; ordinary bursts stay two-note so the peak stays special.
+        if ((event.kills ?? event.count ?? 0) >= 40) this._tone(1174.66, 0.42, 0.024, 1174.66, 'sine', { delay: 0.12, priority: 1 });
         break;
+      case 'combo': {
+        // Milestones only (20/50/100): a low drum plus a rising bell, brighter for longer streaks.
+        if (!this._allow([['combo', 0.6]])) return;
+        const tier = event.count >= 100 ? 2 : event.count >= 50 ? 1 : 0;
+        this._tone(110, 0.2, 0.06, 55, 'triangle', { priority: 1 });
+        [523.25, 659.25, 783.99].slice(0, tier + 2).forEach((frequency, index) => this._tone(frequency * (1 + tier * 0.06), 0.22, 0.032, frequency, 'sine', { delay: 0.04 + index * 0.06, priority: 1 }));
+        break;
+      }
       case 'build':
         if (!this._allow([['build', 0.12]])) return;
         this._tone(175, 0.12, 0.065, 90, 'triangle');
@@ -271,13 +312,14 @@ export class AudioSystem {
     if (!this.context) return;
     try {
       this._setGain(this._masterGain, this.active && !this.destroyed ? 0.8 : 0);
-      this._setGain(this._sfxGain, this.sfxEnabled && this.active ? 0.80 : 0);
+      this._setGain(this._sfxGain, this.sfxEnabled && this.active ? 0.80 * this.sfxLevel : 0);
       this._setGain(this._musicGain, this.musicEnabled && this.active ? this._sceneVolume() : 0);
     } catch { /* Unsupported automation must never interrupt the game. */ }
   }
 
   _sceneVolume() {
-    return this._musicVolume * (this.scene === 'pause' ? 0.22 : this.scene === 'choosing' ? 0.38 : this.scene === 'menu' ? 0.8 : 1);
+    // Menu sits well under battle so the camp feels calm; pause and choice duck further.
+    return this._musicVolume * (this.musicLevel ?? 1) * (this.scene === 'pause' ? 0.22 : this.scene === 'choosing' ? 0.38 : this.scene === 'menu' ? 0.55 : 1);
   }
 
   _setGain(node, value) {
@@ -361,8 +403,10 @@ export class AudioSystem {
       const now = this.context.currentTime;
       const volume = this._sceneVolume();
       this._musicGain.gain.cancelScheduledValues(now);
-      this._musicGain.gain.setValueAtTime(volume * 0.38, now);
-      this._musicGain.gain.linearRampToValueAtTime(volume, now + 0.85);
+      // Peerless owns the mix for ~1 s: drop to 30% under the windup and impact, then breathe back in.
+      this._musicGain.gain.setValueAtTime(volume * 0.3, now);
+      this._musicGain.gain.linearRampToValueAtTime(volume * 0.3, now + 0.45);
+      this._musicGain.gain.linearRampToValueAtTime(volume, now + 1.2);
     } catch { /* Gain automation is optional. */ }
   }
 
@@ -468,7 +512,7 @@ export class AudioSystem {
   /** Eight-bar pentatonic motifs, plucked harmonics and hand-drum synthesis, authored here. */
   _renderScore(scene) {
     const rate = this.context.sampleRate;
-    const tempo = scene === 'boss' ? 132 : scene === 'battle' ? 116 : scene === 'result' ? 92 : 86;
+    const tempo = scene === 'boss' ? 132 : scene === 'battle' ? 116 : scene === 'result' ? 92 : 72;
     const beat = 60 / tempo;
     const length = Math.ceil(32 * beat * rate);
     const buffer = this.context.createBuffer(1, length, rate);
@@ -510,11 +554,12 @@ export class AudioSystem {
       addTone(at, root - 5, 3.8 * beat, 0.016, false);
       for (let step = 0; step < 8; step++) {
         const offset = melody[(bar * 8 + step) % melody.length];
-        if (offset !== null) addTone(at + step * beat / 2 + 0.018, root + 12 + offset, beat * 0.85, scene === 'menu' ? 0.095 : 0.11);
+        // Menu: sparse plucks on every other step, no drums. Battle keeps the driving pulse.
+        if (offset !== null && (scene !== 'menu' || step % 2 === 0)) addTone(at + step * beat / 2 + 0.018, root + 12 + offset, beat * (scene === 'menu' ? 1.4 : 0.85), scene === 'menu' ? 0.07 : 0.11);
         if (scene === 'battle' || scene === 'boss') {
           addTone(at + step * beat / 2, root + (step % 2 ? 7 : 0), beat * 0.40, 0.033);
           if (step % 2 === 0 || scene === 'boss') drum(at + step * beat / 2, step === 0 || step === 4, step === 0 ? 0.19 : 0.105);
-        } else if (scene !== 'result' && step % 4 === 0) drum(at + step * beat / 2, true, 0.045);
+        } else if (scene === 'pause' && step % 4 === 0) drum(at + step * beat / 2, true, 0.045);
       }
     }
     let peak = 0;

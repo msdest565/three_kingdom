@@ -21,6 +21,7 @@ const error = reason => ({ ok: false, reason });
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const object = value => !!value && typeof value === 'object' && !Array.isArray(value);
 const integer = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
+const volumeLevel = value => Number.isFinite(value) && value >= 0 && value <= 1;
 const addResources = (a, b) => { for (const key of CURRENCIES) a[key] += b[key] || 0; };
 const equipmentId = (heroId, slot) => `starter:${heroId}:${slot}`;
 const templateFor = item => item && TEMPLATES[item.templateId];
@@ -86,7 +87,7 @@ function createInitialState(now) {
     party: { lead: META.defaultParty.lead, supports: [], autoSkills: {} },
     levels: {}, progress: { highestReachedGlobalIndex: 1, highestReachedTierId: CONTENT.levels[0].growthTierId, dailyRepeat: { date: localDay(now), count: 0 } },
     unlockedCamps: [...CONTENT.initialCampTypes], guestSelections: {}, guides: {},
-    settings: { musicEnabled: true, sfxEnabled: true, reducedMotion: false, tutorialCompleted: false, tutorialVersion: 0, speed: 1 },
+    settings: { musicEnabled: true, sfxEnabled: true, reducedMotion: false, tutorialCompleted: false, tutorialVersion: 0, speed: 1, musicVolume: 0.8, sfxVolume: 0.8 },
     legacyRecords: { bestBurst: 0, bestKills: 0, wins: 0 },
     rewardLedger: { firstClears: [], heroCatchUps: [], starterGear: [], processedBattleIds: [], issuedBattleSequence: 0, minimumAcceptedBattleSequence: 1, transactions: [] },
   };
@@ -228,6 +229,8 @@ function validateSnapshot(input, now, { filterUnknown = false } = {}) {
   if (![1, 1.5, 2].includes(input.settings.speed) || !integer(input.settings.tutorialVersion, 0, 100)) throw new Error('invalid_settings');
   state.settings.speed = input.settings.speed;
   state.settings.tutorialVersion = input.settings.tutorialVersion;
+  // Volume levels were added without a schema change: absent keeps the default, present must be a 0–1 number.
+  for (const key of ['musicVolume', 'sfxVolume']) if (input.settings[key] !== undefined) { if (!volumeLevel(input.settings[key])) throw new Error('invalid_settings'); state.settings[key] = input.settings[key]; }
   if (!object(input.guestSelections) || !object(input.guides)) throw new Error('invalid_guides');
   for (const [id, enabled] of Object.entries(input.guestSelections)) if (LEVELS.get(id)?.storyGuest) { if (typeof enabled !== 'boolean') throw new Error('invalid_guest'); state.guestSelections[id] = enabled; }
   if (Object.keys(input.guides).length > 1000 || JSON.stringify(input.guides).length > 100_000) throw new Error('invalid_guides');
@@ -499,7 +502,7 @@ export class CampaignStore {
   promoteEquipment(heroId, slot) { const quote = this.getEquipmentPromotionCost(heroId, slot); return this._buy(quote, next => { next.inventory.find(item => item.itemInstanceId === next.heroes[heroId].equipmentIds[slot]).quality = quote.targetQuality; }); }
 
   setSetting(key, value) {
-    const valid = ['musicEnabled', 'sfxEnabled', 'reducedMotion', 'tutorialCompleted'].includes(key) ? typeof value === 'boolean' : key === 'speed' ? [1, 1.5, 2].includes(value) : key === 'tutorialVersion' && integer(value, 0, 100);
+    const valid = ['musicEnabled', 'sfxEnabled', 'reducedMotion', 'tutorialCompleted'].includes(key) ? typeof value === 'boolean' : key === 'speed' ? [1, 1.5, 2].includes(value) : ['musicVolume', 'sfxVolume'].includes(key) ? volumeLevel(value) : key === 'tutorialVersion' && integer(value, 0, 100);
     if (!valid) return error('invalid_setting');
     const next = clone(this.state);
     next.settings[key] = value;

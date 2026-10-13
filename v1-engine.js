@@ -91,7 +91,7 @@ export class V1Game {
     this.upgrades = []; this.tactics = new Set(); this.skillQueue = []; this._casts = []; this._buffs = [];
     this._spawnQueue = []; this._spawnIndex = 0; this._waveTime = 0; this._between = 0;
     this._enemySerial = 0; this._castSerial = 0; this._lastSkillTime = -Infinity; this._previewTimer = 0;
-    this._selectedWave = 0;
+    this._selectedWave = 0; this._clearedWave = 0; this._lastEnemyWave = 0; // presentation-event guards only
     this.stats = { spawned: 0, scheduledEnemies: 0, escaped: 0, maxAlive: 0, maxPendingSpawns: 0,
       ultimateCasts: 0, ultimateKills: 0, sourceStats: {}, perHero: {}, queuedSkills: 0, cancelledAuto: 0,
       summoned: 0, damageToGate: 0, totalFoodEarned: 0, killsByType: {}, escapesByType: {} };
@@ -344,7 +344,13 @@ export class V1Game {
     }
     this._executeQueue();
     this.enemies = this.enemies.filter(alive);
+    // Presentation cues: read-only observations of state the simulation already decided this step.
+    if (this._between <= 0 && !this.pendingEnemyCount && this.enemies.length === 1 && this._lastEnemyWave !== this.wave) {
+      this._lastEnemyWave = this.wave; const last = this.enemies[0];
+      this._emit('lastEnemy', { wave: this.wave, enemyId: last.id, enemyType: last.type, x: last.x, y: last.y });
+    }
     if (this._between <= 0 && !this.pendingEnemyCount && !this.enemies.length && !this._casts.some(c => c.kind === 'delayed')) {
+      if (this._clearedWave !== this.wave) { this._clearedWave = this.wave; this._emit('waveClear', { wave: this.wave, total: this.waveCount, final: this.wave === this.waveCount }); }
       if (this.wave === this.waveCount) this._finish('won');
       else if (this.level.choiceAfterWaves.includes(this.wave) && this._selectedWave !== this.wave) {
         // Let current releases and already-requested skills finish their opening
@@ -361,7 +367,8 @@ export class V1Game {
     const factor = Math.max(0.7, Math.min(1, ...this._buffs.filter(b => b.kind === 'gate').map(b => b.factor)));
     const damage = enemy.leak * enemy.escapeDamageMultiplier * factor;
     this.hp = Math.max(0, this.hp - damage); this.stats.damageToGate += damage;
-    this._emit('leak', { enemyId: enemy.id, damage, hp: this.hp });
+    // Presentation fields only (position, type, max HP) so the renderer/DOM can place gate feedback.
+    this._emit('leak', { enemyId: enemy.id, enemyType: enemy.type, x: enemy.x, y: enemy.y, damage, amount: damage, hp: this.hp, maxHp: this.maxHp });
   }
   _finish(state) {
     this.state = state; this.skillQueue = []; for (const h of this.heroes) h.reserved = false;
@@ -391,7 +398,7 @@ export class V1Game {
     const actual = Math.min(e.hp, inflicted); e.hp -= actual; e.hitFlash = 0.1;
     const stats = this.stats.sourceStats[source] ||= { damage: 0, kills: 0 }; stats.damage += actual;
     const heroId = cast?.heroId || (source.startsWith('hero_') ? source.slice(5) : undefined);
-    this._emit('damage', { enemyId: e.id, enemyType: e.type, x: e.x, y: e.y, amount: actual, source, heroId, castId: cast?.id, executed });
+    this._emit('damage', { enemyId: e.id, enemyType: e.type, enemyClass: e.class, x: e.x, y: e.y, amount: actual, hpAfter: Math.max(0, e.hp), maxHp: e.maxHp, source, heroId, castId: cast?.id, executed });
     if (e.hp > EPS) return false;
     e.hp = 0; this.kills++; stats.kills++; this.stats.killsByType[e.type] = (this.stats.killsByType[e.type] || 0) + 1;
     this.food += e.reward; this.stats.totalFoodEarned += e.reward;

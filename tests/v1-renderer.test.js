@@ -120,12 +120,16 @@ test('damage labels use actual event amounts, merge only tower hits in a short w
   assert.equal(renderer.damageLabels[0].amount, 10.5);
   assert.equal(renderer.damageLabels[0].hits, 2);
   renderer.handleEvent({ ...first, source: 'hero_guan_yu', amount: 17 });
-  renderer.handleEvent({ ...first, heroId: 'guan_yu', source: 'ultimate_guan_yu', castId: 2, amount: 28, executed: true });
+  // A Peerless crowd clear is read through death snapshots and one burst count, not one number per soldier.
+  renderer.handleEvent({ ...first, enemyType: 'infantry', enemyClass: 'ordinary', heroId: 'guan_yu', source: 'ultimate_guan_yu', castId: 2, amount: 28, executed: true });
+  assert.equal(renderer.damageLabels.length, 2, 'ordinary skill victims add no label');
+  // An elite that survives shows its actual remaining health from the engine event.
+  renderer.handleEvent({ ...first, enemyId: 9, enemyType: 'armor', enemyClass: 'elite', heroId: 'guan_yu', source: 'ultimate_guan_yu', castId: 2, amount: 40, hpAfter: 15, maxHp: 55 });
   assert.equal(renderer.damageLabels.length, 3);
   assert.ok(renderer.damageLabels.slice(1).every(label => label.prominent));
   renderer.drawDamageLabels(canvas.context, clock / 1000);
   const labels = canvas.context.operations.filter(op => op[0] === 'fillText').map(op => op[1]);
-  assert.deepEqual(labels, ['10.5 ·2击', '17', '击破 28']);
+  assert.deepEqual(labels, ['10.5 ·2击', '17', '40 · 余27%']);
   clock += 60; renderer.handleEvent({ ...first, amount: 8 });
   assert.equal(renderer.damageLabels.length, 4, 'merging window does not stretch indefinitely');
   for (const amount of [0, -1, NaN, Infinity]) renderer.handleEvent({ ...first, amount });
@@ -219,4 +223,177 @@ test('fifteen skill geometries stay distinct and share a finite particle budget 
     assert.ok(renderer.particlesRemaining >= 0 && renderer.particlesRemaining <= 160);
   }
   assert.equal(new Set(fingerprints).size, 15);
+});
+
+const cues = (renderer, type) => renderer.consumeUiEvents().filter(cue => !type || cue.type === type);
+
+test('consumeUiEvents reports gate hits once from a forwarded leak and from the state diff, then clears', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer();
+  const game = { map: content.maps[0], heroes: [], enemies: [], camps: [], hp: 100, maxHp: 100, wave: 1, waveCount: 3, pendingEnemyCount: 5 };
+  renderer.draw(game); assert.deepEqual(renderer.consumeUiEvents(), [], 'first frame is a silent baseline');
+  // Forwarded engine event, then a draw that sees the same HP: one cue, not two.
+  game.hp = 70; clock += 16; renderer.handleEvent({ type: 'leak', enemyId: 3, x: 200, y: 530, damage: 30, hp: 70, maxHp: 100 });
+  clock += 16; renderer.draw(game);
+  const first = renderer.consumeUiEvents();
+  assert.deepEqual(first.map(c => c.type), ['gateHit', 'shake', 'gateStage']);
+  assert.equal(first[0].amount, 30); assert.equal(first[1].strength, 3); assert.equal(first[2].stage, 1);
+  assert.deepEqual(renderer.consumeUiEvents(), [], 'queue is cleared by consume');
+  // Diff-only path (caller does not forward leaks): the HP drop is still reported once and the stage escalates.
+  game.hp = 35; clock += 16; renderer.draw(game); clock += 16; renderer.draw(game);
+  const second = renderer.consumeUiEvents();
+  assert.deepEqual(second.filter(c => c.type === 'gateHit').map(c => c.amount), [35]);
+  assert.deepEqual(second.filter(c => c.type === 'gateStage').map(c => c.stage), [2]);
+  // Heals move the baseline without a hit cue and can lower the damage stage.
+  game.hp = 75; clock += 16; renderer.draw(game);
+  assert.deepEqual(cues(renderer).map(c => [c.type, c.stage]), [['gateStage', 0]]);
+  // Gate damage art follows HP; the red "-N" number floats at the gate.
+  game.hp = 10; clock += 16; canvas.context.operations.length = 0; renderer.draw(game);
+  assert.ok(cues(renderer, 'gateStage').some(c => c.stage === 3));
+  assert.ok(canvas.context.operations.some(op => op[0] === 'fillText' && op[1] === '-65'));
+});
+
+test('build and upgrade cues come once from events or diff; camps drop in and show a 1s range ring', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer();
+  const slot = content.maps[0].campSlots[1];
+  const game = { map: content.maps[0], heroes: [], enemies: [], camps: [{ slot: content.maps[0].campSlots[0].slot ?? 0, type: 'shield', level: 1, range: 50 }], hp: 100, maxHp: 100 };
+  renderer.draw(game); assert.deepEqual(renderer.consumeUiEvents(), [], 'free camps present at start are not animated');
+  const camp = { slot: slot.slot ?? 1, type: 'archer', level: 1, range: 120, x: slot.x, y: slot.y };
+  game.camps = [...game.camps, camp];
+  renderer.handleEvent({ type: 'build', slot: camp.slot, camp }); clock += 16; renderer.draw(game);
+  assert.deepEqual(cues(renderer).map(c => [c.type, c.slot, c.campType, c.level]), [['build', camp.slot, 'archer', 1]]);
+  canvas.context.operations.length = 0; clock += 100; renderer.draw(game);
+  assert.ok(canvas.context.operations.some(op => op[0] === 'arc' && op[1] === slot.x && op[2] === slot.y && Math.abs(op[3] - 120) < 20), 'real range ring');
+  assert.ok(canvas.context.operations.some(op => op[0] === 'translate' && op[1] === 0 && op[2] < 0), 'camp drops from above');
+  // Upgrade seen only through the diff path (no event forwarded).
+  game.camps = [game.camps[0], { ...camp, level: 2 }]; clock += 16; renderer.draw(game); clock += 16; renderer.draw(game);
+  assert.deepEqual(cues(renderer).map(c => [c.type, c.level]), [['upgrade', 2]]);
+  for (let i = 0; i < 80; i++) { clock += 16; renderer.draw(game); }
+  assert.equal(renderer.campAnims.size, 0, 'animations expire');
+});
+
+test('wave clear and last enemy cues fire once per wave and only after pending spawns are exhausted', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer } = makeRenderer();
+  const enemy = id => ({ id, type: 'infantry', x: 200, y: 200 + id, hp: 10, maxHp: 10 });
+  const game = { map: content.maps[0], heroes: [], camps: [], hp: 100, maxHp: 100, wave: 1, waveCount: 2, pendingEnemyCount: 2, enemies: [enemy(1)] };
+  const step = () => { clock += 16; renderer.draw(game); };
+  step(); game.enemies = []; step();
+  assert.deepEqual(renderer.consumeUiEvents(), [], 'no clear while spawns are pending');
+  game.pendingEnemyCount = 0; game.enemies = [enemy(2), enemy(3), enemy(4)]; step();
+  game.enemies = [enemy(4)]; step();
+  renderer.handleEvent({ type: 'lastEnemy', wave: 1, enemyId: 4, x: 200, y: 204 });
+  game.enemies = []; step(); renderer.handleEvent({ type: 'waveClear', wave: 1, final: false }); step();
+  assert.deepEqual(cues(renderer).map(c => [c.type, c.wave]), [['lastEnemy', 1], ['waveClear', 1]]);
+  game.wave = 2; game.enemies = [enemy(5), enemy(6)]; step(); game.enemies = []; step();
+  assert.deepEqual(cues(renderer).map(c => [c.type, c.wave, c.final]), [['waveClear', 2, true]]);
+});
+
+test('long gaps and new games rebaseline without catch-up cues', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer } = makeRenderer();
+  const game = { map: content.maps[0], heroes: [], enemies: [], camps: [], hp: 100, maxHp: 100 };
+  renderer.draw(game); clock += 16; renderer.draw(game);
+  game.hp = 40; game.camps = [{ slot: 0, type: 'archer', level: 1 }]; clock += 5000; renderer.draw(game);
+  assert.deepEqual(renderer.consumeUiEvents(), [], 'hidden-tab return does not replay');
+  clock += 16; renderer.draw({ ...game, hp: 10, camps: [] });
+  assert.deepEqual(renderer.consumeUiEvents(), [], 'a new game object is a fresh baseline');
+  renderer.destroy(); renderer.pushUi({ type: 'gateHit' }); assert.deepEqual(renderer.consumeUiEvents(), []);
+});
+
+test('Peerless camera: 6px decaying shake, 1.03 zoom punch and edge flash; reduced motion removes them but keeps gate numbers', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer();
+  const game = { map: content.maps[0], heroes: [], enemies: [], camps: [], hp: 100, maxHp: 100 };
+  renderer.draw(game);
+  renderer.handleEvent({ type: 'ultimate', heroId: 'guan_yu', skillName: '青龙横扫' });
+  assert.deepEqual(cues(renderer).map(c => [c.type, c.strength, c.duration, c.source]), [['shake', 6, 0.38, 'ultimate']]);
+  const offsets = [];
+  for (const dt of [0.03, 0.1, 0.2, 0.3, 0.4]) {
+    clock = 1000 + dt * 1000; canvas.context.operations.length = 0; renderer.draw(game);
+    const ops = canvas.context.operations, bg = ops.findIndex(op => op[0] === 'drawImage'), before = ops.slice(0, bg);
+    const shake = before.filter(op => op[0] === 'translate' && Math.abs(op[1]) !== 210).at(-1);
+    offsets.push(shake ? Math.hypot(shake[1], shake[2]) : 0);
+    if (dt === 0.03) assert.ok(before.some(op => op[0] === 'scale' && op[1] > 1 && op[1] <= 1.03 + 1e-9), 'zoom punch');
+    if (dt === 0.1) assert.ok(ops.slice(bg).some(op => op[0] === 'createRadialGradient' || op[0] === 'fillRect'), 'edge flash');
+  }
+  assert.ok(offsets.every(v => v <= 6 * Math.SQRT2), 'bounded at about 6px');
+  assert.ok(offsets[0] > 1 && offsets[4] === 0, 'decays to zero by 0.38s');
+  // Reduced motion: no shake cue or camera transform, but gate numbers and stage remain.
+  renderer.reducedMotion = true; renderer.handleEvent({ type: 'ultimate', heroId: 'guan_yu' });
+  renderer.handleEvent({ type: 'leak', damage: 35, hp: 65, maxHp: 100, x: 210, y: 530 });
+  assert.deepEqual(cues(renderer).map(c => c.type), ['gateHit', 'gateStage']);
+  game.hp = 65; canvas.context.operations.length = 0; clock += 16; renderer.draw(game);
+  const ops = canvas.context.operations, bg = ops.findIndex(op => op[0] === 'drawImage');
+  assert.ok(!ops.slice(0, bg).some(op => ['translate', 'scale'].includes(op[0])));
+  assert.ok(ops.some(op => op[0] === 'fillText' && op[1] === '-35'));
+});
+
+test('hit flash, ink-splash deaths, spawn fade-in and hero gold numbers stay bounded and leave the game untouched', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer();
+  const game = { map: content.maps[0], heroes: [], camps: [], effects: [], hp: 100, maxHp: 100, enemies: [] };
+  renderer.draw(game);
+  game.enemies = Array.from({ length: 200 }, (_, i) => ({ id: i + 1, type: 'infantry', x: 100 + i % 200, y: 100 + i, hp: 5, maxHp: 5, hitFlash: 0.1 }));
+  const before = structuredClone(game);
+  clock += 16; renderer.draw(game);
+  assert.deepEqual(game, before);
+  assert.equal(renderer.spawnAnims.size, 200);
+  assert.ok(renderer.particlesRemaining >= 0);
+  for (let i = 0; i < 600; i++) {
+    renderer.handleEvent({ type: 'damage', enemyId: i, x: 120, y: 200, amount: 3, heroId: i % 2 ? 'guan_yu' : undefined });
+    renderer.handleEvent({ type: 'kill', enemyId: i, enemyType: i % 5 ? 'infantry' : 'armor', x: 120, y: 200 });
+    renderer.handleEvent({ type: 'leak', damage: 1, hp: 50, maxHp: 100 });
+  }
+  assert.ok(renderer.hitFlashes.size <= 400); assert.equal(renderer.deathSnapshots.length, 48);
+  assert.ok(renderer.gateFx.labels.length <= 6); assert.ok(renderer.uiEvents.length <= 64); assert.ok(renderer.shakes.length <= 4);
+  canvas.context.operations.length = 0; clock += 16; renderer.draw(game);
+  assert.ok(renderer.particlesRemaining >= 0);
+  assert.ok(canvas.context.operations.some(op => op[0] === 'ellipse'), 'ink blot and spatter');
+  // Hero numbers are gold and pop from 1.6.
+  renderer.resetFeedback(); renderer.handleEvent({ type: 'damage', enemyId: 1, x: 100, y: 200, amount: 17, heroId: 'guan_yu' });
+  canvas.context.operations.length = 0; renderer.drawDamageLabels(canvas.context, clock / 1000);
+  assert.ok(canvas.context.operations.some(op => op[0] === 'scale' && Math.abs(op[1] - 1.6) < 1e-9));
+  assert.equal(canvas.context.fillStyle, '#ffd257');
+  // Ink blots outlive the corpse (1.2s) and stay static with reduced motion.
+  renderer.reducedMotion = true; renderer.handleEvent({ type: 'kill', enemyId: 2, x: 100, y: 200 });
+  clock += 900; canvas.context.operations.length = 0; renderer.drawDeaths(canvas.context, clock / 1000);
+  assert.ok(canvas.context.operations.some(op => op[0] === 'ellipse'));
+  assert.ok(!canvas.context.operations.some(op => op[0] === 'rotate'));
+});
+
+test('five boss archetypes draw distinct gear and the canvas no longer draws the map name', () => {
+  const { renderer, canvas } = makeRenderer();
+  const prints = ['rammer', 'charger', 'banner_lord', 'guardian', 'siege_lord'].map(bossTemplateId => {
+    canvas.context.operations.length = 0;
+    renderer.drawV1Enemy(canvas.context, { id: 1, type: 'boss', class: 'boss', bossTemplateId, x: 0, y: 0, hp: 50, maxHp: 100 }, 0);
+    return JSON.stringify(canvas.context.operations);
+  });
+  assert.equal(new Set(prints).size, 5);
+  canvas.context.operations.length = 0;
+  renderer.draw({ map: content.maps[0], heroes: [], enemies: [], camps: [], hp: 100 });
+  assert.ok(!canvas.context.operations.some(op => op[0] === 'fillText' && op[1] === content.maps[0].name));
+});
+
+test('rendering a live V1 battle every frame never changes simulation results', async t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { V1Game, seededRandom } = await import('../v1-engine.js');
+  const seen = new Set();
+  const run = withRenderer => {
+    const { renderer, canvas } = makeRenderer();
+    const game = new V1Game({ levelId: 'wei_004', party: [{ heroId: 'guan_yu', level: 10 }], unlockedCamps: ['shield', 'archer', 'catapult'], rng: seededRandom(3),
+      onEvent: event => { if (withRenderer) renderer.handleEvent(event); } });
+    game.start(); game.food = 1000;
+    game.build(game.map.campSlots[0].slot, 'archer'); game.build(game.map.campSlots[1].slot, 'shield');
+    for (let frame = 0; frame < 2400 && game.state === 'playing'; frame++) {
+      clock += 1000 / 60; game.update(1 / 60);
+      if (frame === 600) game.upgrade(game.map.campSlots[0].slot);
+      if (withRenderer && frame % 2 === 0) { renderer.draw(game, { realDt: 1 / 30 }); canvas.context.operations.length = 0; for (const cue of renderer.consumeUiEvents()) seen.add(cue.type); }
+    }
+    return JSON.stringify({ time: game.time, hp: game.hp, food: game.food, kills: game.kills, wave: game.wave, state: game.state,
+      enemies: game.enemies.map(e => [e.id, e.hp, e.progress, e.x, e.y]), camps: game.camps.map(c => [c.slot, c.level, c.range]) });
+  };
+  assert.equal(run(true), run(false));
+  assert.ok(['build', 'upgrade'].every(type => seen.has(type)), [...seen].join());
 });
