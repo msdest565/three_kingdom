@@ -191,31 +191,54 @@ function boot({ storage = new Map(), unavailableStorage = false } = {}) {
     saved: () => JSON.parse(storage.get(SAVE_KEY) ?? 'null'), destroy: () => api.sound.destroy() };
 }
 
+function openWeaponPicker(env) {
+  env.click('hero-gear-weapon');
+  env.clickText('换装', env.get('hero-gear-popover'));
+}
+
+function selectIdleInventoryItem(env) {
+  const card = env.get('inventory-list').querySelectorAll('.equipment-card').find(node => /闲置未穿戴/.test(node.getAttribute('aria-label')));
+  assert.ok(card, 'bag contains an idle item'); card.click(); return card;
+}
+
 test('default portable entry opens the campaign; every chapter and locked level supports honest preview', () => {
   const env = boot();
   assert.equal(env.api.mode, 'lobby'); assert.equal(env.api.game, null);
   assert.equal(env.audioContexts.length, 0, 'no autoplay before a gesture');
-  // The march map is the campaign home: the whole chapter route is visible with one primary button.
+  // The home shows only the selected level and next stop; the full route stays one tap away.
+  assert.equal(env.get('route-sheet').hidden, true);
+  assert.equal(env.get('focus-nodes').querySelectorAll('.focus-node').length, 2);
+  assert.equal(env.get('focus-nodes').querySelectorAll('.focus-node.is-selected').length, 1);
+  assert.equal(env.get('focus-nodes').querySelectorAll('.focus-node.is-next').length, 1);
+  assert.equal(env.get('focus-route').querySelectorAll('path').length, 2);
+  env.click('route-button'); assert.equal(env.get('route-sheet').hidden, false);
   assert.equal(env.get('chapter-body').hidden, false);
   assert.equal(env.get('level-grid').querySelectorAll('button').length, 20);
   assert.equal(env.get('march-route').querySelectorAll('path').length, 2, 'cleared route and remaining route');
   assert.equal(env.get('level-grid').querySelectorAll('button').filter(b => b.classList.contains('is-current')).length, 1);
-  // Pre-battle intel opens as a sheet (long-press on touch; the 情报 button keeps it keyboard reachable).
+  env.click('route-close');
+  // Pre-battle intel opens as a sheet (long-press on touch; the hidden 情报 button keeps it keyboard reachable).
   assert.equal(env.get('level-intel').hidden, true); env.click('intel-button');
   assert.equal(env.get('level-intel').hidden, false); assert.match(env.get('intel-title').textContent, /乡野初阵/);
   env.click('intel-close'); assert.equal(env.get('level-intel').hidden, true);
   assert.equal(env.get('chapter-tabs').querySelectorAll('button').length, 3);
   assert.equal(env.get('hero-roster').querySelectorAll('button').length, 15);
   assert.match(env.get('campaign-progress').textContent, /0 \/ 60/);
+  env.click('route-button');
   env.clickText('蜀篇', env.get('chapter-tabs'));
   assert.equal(env.api.selectedLevelId, 'shu_001'); assert.equal(env.get('campaign-start').disabled, true);
   assert.equal(env.get('map-preview').querySelectorAll('path').length, 2);
   env.get('level-grid').querySelectorAll('button').at(-1).click();
   assert.equal(env.api.selectedLevelId, 'shu_020'); assert.equal(env.get('campaign-start').disabled, true);
+  assert.equal(env.get('route-sheet').hidden, true, 'choosing a full-route node returns to the campaign home');
+  assert.match(env.get('selected-level-name').textContent, new RegExp(env.api.store.getLevel('shu_020').name));
+  assert.equal(env.get('focus-nodes').querySelectorAll('.focus-node').length, 1, 'the final level has no invented next node');
   env.click('campaign-start'); assert.equal(env.api.game, null, 'locked preview cannot enter a battle');
+  env.click('route-button');
   env.clickText('吴篇', env.get('chapter-tabs')); assert.equal(env.api.selectedLevelId, 'wu_001');
   env.clickText('魏篇', env.get('chapter-tabs')); assert.equal(env.api.selectedLevelId, 'wei_001');
   assert.equal(env.get('campaign-start').disabled, false);
+  env.click('route-close');
   env.click('heroes-tab'); assert.equal(env.get('heroes-screen').hidden, false); assert.equal(env.get('campaign-screen').hidden, true);
   env.clickText('太史慈', env.get('hero-roster'));
   assert.match(env.get('toast').textContent, /解锁/); assert.equal(env.get('lobby-modal').hidden, true);
@@ -226,6 +249,7 @@ test('hero detail uses owned equipment and resource gates; the party picker chan
   const storage = new Map(), env = boot({ storage });
   env.click('heroes-tab'); env.clickText('关羽', env.get('hero-roster'));
   assert.match(env.get('modal-title').textContent, /关羽/);
+  assert.equal(env.get('lobby-modal').classList.contains('is-page'), true, 'hero detail reuses the modal as a full page');
   assert.equal(env.get('modal-body').querySelectorAll('.gear-row').length, 4);
   assert.match(env.get('modal-body').textContent, /城关最大耐久/);
   const training = env.get('modal-body').querySelectorAll('.training-action');
@@ -240,6 +264,94 @@ test('hero detail uses owned equipment and resource gates; the party picker chan
   assert.equal(env.saved().party.lead, 'cao_cao');
   env.destroy();
   const restored = boot({ storage }); assert.equal(restored.api.store.state.party.lead, 'cao_cao'); restored.destroy();
+});
+
+test('focus and full-route long presses reveal the requested intel and suppress their trailing click', () => {
+  const env = boot();
+  const current = env.get('focus-nodes').querySelector('.focus-node.is-selected');
+  env.get('focus-map').dispatch('pointerdown', { target: current, button: 0, clientX: 60, clientY: 80 });
+  env.advance(.44); assert.equal(env.get('level-intel').hidden, true);
+  env.advance(.02); assert.equal(env.get('level-intel').hidden, false);
+  assert.match(env.get('intel-title').textContent, /乡野初阵/);
+  env.click('intel-close'); current.click();
+  assert.equal(env.get('level-intel').hidden, true, 'the click produced after a long press is suppressed');
+  env.advance(.75); env.click('route-button');
+  const target = env.get('level-grid').querySelectorAll('button')[2];
+  env.get('level-grid').dispatch('pointerdown', { target, button: 0, clientX: 100, clientY: 100 });
+  env.advance(.2); env.get('level-grid').dispatch('pointermove', { target, clientX: 130, clientY: 100 });
+  env.advance(.3); assert.equal(env.get('level-intel').hidden, true, 'scrolling a route cancels the pending long press');
+  env.get('level-grid').dispatch('pointerdown', { target, button: 0, clientX: 100, clientY: 100 });
+  env.advance(.46); assert.equal(env.get('level-intel').hidden, false);
+  assert.match(env.get('intel-title').textContent, new RegExp(env.api.store.getLevel('wei_003').name));
+  assert.equal(env.api.selectedLevelId, 'wei_003');
+  assert.equal(env.get('campaign-start').disabled, true, 'a locked level remains a preview after opening its intel');
+  assert.equal(env.errors.length, 0); env.destroy();
+});
+
+test('inventory filter badges count the full bag and every equipment tile announces its quality, level and owner', () => {
+  const env = boot();
+  const supplied = JSON.parse(env.api.store.exportSave());
+  supplied.inventory.push({ itemInstanceId: 'test-idle-blue', templateId: 'basic_weapon', slot: 'weapon', quality: 'blue', level: 2, equippedHeroId: null });
+  assert.equal(env.api.store.importSave(JSON.stringify(supplied)).ok, true);
+  env.click('workshop-tab'); env.click('ws-tab-bag');
+  const expected = { all: 9, weapon: 3, armor: 2, command_token: 2, horse: 2 };
+  for (const [slot, count] of Object.entries(expected)) {
+    const filter = env.get('inventory-filters').querySelector(`[data-slot="${slot}"]`);
+    assert.ok(filter, `filter for ${slot}`);
+    assert.equal(filter.querySelector('.filter-count').textContent, String(count));
+    filter.click();
+    assert.equal(env.get('inventory-list').querySelectorAll('.equipment-card').length, count);
+    assert.equal(env.get('inventory-filters').querySelector(`[data-slot="${slot}"]`).getAttribute('aria-pressed'), 'true');
+  }
+  env.get('inventory-filters').querySelector('[data-slot="all"]').click();
+  for (const tile of env.get('inventory-list').querySelectorAll('.gear-tile')) {
+    assert.equal(tile.getAttribute('role'), 'img');
+    assert.match(tile.getAttribute('aria-label'), /百炼兵刃|精工战甲|军令兵符|军府良驹/);
+    assert.match(tile.getAttribute('aria-label'), /白色|蓝色/);
+    assert.match(tile.getAttribute('aria-label'), /强化等级 [02]/);
+    assert.match(tile.getAttribute('aria-label'), /关羽穿戴中|曹操穿戴中|闲置未穿戴/);
+  }
+  assert.match(env.get('inventory-meta').textContent, /9 件.*闲置 1/);
+  const idle = env.get('inventory-list').querySelectorAll('.equipment-card').find(card => /闲置未穿戴/.test(card.querySelector('.gear-tile').getAttribute('aria-label')));
+  idle.click();
+  assert.equal(env.get('inventory-detail').querySelectorAll('.salvage-button').length, 1);
+  assert.equal(env.get('inventory-detail').querySelector('.gear-tile').classList.contains('gear-tile-56'), true);
+  env.click('loot-rates-button');
+  assert.match(env.get('modal-body').textContent, /白 45%.*蓝 30%.*紫 17.5%.*红 5%.*金 2.5%/);
+  assert.equal(env.errors.length, 0); env.destroy();
+});
+
+test('one-click equipment UI reports partial strengthening and disables only when every slot is maxed', () => {
+  const env = boot(), supplied = JSON.parse(env.api.store.exportSave());
+  supplied.settings.reducedMotion = true;
+  supplied.resources = { experience_book: 0, copper_coin: 100000, refined_iron: 10000 };
+  const levels = { weapon: 3, armor: 0, command_token: 2, horse: 1 };
+  for (const item of supplied.inventory.filter(item => item.equippedHeroId === 'guan_yu')) item.level = levels[item.slot];
+  assert.equal(env.api.store.importSave(JSON.stringify(supplied)).ok, true);
+  const slots = Object.keys(levels), costs = slots.map(slot => ({ slot, ...env.api.store.getEquipmentUpgradeCost('guan_yu', slot) })).sort((a, b) => a.cost.copper_coin - b.cost.copper_coin);
+  env.api.store.state.resources.copper_coin = costs[0].cost.copper_coin + costs[1].cost.copper_coin - 1;
+  env.click('heroes-tab'); env.clickText('关羽', env.get('hero-roster'));
+  const coins = env.api.store.state.resources.copper_coin, iron = env.api.store.state.resources.refined_iron, power = Number(env.get('hero-power').textContent.replace(/\D/g, ''));
+  assert.match(env.get('hero-upgrade-all').getAttribute('aria-label'), /可强化 4 格/);
+  env.click('hero-upgrade-all');
+  assert.match(env.get('toast').textContent, /已强化 1 \/ 4 格/);
+  assert.equal(env.api.store.state.resources.copper_coin, coins - costs[0].cost.copper_coin);
+  assert.equal(env.api.store.state.resources.refined_iron, iron - costs[0].cost.refined_iron);
+  for (const slot of slots) assert.equal(env.api.store.getHero('guan_yu').equipment[slot].level, levels[slot] + (slot === costs[0].slot ? 1 : 0));
+  assert.ok(Number(env.get('hero-power').textContent.replace(/\D/g, '')) > power);
+  env.click('modal-close'); env.click('campaign-tab');
+  const homePower = Number(env.get('party-power').textContent.replace(/\D/g, ''));
+  env.click('heroes-tab'); env.clickText('关羽', env.get('hero-roster'));
+  assert.equal(Number(env.get('hero-power').textContent.replace(/\D/g, '')), homePower, 'home and detail share the same display power at the one-hero stage');
+  env.click('modal-close');
+  const maxed = JSON.parse(env.api.store.exportSave());
+  for (const item of maxed.inventory.filter(item => item.equippedHeroId === 'guan_yu')) item.level = 10;
+  assert.equal(env.api.store.importSave(JSON.stringify(maxed)).ok, true);
+  env.clickText('关羽', env.get('hero-roster'));
+  assert.equal(env.get('hero-upgrade-all').disabled, true);
+  assert.match(env.get('hero-upgrade-all').textContent, /已满级/);
+  const before = env.api.store.exportSave(); env.get('hero-upgrade-all').click();
+  assert.equal(env.api.store.exportSave(), before); assert.equal(env.errors.length, 0); env.destroy();
 });
 
 test('settings affect real audio, speed and motion and remain after reloading the campaign save', async () => {
@@ -516,7 +628,9 @@ test('workshop research, forging, same-slot transfer and manual salvage use real
   env.click('workshop-tab');
   assert.equal(env.get('workshop-screen').hidden, false); assert.equal(env.get('campaign-screen').hidden, true);
   assert.equal(env.get('technology-list').querySelectorAll('.technology-card').length, 6);
+  env.click('ws-tab-bag'); env.click('loot-rates-button');
   assert.match(env.get('workshop-loot-rates').textContent, /白 45%.*蓝 30%.*紫 17.5%.*红 5%.*金 2.5%/);
+  env.click('modal-close'); env.click('ws-tab-tech');
   const research = env.get('technology-list').querySelectorAll('button')[0];
   assert.equal(research.disabled, false); research.click();
   assert.equal(env.api.store.state.technology.shield, 1); assert.equal(env.saved().technology.shield, 1);
@@ -525,27 +639,34 @@ test('workshop research, forging, same-slot transfer and manual salvage use real
   env.click('ws-tab-forge'); env.clickText('锻造白色',env.get('forge-list'));
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1);
   const forged = env.api.store.state.inventory.find(item => !item.equippedHeroId && item.templateId === 'basic_weapon');
-  assert.ok(forged); assert.equal(env.get('inventory-list').querySelectorAll('.salvage-button').length, 1, 'equipped items do not offer salvage');
+  assert.ok(forged);
+  env.click('ws-tab-bag');
+  assert.equal(env.get('inventory-detail').querySelectorAll('.salvage-button').length, 0, 'equipped items do not offer salvage');
+  selectIdleInventoryItem(env);
+  assert.equal(env.get('inventory-detail').querySelectorAll('.salvage-button').length, 1, 'selected idle item offers salvage in the persistent detail bar');
   const select = env.get('forge-template');
   assert.equal(select.querySelectorAll('option').length, 19); assert.equal(select.querySelectorAll('option').some(option => /倚天剑|青龙偃月刀/.test(option.textContent)), false, 'gold weapons cannot be forged');
-  env.click('heroes-tab'); env.clickText('关羽',env.get('hero-roster')); env.clickText('选择武器',env.get('modal-body'));
+  env.click('heroes-tab'); env.clickText('关羽',env.get('hero-roster')); openWeaponPicker(env);
   assert.ok(env.get('modal-body').querySelectorAll('.equipment-card').every(card => /百炼兵刃/.test(card.textContent)), 'weapon picker only shows weapon instances');
   env.clickText('换装',env.get('modal-body'));
   assert.equal(env.api.store.getHero('guan_yu').equipment.weapon.itemInstanceId, forged.itemInstanceId);
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1, 'swapped equipment remains in the inventory');
-  env.clickText('选择武器',env.get('modal-body')); env.clickText('转移给关羽',env.get('modal-body'));
+  openWeaponPicker(env); env.clickText('转移给关羽',env.get('modal-body'));
   assert.equal(env.api.store.getHero('cao_cao').equipment.weapon, null);
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1, 'transfer never creates a replacement starter item');
   env.click('modal-close'); env.clickText('曹操',env.get('hero-roster'));
-  assert.match(env.get('modal-body').textContent, /武器 · 未装备/);
-  assert.equal(env.get('modal-body').querySelectorAll('.gear-row')[0].querySelectorAll('button').length, 1, 'empty slot only offers the picker');
+  assert.match(env.get('hero-gear-weapon').getAttribute('aria-label'), /武器.*未装备/);
+  assert.match(env.get('hero-gear-weapon').querySelector('.gear-tile').getAttribute('aria-label'), /未装备/);
+  env.click('hero-gear-weapon');
+  assert.equal(env.get('hero-gear-popover').querySelectorAll('.gear-equip').length, 1, 'empty slot offers one equipment picker');
+  assert.equal(env.get('hero-gear-popover').querySelectorAll('button').filter(node => /强化|升品/.test(node.textContent) && !node.disabled).length, 0, 'empty slot cannot strengthen or promote');
   env.click('modal-close'); env.click('workshop-tab'); env.click('ws-tab-bag');
   const idle = env.api.store.state.inventory.filter(item => !item.equippedHeroId);
-  env.clickText('分解',env.get('inventory-list'));
+  selectIdleInventoryItem(env); env.clickText('分解',env.get('inventory-detail'));
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1, 'opening manual salvage does not remove an item');
   env.clickText('保留装备',env.get('modal-body'));
   assert.equal(env.api.store.state.inventory.length, beforeForge + 1);
-  env.clickText('分解',env.get('inventory-list')); env.clickText('确认分解',env.get('modal-body'));
+  env.clickText('分解',env.get('inventory-detail')); env.clickText('确认分解',env.get('modal-body'));
   assert.equal(env.api.store.state.inventory.length, beforeForge);
   assert.ok(idle.some(item => !env.api.store.state.inventory.some(current => current.itemInstanceId === item.itemInstanceId)));
   assert.equal(env.errors.length, 0); env.destroy();
@@ -557,20 +678,23 @@ test('gold signatures show real item names and wearer activation; they strengthe
   supplied.inventory.push({itemInstanceId:'test-gold-signature',templateId:'signature_guan_yu_weapon',slot:'weapon',quality:'gold',level:0,equippedHeroId:null});
   supplied.resources = {experience_book:100,copper_coin:20000,refined_iron:1000};
   assert.equal(env.api.store.importSave(JSON.stringify(supplied)).ok,true);
-  env.click('heroes-tab'); env.clickText('关羽',env.get('hero-roster')); env.clickText('选择武器',env.get('modal-body'));
+  env.click('heroes-tab'); env.clickText('关羽',env.get('hero-roster')); openWeaponPicker(env);
   const gold = env.get('modal-body').querySelectorAll('.equipment-card').find(card => /青龙偃月刀/.test(card.textContent));
   assert.ok(gold); assert.match(gold.textContent,/本人效果已激活/); gold.querySelector('button').click();
-  const row = env.get('modal-body').querySelectorAll('.gear-row')[0]; assert.match(row.textContent,/青龙偃月刀.*金色.*强化 Lv0/);
-  assert.equal(row.querySelectorAll('button').some(node => node.textContent.includes('升品')),false);
+  env.click('hero-gear-weapon');
+  const row = env.get('hero-gear-popover'); assert.match(row.textContent,/青龙偃月刀.*金色.*强化 Lv\s*0/);
+  const promotion = row.querySelectorAll('button').find(node => node.textContent.includes('升品'));
+  assert.ok(promotion?.disabled, 'gold shows a disabled promotion action');
   env.clickText('强化',row); assert.equal(env.api.store.getHero('guan_yu').equipment.weapon.level,1);
-  env.click('modal-close'); env.clickText('曹操',env.get('hero-roster')); env.clickText('选择武器',env.get('modal-body'));
+  env.click('modal-close'); env.clickText('曹操',env.get('hero-roster')); openWeaponPicker(env);
   const transfer = env.get('modal-body').querySelectorAll('.equipment-card').find(card => /青龙偃月刀/.test(card.textContent));
   assert.match(transfer.textContent,/本人效果未激活/); transfer.querySelector('button').click();
   assert.equal(env.api.store.getHero('cao_cao').equipment.weapon.templateId,'signature_guan_yu_weapon');
-  assert.match(env.get('modal-body').querySelectorAll('.gear-row')[0].textContent,/本人效果未激活/);
-  env.click('modal-close'); env.click('workshop-tab');
+  env.click('hero-gear-weapon'); assert.match(env.get('hero-gear-popover').textContent,/本人效果未激活/);
+  env.click('modal-close'); env.click('workshop-tab'); env.click('ws-tab-bag');
   const original = env.api.store.exportSave();
-  assert.equal(env.get('inventory-list').querySelectorAll('.equipment-card').find(card => /青龙偃月刀/.test(card.textContent)).querySelectorAll('.salvage-button').length,0);
+  env.get('inventory-list').querySelectorAll('.equipment-card').find(card => /青龙偃月刀/.test(card.textContent)).click();
+  assert.equal(env.get('inventory-detail').querySelectorAll('.salvage-button').length,0);
   env.click('campaign-tab'); env.click('campaign-start');
   assert.equal(env.api.game.campTech.shield,env.api.store.state.technology.shield);
   assert.equal(env.api.store.state.inventory.length,JSON.parse(original).inventory.length);

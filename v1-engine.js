@@ -11,6 +11,11 @@ const no = reason => ({ ok: false, reason });
 const alive = e => e.hp > 0 && !e.escaped;
 const classOf = e => e.class || B.enemies[e.type]?.class || 'ordinary';
 const priority = (a, b) => b.progress / b.pathLength - a.progress / a.pathLength || a.id - b.id;
+// Shared by combat and its read-only lobby presentation; no alternate equipment formula.
+export function equipmentBonus(item, property) {
+  const rules = B.metaProgression.equipment;
+  return (item?.level || 0) * rules.perLevelBonuses[property] + rules.qualityFixedBonuses[item?.quality || 'white'][property];
+}
 export function seededRandom(seed = 1) {
   let state = seed >>> 0;
   return () => { state = (Math.imul(1664525, state) + 1013904223) >>> 0; return state / 4294967296; };
@@ -115,8 +120,7 @@ export class V1Game {
   resume() { if (this.state !== 'paused') return no('当前不能继续'); this.state = 'playing'; this._emit('resume'); return okay(); }
 
   _gear(hero, slot, property) {
-    const item = hero.equipment[slot];
-    return item.level * B.metaProgression.equipment.perLevelBonuses[property] + B.metaProgression.equipment.qualityFixedBonuses[item.quality][property];
+    return equipmentBonus(hero.equipment[slot], property);
   }
   _resolveSignatureBonuses(heroId, equipment) {
     const rules = B.metaProgression.equipment;

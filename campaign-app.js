@@ -3,12 +3,14 @@ import { CampaignStore } from './campaign-state.js';
 import { V1Game } from './v1-engine.js';
 import { V1Renderer } from './v1-renderer.js';
 import { heroPortrait, heroSilhouette, HERO_ART } from './hero-portraits.js';
-import { equipmentIcon } from './equipment-art.js';
+import { gearTile } from './gear-tile.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialController } from './tutorial.js';
 import { CombatClock, nextSpeed } from './combat-clock.js';
 import { Telemetry, ComboTracker, battleHighlight, defeatAdvice, nextObjective, shareText, encodeChallenge, decodeChallenge, challengeSetup, challengeReasons, publicChallengeUrl, BUILD_ID } from './experience.js';
 import { renderShareCard, canvasBlob } from './share-card.js';
+import { displayHeroPower, heroCombatStats, equipmentPreparation, runEquipmentPreparation } from './hero-presentation.js';
+import { HERO_SKILL_COPY, skillPreviewSvg } from './hero-skill-copy.js';
 
 const $ = id => document.getElementById(id);
 const make = (tag, text = '', className = '') => { const node = document.createElement(tag); node.textContent = text; if (className) node.className = className; return node; };
@@ -18,7 +20,6 @@ const heroName = id => BALANCE.heroes[id]?.name || '武将';
 const factionOf = id => HERO_ART[id]?.faction || 'shu';
 const FACTION_COLOR = { wei:'#6fa8ff', shu:'#4fd68f', wu:'#ff8a4c' };
 const QUALITY_COLOR = { white:'#d9d6c3', blue:'#5fb2ff', purple:'#b98cff', red:'#ff6b57', gold:'#ffc940' };
-function gearIcon(item, slot) { const node = make('img','','gear-icon'); node.alt = ''; node.src = equipmentIcon(item?.templateId || `basic_${slot || item?.slot || 'weapon'}`, item?.quality || 'white'); return node; }
 // ===== V2 feedback helpers: DOM-only, skipped under reduced motion, never touch game state =====
 const calm = () => renderer.reducedMotion;
 const rectOf = node => node?.getBoundingClientRect?.() || null;
@@ -108,6 +109,7 @@ let battleId = null;
 let settlement = null;
 let lootRevealed = false;
 let inventorySlot = 'all';
+let inventoryItemId = null;
 let forgeTemplateId = 'basic_weapon';
 let forceGuide = false;
 let storyVisible = false;
@@ -206,7 +208,8 @@ function renderShortcuts() {
   let badge = $('prepare-button').querySelector('.up-count');
   if (work && !badge) { badge = make('span','','up-count'); badge.setAttribute('aria-hidden','true'); $('prepare-button').append(badge); }
   if (badge) { if (work) badge.textContent = String(Math.min(99,work)); else badge.remove(); }
-  const count = salvageCandidates().length; $('bulk-salvage-count').textContent = count ? String(count) : ''; $('bulk-salvage').disabled = !count || store.readOnly;
+  const count = salvageCandidates().length; $('bulk-salvage-count').textContent = count ? String(Math.min(99,count)) : ''; $('bulk-salvage').disabled = !count || store.readOnly;
+  $('bulk-salvage').setAttribute('aria-label',count ? `清理闲置白蓝装备，可清理 ${count} 件` : '清理闲置白蓝装备，暂无可清理');
 }
 
 // ===== Kill streak: rules live in ComboTracker (combat-time window, see experience.js) =====
@@ -235,16 +238,25 @@ function showCutin(event) {
   $('battle-announcer').textContent = `${hero.name}发动${hero.definition.ultimate.name}`;
   clearTimeout(cutinTimer); cutinTimer = setTimeout(() => node.classList.remove('is-visible'),chained ? 650 : 1000);
 }
-function openModal(title) { modalFocus = document.activeElement; $('modal-title').textContent = title; $('modal-body').replaceChildren(); $('lobby-modal').hidden = false; $('modal-close').focus(); resetClock(); return $('modal-body'); }
-function closeModal() { $('lobby-modal').hidden = true; $('modal-body').replaceChildren(); modalFocus?.focus?.(); resetClock(); }
+function openModal(title, { page = false } = {}) {
+  if ($('lobby-modal').hidden) modalFocus = document.activeElement;
+  $('modal-title').textContent = title;
+  for (const node of $('lobby-modal').querySelectorAll('.hero-heading-meta,.hero-pager')) node.remove();
+  $('modal-body').replaceChildren(); $('modal-body').className = page ? 'hero-detail-body' : '';
+  $('lobby-modal').classList.toggle('is-page',page); document.body.classList.toggle('has-hero-page',page);
+  $('modal-close').textContent = page ? '‹' : '×'; $('modal-close').setAttribute('aria-label',page ? '返回武将列表' : '关闭窗口');
+  $('lobby-modal').hidden = false; $('modal-close').focus(); resetClock(); return $('modal-body');
+}
+function closeModal() {
+  $('lobby-modal').hidden = true; $('lobby-modal').classList.remove('is-page'); document.body.classList.remove('has-hero-page');
+  $('modal-body').replaceChildren();
+  const returnTo = modalFocus && document.body.contains(modalFocus) ? modalFocus : mode === 'lobby' ? document.querySelector('.lobby-nav')?.querySelector('[aria-pressed="true"]') : $('pause-button');
+  returnTo?.focus?.(); modalFocus = null; resetClock();
+}
 function syncResources() { $('books-value').textContent = store.state.resources.experience_book; $('coins-value').textContent = store.state.resources.copper_coin; $('iron-value').textContent = store.state.resources.refined_iron; }
 
-// Display-only summary of party strength (level, skill, main weapon). Not used by combat or saves.
-function heroPower(id) {
-  const hero = store.getHero(id); if (!hero) return 0;
-  const weapon = hero.equipment.weapon;
-  return hero.level * 120 + hero.skillLevel * 260 + (weapon ? (QUALITY_RANK[weapon.quality] + 1) * 300 + weapon.level * 60 : 0);
-}
+// Shared display-only strength includes levels, skills and all four equipment slots.
+function heroPower(id) { return displayHeroPower(store.getHero(id)); }
 let shownPower = null;
 function renderParty() {
   const ids = [store.state.party.lead,...store.state.party.supports];
@@ -290,11 +302,10 @@ function renderLevelDetail() {
   $('selected-level-stars').replaceChildren(...[0,1,2].map(i => i < earned ? make('b','★') : make('span','★')));
   $('selected-level-stars').setAttribute('aria-label',`${earned} 星`);
   $('level-brief').textContent = level.tacticalBrief; $('intel-title').textContent = level.name;
-  const clearedCount = Object.values(store.state.levels).filter(l => l.cleared).length;
-  $('intel-button').dataset.hint = clearedCount < 3 ? '长按关卡也可查看' : '';
-  if (detailLevelId !== level.id) { if (detailLevelId) replayClass($('level-detail'),'is-swap'); detailLevelId = level.id; }
+  $('intel-button').dataset.hint = '';
+  if (detailLevelId !== level.id) { if (detailLevelId && !calm()) replayClass($('level-detail'),'is-swap'); detailLevelId = level.id; }
   // Glanceable facts: length, readiness, threat and reward. Everything else lives in 战前情报.
-  const chips = [chip('波',`${level.waves.length} 波`),chip('将',`建议 Lv${recommended}`,leadLevel < recommended ? 'is-warn' : '')];
+  const chips = [chip('波',`${level.waves.length} 波`),chip('将',`Lv ${recommended}`,leadLevel < recommended ? 'is-warn' : '')];
   if (boss) chips.push(chip('帅','敌将','is-boss'));
   chips.push(chip('赏',progress?.cleared ? '已首通' : resourcesCopy(level.firstClearReward)));
   $('mission-chips').replaceChildren(...chips);
@@ -308,6 +319,48 @@ function renderLevelDetail() {
   $('campaign-start').disabled = !unlocked || store.readOnly;
   $('start-label').textContent = !unlocked ? '未开放' : progress?.cleared ? '再战' : '出阵';
   $('start-sub').textContent = unlocked ? `${party.map(h => heroName(h.heroId) + (h.guest ? '（借）' : '')).join(' · ')} 出战` : `${factionNames[level.chapterId]}篇第 ${level.order} 阵`;
+  renderFocus(level);
+}
+
+// The home map deliberately shows only the selected stage and its immediate successor.
+function renderFocus(level) {
+  const chapter = CONTENT.chapters.find(c => c.id === level.chapterId), at = chapter.levelIds.indexOf(level.id);
+  const next = store.getLevel(chapter.levelIds[at + 1]), progress = store.state.levels[level.id];
+  const ns = 'http://www.w3.org/2000/svg', paths = [];
+  for (const [name,d] of [['done','M-4 96 C10 90 16 52 30 48'],['todo','M30 48 C48 48 57 29 78 24 S100 8 113 3']]) {
+    const path = document.createElementNS(ns,'path'); path.setAttribute('class',name); path.setAttribute('d',d); path.setAttribute('vector-effect','non-scaling-stroke'); paths.push(path);
+  }
+  $('focus-route').replaceChildren(...paths);
+  const nodes = $('focus-nodes'); nodes.replaceChildren();
+  const stageNode = (stage, nextStage) => {
+    const boss = stage.waves.some(w => w.bossSpawn), cleared = store.state.levels[stage.id]?.cleared;
+    const node = button(boss ? '帅' : String(stage.order),`focus-node ${nextStage ? 'is-next' : 'is-selected'}${boss ? ' is-boss' : ''}`,() => {
+      if (suppressClick) return;
+      if (nextStage) { selectedLevelId = stage.id; renderCampaign(); }
+      else openIntel(stage.id);
+    });
+    node.dataset.levelId = stage.id;
+    node.setAttribute('aria-label',`${nextStage ? '下一关' : '当前关'}：${stage.name}，第 ${stage.order} 阵${boss ? '，敌将关' : ''}，${cleared ? '已通关，可再战' : store.isLevelUnlocked(stage.id) ? '可挑战' : '未开放'}${nextStage ? '，点击选关' : '，长按查看战前情报'}`);
+    nodes.append(node);
+  };
+  stageNode(level,false);
+  const label = make('div','','focus-label is-selected'); label.append(make('strong',level.name));
+  const showHint = level.globalIndex <= 3 && !intelHintSeen;
+  const hint = make('small',progress?.cleared ? '已通关 · 可再战' : '当前关 · 长按看情报');
+  if (showHint && !progress?.cleared) { intelHintSeen = true; hint.classList.add('is-intel-hint'); setTimeout(() => hint.classList.remove('is-intel-hint'),6000); }
+  label.append(hint);
+  nodes.append(label);
+  const nextLabel = make('div','','focus-label is-next');
+  if (next) { stageNode(next,true); nextLabel.append(make('span',`下一关 · ${next.name}`),make('small',next.waves.some(w => w.bossSpawn) ? '敌将关' : `第 ${next.order} 阵`)); }
+  else {
+    nextLabel.classList.add('is-chapter-end');
+    const nextChapter = CONTENT.chapters[CONTENT.chapters.indexOf(chapter) + 1];
+    nextLabel.append(make('span',nextChapter ? '下一章' : '三国终章'),make('small',nextChapter ? `${factionNames[nextChapter.id]}篇 · 第 1 阵` : '六十阵 · 征途圆满'));
+  }
+  nodes.append(nextLabel);
+  const done = chapter.levelIds.filter(id => store.state.levels[id]?.cleared).length;
+  $('focus-trail').textContent = `已行 ${done} 阵`;
+  $('focus-map').setAttribute('aria-label',`${level.name}${next ? `与下一关${next.name}` : '，本章最后一阵'}`);
 }
 
 function renderCampaign() {
@@ -332,7 +385,7 @@ const MARCH_COLS = [14, 38, 62, 86];
 function marchPoint(index, count) {
   const rows = Math.ceil(count / 4), row = Math.floor(index / 4), col = index % 4;
   const x = MARCH_COLS[row % 2 ? 3 - col : col] + (col % 2 ? 2.5 : -2.5);
-  const y = 91 - row * (82 / Math.max(1,rows - 1));
+  const y = 87.5 - row * (78 / Math.max(1,rows - 1));
   return { x, y };
 }
 function marchPath(points) {
@@ -350,7 +403,7 @@ function renderMarch(chapter) {
   $('level-grid').replaceChildren();
   ids.forEach((id, i) => {
     const level = store.getLevel(id), unlocked = store.isLevelUnlocked(id), stars = store.state.levels[id]?.highestRewardedStars || 0, boss = level.waves.some(w => w.bossSpawn);
-    const node = button('',`level-card ${id === selectedLevelId ? 'is-selected' : ''} ${id === current ? 'is-current' : ''} ${unlocked ? '' : 'is-locked'} ${boss ? 'is-boss' : ''}`,() => { if (suppressClick) return; selectedLevelId = id; renderCampaign(); });
+    const node = button('',`level-card ${id === selectedLevelId ? 'is-selected' : ''} ${id === current ? 'is-current' : ''} ${unlocked ? '' : 'is-locked'} ${boss ? 'is-boss' : ''}`,() => { if (suppressClick) return; selectedLevelId = id; renderCampaign(); closeRoute(); });
     node.dataset.levelId = id; node.style.setProperty('--x',points[i].x + '%'); node.style.setProperty('--y',points[i].y + '%');
     node.append(make('span',boss ? '帅' : String(level.order),'level-number'),make('span',level.name,'level-name'),make('span',stars ? '★'.repeat(stars) : '','level-stars'));
     node.setAttribute('aria-label',`第${level.order}关 ${level.name}${boss ? '，敌将关' : ''}，${unlocked ? stars ? `${stars}星` : '可挑战' : '待解锁'}。长按查看战前情报`);
@@ -416,7 +469,8 @@ function showEquipmentPicker(heroId, slot) {
   for (const item of items) {
     const current = item.equippedHeroId === heroId;
     const row = make('div','',`equipment-card quality-${item.quality}`);
-    row.append(gearIcon(item),make('strong',itemCopy(item)),make('small',(current ? '' : '换装后：') + signatureCopy(item,heroId)),make('small',current ? '本将正在穿戴' : item.equippedHeroId ? `${heroName(item.equippedHeroId)}正在穿戴 · 可转移` : '背包待用'));
+    row.classList.add('equipment-picker-card');
+    row.append(gearTile(item,{size:64,heroId,owner:item.equippedHeroId}),make('strong',itemCopy(item)),make('small',(current ? '' : '换装后：') + signatureCopy(item,heroId)),make('small',current ? '本将正在穿戴' : item.equippedHeroId ? `${heroName(item.equippedHeroId)}正在穿戴 · 可转移` : '背包待用'));
     const pick = button(current ? '已穿戴' : item.equippedHeroId ? `转移给${heroName(heroId)}` : '换装','equipment-pick',() => { if (notify(store.equipEquipment(heroId,item.itemInstanceId),'行装已调整')) { renderCampaign(); showHero(heroId); } });
     pick.disabled = current || store.readOnly; row.append(pick); body.append(row);
   }
@@ -433,30 +487,30 @@ function showSalvage(item) {
   actions.append(button('保留装备','',closeModal),confirm); body.append(actions);
 }
 function renderWorkshop() {
-  $('workshop-loot-rates').textContent = lootRatesCopy;
   $('technology-list').replaceChildren();
   const RING = 2 * Math.PI * 27;
   for (const [campId,definition] of Object.entries(BALANCE.technology.camps)) {
     const level = store.state.technology[campId]; const quote = store.getTechnologyCost(campId); const bonuses = definition.perLevelBonuses;
     const locked = !quote.ok && ['camp_locked','progress_required','level_required','tier_required'].includes(quote.reason);
-    const effects = [bonuses.damage ? `伤害 +${Number((level * bonuses.damage * 100).toFixed(1))}%` : '', `范围 +${level * bonuses.range}`, bonuses.auraDamage ? `军阵增伤 +${Number((level * bonuses.auraDamage * 100).toFixed(1))}%` : ''].filter(Boolean).join(' · ');
     const row = make('div','',`technology-card ${locked ? 'is-locked' : ''} ${techFx === campId ? 'is-pop' : ''}`);
     const ring = make('span','','tech-ring'); ring.setAttribute('aria-hidden','true');
     ring.innerHTML = `<svg viewBox="0 0 64 64"><circle class="bg" cx="32" cy="32" r="27"/><circle class="fg" cx="32" cy="32" r="27" stroke-dasharray="${RING.toFixed(2)}" stroke-dashoffset="${(RING * (1 - level / definition.levelMax)).toFixed(2)}"/></svg>`;
     ring.append(make('span',campGlyphs[campId] || definition.name[0],'tech-core'));
     const copy = make('div','','tech-copy');
-    const delta = make('span','','tech-delta'); for (const text of [bonuses.damage ? `伤 +${bonuses.damage * 100}%` : '', `距 +${bonuses.range}`, bonuses.auraDamage ? `阵 +${bonuses.auraDamage * 100}%` : '']) if (text) delta.append(make('b',text));
-    copy.append(make('strong',`${definition.name}  Lv${level}/${definition.levelMax}`),make('small',level ? effects : '尚未研究'),delta);
+    const delta = make('span','','tech-delta'); for (const text of [bonuses.damage ? `伤害 +${Number((bonuses.damage * 100).toFixed(1))}%` : '', `范围 +${bonuses.range}`, bonuses.auraDamage ? `军阵 +${Number((bonuses.auraDamage * 100).toFixed(1))}%` : '']) if (text) delta.append(make('span',text));
+    copy.append(make('strong',definition.name),make('span',`Lv ${level} / ${definition.levelMax}`,'tech-level'),make('small','每级效果'),delta);
     const research = button('','workshop-action',() => { if (notify(store.researchTechnology(campId),'军营科技已精进')) { techFx = campId; renderCampaign(); techFx = null; const card = $('technology-list').querySelectorAll('.technology-card')[Object.keys(BALANCE.technology.camps).indexOf(campId)]; fxBurst(card?.querySelector?.('.tech-ring'),'#ffe7a6',16); fxFloat(card?.querySelector?.('.tech-ring'),`Lv${store.state.technology[campId]}`,'#ffe7a6'); } });
-    research.append(make('span',quote.ok ? `研究 → Lv${quote.targetLevel}` : '研究'),make('small',quoteCopy(quote))); research.disabled = !canBuy(quote);
+    research.append(make('span',level >= definition.levelMax ? '已满级' : '研究'),make('small',quoteCopy(quote))); research.disabled = !canBuy(quote);
     row.append(ring,copy,research); $('technology-list').append(row);
   }
   $('forge-list').replaceChildren();
   const forgeDef = equipmentDefinitions[forgeTemplateId];
-  const stage = make('div','',`forge-stage quality-${forgeFx || forgeDef.forgeQualities.at(-1) || 'white'} ${forgeFx ? 'is-strike' : ''}`); stage.setAttribute('aria-hidden','true');
-  const forgeArt = make('img','','forge-icon'); forgeArt.alt = ''; forgeArt.src = equipmentIcon(forgeTemplateId,forgeFx || forgeDef.forgeQualities.at(-1) || 'white');
-  stage.append(make('span','','rays'),make('span','','anvil'),forgeArt,make('span','','hammer')); $('forge-list').append(stage);
-  if (forgeFx) { setTimeout(() => { stage.classList.remove('is-strike'); stage.classList.add('is-done'); fxBurst(forgeArt,QUALITY_COLOR[forgeFx],22); },calm() ? 0 : 980); }
+  const forgeQuality = forgeFx || forgeDef.forgeQualities.at(-1) || 'white';
+  const stage = make('div','',`forge-stage quality-${forgeQuality}`);
+  const forgeArt = gearTile({templateId:forgeTemplateId,slot:forgeDef.slot,quality:forgeQuality,level:BALANCE.metaProgression.equipment.forging.levelAtForge},{size:96,showOwner:false,showExclusive:false});
+  const forgeCopy = make('div','','forge-stage-copy'); forgeCopy.append(make('strong',forgeDef.name),make('p',`${slotNames[forgeDef.slot]} · ${gearCopy[forgeDef.slot]}`),make('p','白 → 蓝 → 紫 → 红'));
+  stage.append(forgeArt,forgeCopy); $('forge-list').append(stage);
+  if (forgeFx && !calm()) { replayClass(forgeArt,'is-pop'); fxBurst(forgeArt,QUALITY_COLOR[forgeQuality],22); }
   const label = make('label','锻造行装','forge-label'); label.setAttribute('for','forge-template');
   const select = make('select','','forge-select'); select.id = 'forge-template'; select.setAttribute('aria-label','选择锻造装备');
   for (const definition of Object.values(equipmentDefinitions).filter(template => template.forgeQualities.length)) { const option = make('option',`${definition.name} · ${definition.exclusiveHeroId ? heroName(definition.exclusiveHeroId) + '专属' : slotNames[definition.slot]}`); option.value = definition.id; select.append(option); }
@@ -467,47 +521,167 @@ function renderWorkshop() {
   const forgeActions = make('div','','forge-actions');
   for (const quality of definition.forgeQualities) { const quote = store.getForgeCost(forgeTemplateId,quality); const forge = button('',`workshop-action quality-${quality}`,() => { if (notify(store.forgeEquipment(forgeTemplateId,quality),`${definition.name}已入背包`)) { forgeFx = quality; renderCampaign(); forgeFx = null; } }); forge.append(make('strong',`锻造${qualityNames[quality]}色`),make('small',quoteCopy(quote))); forge.disabled = !canBuy(quote); forgeActions.append(forge); }
   $('forge-list').append(forgeActions);
+  const inventory = store.getInventory();
   $('inventory-filters').replaceChildren();
-  for (const slot of ['all',...BALANCE.metaProgression.equipment.slots]) { const filter = button(slot === 'all' ? '全部' : slotNames[slot],inventorySlot === slot ? 'is-active' : '',() => { inventorySlot = slot; renderWorkshop(); }); filter.setAttribute('aria-pressed',String(inventorySlot === slot)); $('inventory-filters').append(filter); }
-  const items = store.getInventory(inventorySlot === 'all' ? {} : {slot:inventorySlot});
-  $('inventory-count').textContent = String(store.state.inventory.length);
+  const slotPaths = { weapon:'M5 19 19 5M14 5h5v5M4 15l5 5', armor:'M5 4 9 2c0 4 6 4 6 0l4 2 3 5-4 2v10H6V11L2 9z', command_token:'M7 3h10v18H7zM10 7h4M10 11h4M10 15h4', horse:'m6 21 1-8 6-7 1-4 4 4 3 4-2 3-5-1-1 9M6 21h11' };
+  for (const slot of ['all',...BALANCE.metaProgression.equipment.slots]) {
+    const count = slot === 'all' ? inventory.length : inventory.filter(item => item.slot === slot).length;
+    const label = slot === 'all' ? '全部' : slotNames[slot];
+    const filter = button('',inventorySlot === slot ? 'is-active' : '',() => { inventorySlot = slot; renderWorkshop(); });
+    filter.setAttribute('data-slot',slot); filter.setAttribute('aria-label',`${label}，${count} 件`); filter.setAttribute('aria-pressed',String(inventorySlot === slot));
+    if (slot === 'all') filter.append(make('span',label));
+    else { const icon = make('span','','filter-icon'); icon.setAttribute('aria-hidden','true'); icon.innerHTML = `<svg viewBox="0 0 24 24"><path d="${slotPaths[slot]}"/></svg>`; filter.append(icon); }
+    const badge = make('b',String(count),'filter-count'); badge.setAttribute('aria-hidden','true'); filter.append(badge); $('inventory-filters').append(filter);
+  }
+  const items = inventory.filter(item => inventorySlot === 'all' || item.slot === inventorySlot);
+  $('inventory-count').textContent = String(inventory.length);
+  $('inventory-meta').textContent = `${inventory.length} 件 · 闲置 ${inventory.filter(item => !item.equippedHeroId).length}`;
+  $('inventory-capacity').hidden = inventory.length < 3900;
+  $('inventory-capacity').textContent = inventory.length >= 3900 ? `背包将满：${inventory.length} / 4000，请清理闲置装备` : '';
+  if (!items.some(item => item.itemInstanceId === inventoryItemId)) inventoryItemId = items[0]?.itemInstanceId || null;
   $('inventory-list').replaceChildren();
-  items.forEach((item, index) => { const row = make('div','',`equipment-card quality-${item.quality}`); row.style.setProperty('--i',String(Math.min(index,16))); row.append(gearIcon(item),make('strong',itemCopy(item)),make('small',signatureCopy(item)),make('small',item.equippedHeroId ? `${heroName(item.equippedHeroId)}穿戴中` : '闲置 · 在武将页换装')); if (!item.equippedHeroId) { const salvage = button('分解','salvage-button',() => showSalvage(item)); salvage.disabled = store.readOnly; row.append(salvage); } $('inventory-list').append(row); });
+  items.forEach(item => {
+    const row = button('',`equipment-card quality-${item.quality}`,() => { inventoryItemId = item.itemInstanceId; renderInventoryDetail(); });
+    row.setAttribute('data-item-id',item.itemInstanceId);
+    const tile = gearTile(item); row.setAttribute('aria-label',tile.getAttribute('aria-label')); row.append(tile,make('strong',itemName(item))); $('inventory-list').append(row);
+  });
   if (!items.length) $('inventory-list').append(make('p','暂无装备。胜利箱与锻造可获得。','quiet-note'));
+  renderInventoryDetail();
+}
+function renderInventoryDetail() {
+  const item = store.getInventory().find(gear => gear.itemInstanceId === inventoryItemId), detail = $('inventory-detail'); detail.replaceChildren();
+  for (const row of $('inventory-list').querySelectorAll('.equipment-card')) { const selected = row.getAttribute('data-item-id') === inventoryItemId; row.classList.toggle('is-selected',selected); row.setAttribute('aria-pressed',String(selected)); }
+  if (!item) { detail.append(make('p','选择装备查看详情','quiet-note')); return; }
+  detail.className = `inventory-detail quality-${item.quality}`;
+  const copy = make('div','','inventory-detail-copy');
+  copy.append(make('strong',itemName(item)),make('span',`${qualityNames[item.quality]}色 · 强化 Lv ${item.level}`),make('p',signatureCopy(item)),make('span',item.equippedHeroId ? `${heroName(item.equippedHeroId)}穿戴中` : '闲置'));
+  const actions = make('div','','inventory-detail-actions');
+  if (item.equippedHeroId) actions.append(button('去换装','',() => showHero(item.equippedHeroId)));
+  else {
+    const equip = button('穿戴','',() => showInventoryEquip(item)); equip.disabled = store.readOnly; actions.append(equip);
+    if (!item.exclusiveHeroId) { const salvage = button('分解','salvage-button',() => showSalvage(item)); salvage.disabled = store.readOnly; actions.append(salvage); }
+  }
+  detail.append(gearTile(item,{size:56,showOwner:false,showExclusive:false}),copy,actions);
+}
+function showInventoryEquip(item) {
+  const body = openModal('选择穿戴武将'); body.append(make('p',itemCopy(item),'modal-note'));
+  const roster = make('div','','modal-roster');
+  for (const id of Object.keys(store.state.heroes)) {
+    const pick = button('','',() => { if (notify(store.equipEquipment(id,item.itemInstanceId),'行装已调整')) { closeModal(); renderCampaign(); } });
+    pick.append(portrait(id),make('span',heroName(id))); pick.disabled = store.readOnly; roster.append(pick);
+  }
+  body.append(roster);
+}
+function showLootRates() {
+  const body = openModal('胜利箱掉率');
+  const rates = make('p',lootRatesCopy,'modal-note'); rates.id = 'workshop-loot-rates';
+  body.append(make('p','每次胜利 1 箱，失败不掉落。结果在结算时保存。','modal-note'),rates,make('p','金色为武将专属武器。任何武将都能穿戴，本人穿戴另有专属效果。','modal-note'));
 }
 function statBar(label, value, max, text) { const row = make('div','','statbar'); const bar = make('span','','bar'); const fill = make('i'); fill.style.setProperty('--w',`${Math.max(4,Math.min(100,value / max * 100))}%`); bar.append(fill); row.append(make('span',label),bar,make('b',text)); return row; }
 function showHero(id, keepModal = false) {
   const hero = store.getHero(id); if (!hero) return;
-  const body = keepModal ? $('modal-body') : openModal(heroName(id) + ' · 培养与行装'); body.replaceChildren();
-  const META = BALANCE.metaProgression, weapon = hero.equipment.weapon;
-  const summary = make('div','',`modal-hero-summary faction-${factionOf(id)}`); const halo = make('span','','halo'); const face = portrait(id); halo.append(face);
-  const copy = make('div'); copy.append(make('h3',BALANCE.heroes[id].ultimate.name),make('p',`武将 Lv${hero.level} / 技能 Lv${hero.skillLevel}\n${weapon ? qualityNames[weapon.quality] + '色武器 Lv' + weapon.level : ''}`));
-  const bars = make('div','','statbars');
-  bars.append(statBar('级',hero.level,META.heroLevel?.max || 60,`Lv${hero.level}`),statBar('技',hero.skillLevel,META.skillLevel?.max || 5,`Lv${hero.skillLevel}`));
-  if (weapon) bars.append(statBar('兵',QUALITY_RANK[weapon.quality] * 10 + weapon.level,4 * 10 + (META.equipment.levelMax || 10),qualityNames[weapon.quality] + ' ' + weapon.level));
-  copy.append(bars); summary.append(halo,copy); body.append(summary);
-  const actions = make('div','','training-actions'); const trainingNodes = {};
-  for (const [key,title,quote,action] of [['level','提升等级',store.getTrainingCost(id),() => store.trainHero(id)],['skill','强化技能',store.getSkillCost(id),() => store.trainSkill(id)]]) { const node = button('','training-action',() => { const result = action(); if (notify(result,'培养完成')) heroFx = key; renderCampaign(); showHero(id,true); }); node.append(make('strong',quote.ok ? `${title} → Lv${quote.targetLevel}` : title),make('small',quoteCopy(quote))); node.disabled = !canBuy(quote); actions.append(node); trainingNodes[key] = node; } body.append(actions);
-  if (heroFx) { const key = heroFx; heroFx = null; replayClass(face,'is-pop'); fxBurst(trainingNodes[key],'#ffe7a6',18); fxFloat(face,key === 'level' ? `Lv${hero.level}` : `技能 Lv${hero.skillLevel}`,'#ffe7a6'); }
-  for (const slot of BALANCE.metaProgression.equipment.slots) {
-    const gear = hero.equipment[slot]; const row = make('div','',`gear-row ${gear ? 'quality-' + gear.quality : 'is-empty'}`); const info = make('div','','gear-copy');
-    info.append(make('strong',gear ? itemCopy(gear) : `${slotNames[slot]} · 未装备`),make('small',gear ? signatureCopy(gear,id) : gearCopy[slot])); row.append(gearIcon(gear,slot),info);
-    const actions = make('div','','gear-actions'); const equip = button('选择' + slotNames[slot],'gear-equip',() => showEquipmentPicker(id,slot)); equip.disabled = store.readOnly; actions.append(equip);
-    if (gear) {
-      const operations = [['强化',store.getEquipmentUpgradeCost(id,slot),() => store.upgradeEquipment(id,slot)]];
-      if (!['red','gold'].includes(gear.quality)) operations.push(['升品',store.getEquipmentPromotionCost(id,slot),() => store.promoteEquipment(id,slot)]);
-      for (const [title,quote,action] of operations) { const node = button('','',() => { const ok = notify(action(),'行装已强化'); renderCampaign(); showHero(id,true); if (ok) { const icon = $('modal-body').querySelectorAll('.gear-row')[BALANCE.metaProgression.equipment.slots.indexOf(slot)]?.querySelector?.('.gear-icon'); fxBurst(icon,QUALITY_COLOR[store.getHero(id).equipment[slot]?.quality] || '#ffe7a6',14); } }); node.append(make('span',title),make('small',quoteCopy(quote))); node.disabled = !canBuy(quote); actions.append(node); }
-    }
-    row.append(actions); body.append(row);
+  const body = openModal(heroName(id),{page:true});
+  const copy = HERO_SKILL_COPY[id], stats = heroCombatStats(hero), owned = Object.keys(store.state.heroes), current = owned.indexOf(id);
+  body.classList.add(`faction-${factionOf(id)}`); body.dataset.heroId = id;
+  const heading = $('modal-title').parentElement, meta = make('div','','hero-heading-meta');
+  meta.append(make('span',factionNames[factionOf(id)],`hero-faction faction-${factionOf(id)}`),make('span',copy.role,'hero-role'));
+  const pager = make('div','','hero-pager');
+  const previous = button('‹','hero-page-arrow',() => showHero(owned[(current-1+owned.length)%owned.length])); previous.setAttribute('aria-label','上一位已拥有武将');
+  const next = button('›','hero-page-arrow',() => showHero(owned[(current+1)%owned.length])); next.setAttribute('aria-label','下一位已拥有武将');
+  previous.disabled = next.disabled = owned.length < 2;
+  pager.append(previous,make('span',`${current+1} / ${owned.length}`),next); heading.append(meta,pager);
+  const power = make('div','','hero-power-block'), powerNumber = make('b',String(heroPower(id))); powerNumber.id = 'hero-power';
+  power.append(make('small','战力'),powerNumber);
+  const attributes = make('div','','hero-attributes'), number = value => Number(value.toFixed(2)).toString();
+  for (const [key,label,value,detail] of [
+    ['attack','攻击',number(stats.attack),'本人普攻伤害，含等级、武器与本人专属加成'],
+    ['range','射程',number(stats.range),'普攻射程，含战马与本人专属加成'],
+    ['interval','攻速',`${number(stats.interval)}秒`,'普攻间隔'],
+    ['gate','守城',`${number(stats.gate*100)}%`,'本将装备提供的全队城关最大耐久加成'],
+  ]) {
+    const attr = make('span','','hero-attribute'); attr.dataset.stat = key; attr.setAttribute('aria-label',`${detail}：${value}`);
+    attr.append(make('span',label),make('b',value)); attributes.append(attr);
   }
-  const signatures = Object.values(equipmentDefinitions).filter(template => template.exclusiveHeroId === id);
-  body.append(make('p','持有：' + resourcesCopy(store.state.resources),'modal-note'));
-  // Reference material stays one tap away instead of competing with the training buttons.
-  const more = make('details','','rule-note'); more.append(make('summary','专属装备与培养建议'));
-  more.append(make('p',signatures.map(template => `${template.name}（${qualityNames[template.quality]}色${slotNames[template.slot]}）：${template.effectDescription}`).join('\n'),'modal-note signature-catalog'));
-  more.append(make('p','优先培养三位主力与主武器。控制时间、处决与回怒不随装备提高。','modal-note'));
-  body.append(more);
+  power.append(attributes,make('span','守城：本将装备为全队提供城关最大耐久加成','sr-only')); body.append(power);
+
+  const train = key => {
+    const before = heroPower(id), result = key === 'level' ? store.trainHero(id) : store.trainSkill(id);
+    if (!notify(result,'培养完成')) return;
+    renderCampaign(); showHero(id,true); animateHeroChange(id,before,[]);
+  };
+  const stage = make('div','','hero-detail-stage'), left = make('div','','hero-gear-column'), right = make('div','','hero-gear-column');
+  for (const slot of BALANCE.metaProgression.equipment.slots) {
+    const gear = hero.equipment[slot], row = button('','gear-row hero-gear-slot',() => showHeroGear(id,slot));
+    row.id = `hero-gear-${slot}`; row.dataset.slot = slot; row.setAttribute('aria-label',`${slotNames[slot]}：${gear ? itemCopy(gear) : '未装备'}，查看换装与强化`);
+    row.append(gearTile(gear,{size:64,showOwner:true,heroId:id,owner:gear ? id : null,slot}),make('span',slotNames[slot],'hero-slot-name'));
+    (['weapon','armor'].includes(slot) ? left : right).append(row);
+  }
+  const figure = make('div','','hero-detail-figure'), face = portrait(id,'hero-detail-portrait'); figure.append(face);
+  const levelPill = button('','hero-level-pill',() => train('level')), trainQuote = store.getTrainingCost(id), xp = make('span','','hero-xp'), xpFill = make('i');
+  xpFill.style.width = `${trainQuote.ok ? Math.min(100,hero.xp/trainQuote.xpNeeded*100) : 100}%`; xp.append(xpFill);
+  levelPill.append(make('span',`Lv ${hero.level}`),xp,make('em',trainQuote.ok ? '升级' : '满级')); levelPill.disabled = !canBuy(trainQuote);
+  levelPill.setAttribute('aria-label',`武将 Lv ${hero.level}，经验 ${hero.xp}，${quoteCopy(trainQuote)}`); figure.append(levelPill);
+  stage.append(left,figure,right); body.append(stage);
+
+  const skill = make('section','','hero-skill-card'), preview = button('','hero-skill-preview',() => { if (!calm()) replayClass(preview,'is-playing'); });
+  preview.id = 'hero-skill-preview'; preview.dataset.shape = BALANCE.heroes[id].ultimate.shape; preview.setAttribute('aria-label',`重播${BALANCE.heroes[id].ultimate.name}技能预览`);
+  preview.append(skillPreviewSvg(id),make('span','↻ 重播','hero-skill-replay')); if (!calm()) preview.classList.add('is-playing');
+  const skillCopy = make('div','','hero-skill-copy'), title = make('strong',BALANCE.heroes[id].ultimate.name), pips = make('span','','hero-skill-pips');
+  pips.setAttribute('aria-label',`技能 ${hero.skillLevel} / ${BALANCE.metaProgression.skillLevel.max} 级`);
+  for (let i=0;i<5;i++) pips.append(make('i','',i<hero.skillLevel ? 'is-on' : ''));
+  const tags = make('div','','hero-skill-tags'); for (const tag of copy.tags) tags.append(make('span',tag));
+  skillCopy.append(title,pips,make('p',copy.description),tags); skill.append(preview,skillCopy); body.append(skill);
+
+  const actions = make('div','','hero-training-actions');
+  for (const [key,label,quote,level] of [['level','升级',trainQuote,hero.level],['skill','技能',store.getSkillCost(id),hero.skillLevel]]) {
+    const node = button('','training-action',() => train(key));
+    node.append(make('strong',quote.targetLevel ? `${label} Lv ${quote.targetLevel}` : `${label}已满级 Lv ${level}`),make('small',quoteCopy(quote))); node.disabled = !canBuy(quote); actions.append(node);
+  }
+  const plan = equipmentPreparation(store,id), all = button('','hero-upgrade-all',() => {
+    const before = heroPower(id), result = runEquipmentPreparation(store,id);
+    renderCampaign(); showHero(id,true); animateHeroChange(id,before,result.upgraded);
+    if (result.upgraded.length) sound.handleEvent({type:'upgrade'});
+    toast(`已强化 ${result.upgraded.length} / ${result.count} 格${result.equipped ? ` · 已适配 ${result.equipped} 件` : ''}`);
+  });
+  all.id = 'hero-upgrade-all'; all.disabled = store.readOnly || !plan.count;
+  all.append(make('strong','一键强化装备'),make('small',plan.count ? `${plan.moves.length ? '先适配 · ' : ''}${resourcesCopy(plan.cost)}` : '四格装备已满级或暂无装备'),make('span',String(plan.count),'hero-upgrade-count'));
+  all.setAttribute('aria-label',`一键强化装备，先适配闲置装备，再按费用升序各强化一级，可强化 ${plan.count} 格，总计 ${resourcesCopy(plan.cost)}`);
+  actions.append(all); body.append(actions);
+  const popover = make('section','','hero-gear-popover'); popover.id = 'hero-gear-popover'; popover.hidden = true; popover.setAttribute('role','dialog'); popover.setAttribute('aria-label','装备操作'); body.append(popover);
 }
+
+function animateHeroChange(id, before, slots) {
+  const after = heroPower(id), power = $('hero-power');
+  countUp(power,after,{from:before,duration:650}); if (after > before) fxFloat(power,`+${after-before}`,'#7ff0c4');
+  if (calm()) return;
+  slots.forEach((slot,index) => { const node = $(`hero-gear-${slot}`); setTimeout(() => {
+    if ($('modal-body').dataset.heroId !== id || $('lobby-modal').hidden || calm()) return;
+    replayClass(node,'is-upgraded'); fxFloat(node,'+1',QUALITY_COLOR[store.getHero(id).equipment[slot]?.quality]);
+  },index*120); });
+}
+
+function showHeroGear(id, slot) {
+  const gear = store.getHero(id).equipment[slot], popover = $('hero-gear-popover');
+  popover.replaceChildren(); popover.hidden = false; popover.dataset.slot = slot; popover.className = `hero-gear-popover ${gear ? 'quality-'+gear.quality : ''}`;
+  const close = button('×','hero-gear-popover-close',closeHeroGear); close.setAttribute('aria-label','收起装备操作');
+  const info = make('div','','hero-gear-popover-copy'); info.append(make('strong',gear ? itemName(gear) : `${slotNames[slot]} · 未装备`),make('span',gear ? `${qualityNames[gear.quality]}色 · 强化 Lv ${gear.level}` : '选择一件行装'));
+  const description = make('p',gear ? signatureCopy(gear,id) : gearCopy[slot]);
+  popover.append(gearTile(gear,{size:64,heroId:id,owner:gear ? id : null,slot}),info,close,description);
+  const actions = make('div','','hero-gear-popover-actions'), equip = button('换装','gear-equip',() => showEquipmentPicker(id,slot)); equip.disabled = store.readOnly; actions.append(equip);
+  for (const [label,quote,action] of [
+    ['强化',store.getEquipmentUpgradeCost(id,slot),() => store.upgradeEquipment(id,slot)],
+    ['升品',store.getEquipmentPromotionCost(id,slot),() => store.promoteEquipment(id,slot)],
+  ]) {
+    const node = button('','',() => { const before = heroPower(id); if (!notify(action(),label==='强化' ? '行装已强化' : '行装已升品')) return;
+      renderCampaign(); showHero(id,true); animateHeroChange(id,before,[slot]); showHeroGear(id,slot);
+    });
+    const cappedQuality = label==='升品' && ['red','gold'].includes(gear?.quality);
+    node.append(make('span',label),make('small',!gear ? '请先换装' : cappedQuality ? '品质已满' : quoteCopy(quote)));
+    node.disabled = !gear || cappedQuality || !canBuy(quote); actions.append(node);
+  }
+  popover.append(actions); close.focus?.();
+}
+function closeHeroGear() { const popover = $('hero-gear-popover'); if (!popover) return; popover.hidden = true; $(`hero-gear-${popover.dataset.slot}`)?.focus?.(); }
 
 function renderSettings() {
   const s = store.state.settings;
@@ -761,7 +935,7 @@ function renderLootResult() {
   $('result-loot-rates').textContent = `每次胜利 1 箱 · 失败不掉落\n${lootRatesCopy}\n金色专属武器仅由装备箱掉落`;
   if (loot?.item) {
     const box = $('result-loot-item'); box.className = `result-loot-item quality-${loot.item.quality}`; $('result-open-box').className = `chest-button quality-${loot.item.quality}`;
-    box.replaceChildren(gearIcon(loot.item),make('strong',itemCopy(loot.item)),make('span',signatureCopy(loot.item)),make('span',loot.salvaged ? '背包已满，已转为：' + resourcesCopy(loot.salvageResources) : '已存入背包'));
+    box.replaceChildren(gearTile(loot.item,{size:96,showOwner:false,showExclusive:false}),make('strong',itemCopy(loot.item)),make('span',signatureCopy(loot.item)),make('span',loot.salvaged ? '背包已满，已转为：' + resourcesCopy(loot.salvageResources) : '已存入背包'));
     if (lootJustOpened) { lootJustOpened = false; fxBurst($('result-open-box').querySelector('.chest'),QUALITY_COLOR[loot.item.quality],loot.item.quality === 'gold' ? 30 : 20); }
   }
 }
@@ -887,24 +1061,52 @@ bind('setting-guide',() => enterBattle(CONTENT.levels[0].id,true)); bind('save-e
 $('guest-checkbox').addEventListener('change',() => { notify(store.setGuest(selectedLevelId,$('guest-checkbox').checked)); renderLevelDetail(); });
 bind('story-start',beginCombat); bind('story-skip',beginCombat); bind('pause-button',togglePause); bind('resume-button',() => { game?.resume(); syncBattle(true); }); bind('restart-paused',() => enterBattle(game.level.id,false,{friend:challenge,retry:true})); bind('retry-button',() => enterBattle(game.level.id,false,{friend:challenge,retry:true})); bind('result-home',() => { returnHome(); showTab('campaign'); });
 for (const id of ['tech','forge','bag']) bind('ws-tab-' + id,() => showWorkshopPanel(id));
-bind('prepare-button',showPrepare); bind('bulk-salvage',showBulkSalvage);
+bind('prepare-button',showPrepare); bind('bulk-salvage',showBulkSalvage); bind('loot-rates-button',showLootRates);
 bind('leave-battle',() => { const body = openModal('结束本次演武？'); body.append(make('p','本局没有奖励，已有进度都会保留。','modal-note')); const actions = make('div','','modal-actions'); actions.append(button('继续守关','',() => { closeModal(); game.resume(); syncBattle(true); }),button('返回军帐','',returnHome)); body.append(actions); });
 bind('next-level',() => { if ($('next-level').dataset.action === 'retry') { enterBattle(game.level.id,false,{retry:true}); return; } const next = CONTENT.levels.find(l => l.globalIndex === game.level.globalIndex + 1); if (next) { enterBattle(next.id); playGate(); } });
 bind('result-share',showShare); bind('challenge-enter',showChallengeEntry); bind('telemetry-view',showTelemetry);
-// Pre-battle intel: long-press a stage node or the stage card (right-click on desktop); the 情报 button keeps it reachable by keyboard.
+// Route and intel retain keyboard access and return focus to the control that opened them.
+let routeReturn = null, intelHintSeen = false;
+function openRoute() {
+  routeReturn = document.activeElement; $('route-sheet').hidden = false; $('route-button').setAttribute('aria-expanded','true'); $('route-close').focus?.(); void sound.unlock();
+}
+function closeRoute() {
+  $('route-sheet').hidden = true; $('route-button').setAttribute('aria-expanded','false'); (routeReturn || $('route-button')).focus?.(); routeReturn = null;
+}
+bind('route-button',openRoute); bind('route-close',closeRoute);
+$('route-sheet').addEventListener('click',event => { if (event.target === $('route-sheet')) closeRoute(); });
+for (const sheet of [$('route-sheet'),$('level-intel'),$('lobby-modal')]) sheet.addEventListener('keydown',event => {
+  if (event.key !== 'Tab' && event.code !== 'Tab') return;
+  const popover = $('hero-gear-popover');
+  const scope = sheet === $('lobby-modal') && popover && !popover.hidden ? popover : sheet;
+  const controls = [...scope.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(node => {
+    if (node.disabled || node.getAttribute('tabindex') === '-1') return false;
+    for (let parent = node; parent; parent = parent.parentElement) if (parent.hidden) return false;
+    return true;
+  });
+  const first = controls[0], last = controls[controls.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus?.(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus?.(); }
+});
+// Long-press a stage node (right-click on desktop); a focus-visible button is available to keyboard users.
 function openIntel(levelId = selectedLevelId) {
-  if (levelId !== selectedLevelId) { selectedLevelId = levelId; renderCampaign(); }
-  intelReturn = document.activeElement; $('level-intel').hidden = false; $('intel-close').focus?.(); void sound.unlock();
+  const fromKeyboardEntry = document.activeElement === $('intel-button');
+  intelHintSeen = true;
+  if (levelId !== selectedLevelId) { selectedLevelId = levelId; selectedChapter = store.getLevel(levelId).chapterId; renderCampaign(); }
+  renderFocus(store.getLevel(selectedLevelId));
+  intelReturn = $('route-sheet').hidden ? fromKeyboardEntry ? $('intel-button') : $('focus-nodes').querySelector('.is-selected') : $('route-close');
+  $('level-intel').hidden = false; $('intel-close').focus?.(); void sound.unlock();
 }
 function closeIntel() { $('level-intel').hidden = true; intelReturn?.focus?.(); intelReturn = null; }
 bind('intel-button',() => openIntel()); bind('intel-close',closeIntel);
 $('level-intel').addEventListener('click',event => { if (event.target === $('level-intel')) closeIntel(); });
-let pressTimer = null, pressNode = null;
-const pressTarget = event => event.target?.closest?.('.level-card') || event.target?.closest?.('#level-detail');
+let pressTimer = null, pressNode = null, pressOrigin = null;
+const pressTarget = event => event.target?.closest?.('.level-card') || event.target?.closest?.('.focus-node.is-selected');
 const cancelPress = () => { clearTimeout(pressTimer); pressTimer = null; pressNode?.classList.remove('is-pressing'); pressNode = null; };
-for (const host of [$('level-grid'),$('level-detail')]) {
-  host.addEventListener('pointerdown',event => { const node = pressTarget(event); if (!node || node.closest?.('button.intel-button,label')) return; cancelPress(); pressNode = node; node.classList.add('is-pressing');
+for (const host of [$('level-grid'),$('focus-map')]) {
+  host.addEventListener('pointerdown',event => { const node = pressTarget(event); if (!node || event.button > 0) return; cancelPress(); pressNode = node; pressOrigin = { x:event.clientX, y:event.clientY }; node.classList.add('is-pressing');
     pressTimer = setTimeout(() => { const id = node.dataset?.levelId || selectedLevelId; cancelPress(); suppressClick = true; setTimeout(() => { suppressClick = false; },700); openIntel(id); },450); });
+  host.addEventListener('pointermove',event => { if (pressOrigin && Math.hypot(event.clientX - pressOrigin.x,event.clientY - pressOrigin.y) > 12) cancelPress(); });
   for (const type of ['pointerup','pointercancel','pointerleave']) host.addEventListener(type,cancelPress);
   host.addEventListener('contextmenu',event => { const node = pressTarget(event); if (!node) return; event.preventDefault(); cancelPress(); openIntel(node.dataset?.levelId || selectedLevelId); });
 }
@@ -913,7 +1115,7 @@ bind('result-open-box',() => { if (settlement?.ok && settlement.loot?.item && !l
 bind('formation-button',cycleCamp); bind('close-camp',closeCamp); bind('speed-button',() => { if (!tutorial.active) { changeSetting('speed',nextSpeed(store.state.settings.speed)); resetClock(); } }); bind('music-button',() => changeSetting('musicEnabled',!store.state.settings.musicEnabled)); bind('sound-button',() => changeSetting('sfxEnabled',!store.state.settings.sfxEnabled));
 bind('tutorial-skip',() => finishTutorial(true)); bind('tutorial-action',() => { if (tutorial.step === 'intro') { tutorial.advance(); syncBattle(); } else if (tutorial.step === 'deploy') { const slot = guideSlot(); slot >= 0 ? openCamp(slot) : cycleCamp(); } else if (tutorial.step === 'ultimate') cast(); else if (tutorial.step === 'complete') finishTutorial(); });
 $('battle-canvas').addEventListener('pointerup',event => { if (mode !== 'battle') return; const slot = renderer.hitTest(event.clientX,event.clientY); if (slot >= 0) { void sound.unlock(); openCamp(slot); } else if (selectedSlot >= 0) closeCamp(); });
-document.addEventListener('keydown',event => { if (event.code === 'Escape') { if (!$('level-intel').hidden) closeIntel(); else if (!$('lobby-modal').hidden) closeModal(); else if (selectedSlot >= 0) closeCamp(); else if (mode === 'battle') togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'KeyP') { togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'Space' && !/^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(event.target.tagName)) { cast(); event.preventDefault(); } });
+document.addEventListener('keydown',event => { if (event.code === 'Escape') { if (!$('level-intel').hidden) closeIntel(); else if (!$('route-sheet').hidden) closeRoute(); else if (!$('lobby-modal').hidden && $('hero-gear-popover') && !$('hero-gear-popover').hidden) closeHeroGear(); else if (!$('lobby-modal').hidden) closeModal(); else if (selectedSlot >= 0) closeCamp(); else if (mode === 'battle') togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'KeyP') { togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'Space' && !/^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(event.target.tagName)) { cast(); event.preventDefault(); } });
 document.addEventListener('visibilitychange',() => { resetClock(); if (document.hidden && game?.state === 'playing') { selectedSlot = -1; game.pause(); } syncAudio(); syncBattle(true); });
 window.addEventListener('pagehide',() => { pageSuspended = true; resetClock(); if (game?.state === 'playing') game.pause(); sound.setActive(false); audioActive = false; store.save(); });
 window.addEventListener('pageshow',() => { pageSuspended = false; resetClock(); audioActive = null; syncAudio(); syncBattle(true); }); window.addEventListener('resize',() => renderer.resize()); motionPreference.addEventListener('change',() => { renderer.reducedMotion = store.state.settings.reducedMotion || motionPreference.matches; if (renderer.reducedMotion) combatClock.clearImpact(); });

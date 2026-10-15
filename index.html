@@ -11,6 +11,10 @@
   <link rel="stylesheet" href="./campaign.css">
   <link rel="stylesheet" href="./brush-font.css">
   <link rel="stylesheet" href="./ui-v2.css">
+  <link rel="stylesheet" href="./gear-tile.css">
+  <link rel="stylesheet" href="./campaign-focus.css">
+  <link rel="stylesheet" href="./hero-detail.css">
+  <link rel="stylesheet" href="./workshop-v2.css">
 </head>
 <body>
   <main class="campaign-shell" id="lobby-view" aria-label="三国演武军帐">
@@ -24,15 +28,13 @@
     </header>
     <div class="lobby-scroll" id="lobby-scroll">
       <section id="campaign-screen" aria-label="征战">
-        <section class="chapter-section" id="chapter-section" aria-label="关卡选择"><div class="section-heading"><h3 id="chapter-title">魏篇</h3><span id="chapter-progress">0 / 20</span><span class="chapter-meter" aria-hidden="true"><i id="chapter-meter"></i></span></div><div id="chapter-body"><div id="chapter-tabs" class="chapter-tabs" aria-label="篇章选择"></div><div class="march-map" id="march-map"><svg class="march-route" id="march-route" aria-hidden="true"></svg><div id="level-grid" class="level-grid" aria-label="关卡选择"></div></div></div></section>
         <section class="mission-card" id="level-detail" aria-label="当前关卡">
           <img id="lead-portrait" class="lead-portrait" alt="领衔武将关羽">
-          <div class="mission-head"><span class="eyebrow" id="level-act"></span><h2 id="selected-level-name"></h2><span id="selected-level-stars" class="stars"></span></div>
-          
-          <ul class="mission-chips" id="mission-chips" aria-label="关卡要点"></ul><button type="button" class="intel-button" id="intel-button" aria-label="查看战前情报，也可长按关卡">情报</button>
-          <label class="guest-option" id="guest-option" hidden><input id="guest-checkbox" type="checkbox"><span id="guest-copy"></span></label>
-          
+          <div class="mission-head"><div class="mission-progress"><span class="eyebrow" id="level-act"></span><span class="chapter-meter" aria-hidden="true"><i id="chapter-meter"></i></span><span id="chapter-progress">0 / 20</span></div><h2><span id="selected-level-name"></span><span id="selected-level-stars" class="stars"></span></h2></div>
+          <button type="button" class="route-button" id="route-button" aria-label="关卡详情：打开本章行军路线" aria-controls="route-sheet" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2zM9 4v14M15 6v14"/></svg><span>关卡详情</span></button>
+          <ul class="mission-chips" id="mission-chips" aria-label="关卡要点"></ul><button type="button" class="intel-button" id="intel-button" aria-label="查看战前情报，也可长按当前关卡">查看战前情报</button>
         </section>
+        <section class="focus-map" id="focus-map" aria-label="当前关与下一关"><svg id="focus-route" class="focus-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg><div id="focus-nodes"></div><span class="focus-flag" aria-hidden="true"><svg viewBox="0 0 30 40"><path d="M3 2V40" stroke="#f1e4c3" stroke-width="2.5"/><path d="M4 3h23l-5 8 5 8H4z" fill="#e2493b"/></svg></span><div class="focus-trail"><i aria-hidden="true"></i><span id="focus-trail">已行 0 阵</span></div></section>
         <section class="party-section party-row" id="party-section" aria-label="出战编队"><div id="party-slots" class="party-meds"></div><div class="party-power"><small>总战力</small><b id="party-power">0</b><span id="party-unlock-note"></span></div><button type="button" class="prepare-button" id="prepare-button" aria-label="一键整备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span>整备</span></button></section>
         
       </section>
@@ -42,7 +44,11 @@
         <div class="segmented" role="group" aria-label="工坊分区"><button type="button" id="ws-tab-tech" class="is-active" aria-pressed="true">科技</button><button type="button" id="ws-tab-forge" aria-pressed="false">锻造</button><button type="button" id="ws-tab-bag" aria-pressed="false">背包 <span id="inventory-count"></span></button></div>
         <section class="workshop-panel" id="ws-panel-tech" aria-label="军营科技"><div id="technology-list" class="technology-list"></div></section>
         <section class="workshop-panel" id="ws-panel-forge" aria-label="铁匠铺" hidden><div id="forge-list" class="forge-list"></div><details class="rule-note"><summary>锻造规则</summary><p>普通四槽可锻造：白 → 蓝 → 紫 → 红。专属战马最高红色。</p><p>金色专属武器只从胜利箱获得，可强化，不能锻造或升品。</p></details></section>
-        <section class="workshop-panel" id="ws-panel-bag" aria-label="装备背包" hidden><div class="bag-tools"><button type="button" id="bulk-salvage">清理闲置 <span id="bulk-salvage-count"></span></button></div><div id="inventory-filters" class="inventory-filters" aria-label="背包槽位筛选"></div><div id="inventory-list" class="inventory-list"></div><details class="rule-note"><summary>胜利箱掉率</summary><p>每次胜利 1 箱，失败不掉落。结果在结算时保存。</p><p id="workshop-loot-rates">白 45% · 蓝 30% · 紫 17.5% · 红 5% · 金 2.5%</p><p>金色为武将专属武器。任何武将都能穿戴，本人穿戴另有专属效果。</p></details></section>
+        <section class="workshop-panel" id="ws-panel-bag" aria-label="装备背包" hidden>
+          <div class="bag-tools"><div id="inventory-filters" class="inventory-filters" role="group" aria-label="背包槽位筛选"></div><button type="button" id="bulk-salvage" aria-label="清理闲置白蓝装备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 3.5l-4 8M6.5 11.5h8.5l1.5 2.5-2 6.5H7l-2-6.5z M9.5 15.5l-.5 5M12.5 15.5v5"/></svg><span>清理</span><b id="bulk-salvage-count" class="salvage-count" aria-hidden="true"></b></button></div>
+          <div class="inventory-meta-row"><span id="inventory-meta"></span><span class="quality-legend" role="img" aria-label="品质由低到高：白、蓝、紫、红、金"><i class="quality-white"></i><i class="quality-blue"></i><i class="quality-purple"></i><i class="quality-red"></i><i class="quality-gold"></i></span><button type="button" id="loot-rates-button">ⓘ 掉率</button></div>
+          <p id="inventory-capacity" class="inventory-capacity" hidden></p><div id="inventory-list" class="inventory-list"></div><section id="inventory-detail" class="inventory-detail" aria-label="所选装备详情" aria-live="polite"></section>
+        </section>
       </section>
       <section id="settings-screen" hidden aria-label="设置">
         <div class="screen-title"><h2>设置</h2></div>
@@ -58,7 +64,8 @@
         <details class="rule-note"><summary>关于本版本</summary><p>进度保存在当前浏览器，换设备前请导出存档。首通解锁武将，无需抽卡。</p><a class="prototype-link" href="./prototype.html">关羽孤城试炼 →</a><p class="build-note">十五名将 · 六十关 · 单机免费 · V1 开发版<br>精修美术与真机调优持续制作中</p></details>
       </section>
     </div>
-    <section class="intel-sheet" id="level-intel" role="dialog" aria-modal="true" aria-labelledby="intel-title" hidden><div class="intel-card"><span class="eyebrow">战前情报</span><h3 id="intel-title"></h3><p class="mission-brief" id="level-brief"></p><div class="preview-row"><div id="map-preview" class="map-preview"></div><div class="level-facts"><p id="level-map-rule"></p><p id="level-recommendation"></p><p id="level-rewards"></p><p id="party-level-note"></p></div></div><button type="button" class="primary-button" id="intel-close">知道了</button></div></section>
+    <section class="route-sheet" id="route-sheet" role="dialog" aria-modal="true" aria-labelledby="chapter-title" hidden><div class="route-card"><div class="route-heading"><h3 id="chapter-title">魏篇</h3><button type="button" id="route-close" aria-label="关闭关卡详情">×</button></div><section class="chapter-section" id="chapter-section" aria-label="整章行军路线"><div id="chapter-body"><div id="chapter-tabs" class="chapter-tabs" aria-label="篇章选择"></div><div class="march-map" id="march-map"><svg class="march-route" id="march-route" aria-hidden="true"></svg><div id="level-grid" class="level-grid" aria-label="关卡选择"></div></div></div></section><div class="route-legend" aria-label="路线图例"><span><i class="is-cleared"></i>已通关</span><span><i class="is-current"></i>当前</span><span><i class="is-boss"></i>敌将关</span><span><i class="is-locked"></i>未开放</span></div><p class="route-hint">点按选关 · 长按查看战前情报</p></div></section>
+    <section class="intel-sheet" id="level-intel" role="dialog" aria-modal="true" aria-labelledby="intel-title" hidden><div class="intel-card"><span class="eyebrow">战前情报</span><h3 id="intel-title"></h3><p class="mission-brief" id="level-brief"></p><div class="preview-row"><div id="map-preview" class="map-preview"></div><div class="level-facts"><p id="level-map-rule"></p><p id="level-recommendation"></p><p id="level-rewards"></p><p id="party-level-note"></p></div></div><label class="guest-option" id="guest-option" hidden><input id="guest-checkbox" type="checkbox"><span id="guest-copy"></span></label><button type="button" class="primary-button" id="intel-close">知道了</button></div></section>
     <div class="lobby-action" id="lobby-action"><button type="button" class="primary-button" id="campaign-start"><span id="start-label" data-brush="出阵再战未开放">出阵</span><small id="start-sub"></small></button></div>
     <nav class="lobby-nav" aria-label="军帐导航"><span class="nav-pill" id="nav-pill" aria-hidden="true"></span><button type="button" id="campaign-tab" class="is-active" aria-pressed="true"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4l11 11M13 17l4-4M20 4L9 15M7 13l4 4M6 18l-2 2M18 18l2 2"/></svg></i><span>征战</span></button><button type="button" id="heroes-tab" aria-pressed="false"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 16a7 7 0 0 1 14 0v2H5zM12 3v6M9 21h6M12 18v3"/></svg></i><span>武将</span></button><button type="button" id="workshop-tab" aria-pressed="false"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14h12l-2 4H6zM8 18v3M12 18v3M14 3l5 5-2 2-5-5zM13 7l-5 5"/></svg></i><span>工坊</span></button><button type="button" id="settings-tab" aria-pressed="false"><i aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></i><span>设置</span></button></nav>
   </main>

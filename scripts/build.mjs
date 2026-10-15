@@ -10,7 +10,7 @@ const output = path.join(root, 'dist');
 await mkdir(output, { recursive:true });
 const profiles = [
   {page:'prototype.html',entry:'app.js',css:['styles.css'],modules:['game-engine.js','renderer.js','audio-system.js','tutorial.js','combat-clock.js']},
-  {page:'index.html',entry:'campaign-app.js',css:['styles.css','campaign.css','brush-font.css','ui-v2.css'],modules:['runtime-data.js','campaign-state.js','skill-targeting.js','v1-engine.js','renderer.js','hero-portraits.js','equipment-art.js','v1-renderer.js','audio-system.js','tutorial.js','combat-clock.js','experience.js','share-card.js']},
+  {page:'index.html',entry:'campaign-app.js',css:['styles.css','campaign.css','brush-font.css','ui-v2.css','gear-tile.css','campaign-focus.css','hero-detail.css','workshop-v2.css'],modules:['runtime-data.js','campaign-state.js','skill-targeting.js','v1-engine.js','renderer.js','hero-portraits.js','equipment-art.js','gear-tile.js','hero-skill-copy.js','hero-presentation.js','v1-renderer.js','audio-system.js','tutorial.js','combat-clock.js','experience.js','share-card.js']},
 ];
 const files = new Set(['favicon.svg','.nojekyll',...profiles.flatMap(p => [p.page,p.entry,...p.css,...p.modules])]);
 for (const file of files) if (!profiles.some(profile=>profile.page===file)) await writeAtomic(path.join(output,file),await readFile(path.join(root,file),'utf8'));

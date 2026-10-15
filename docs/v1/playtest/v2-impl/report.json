@@ -1,0 +1,799 @@
+{
+  "label": "v2-impl",
+  "startedAt": "2026-10-14T02:51:10.109Z",
+  "build": "dev server",
+  "steps": [
+    {
+      "name": "first_screen_interactive",
+      "domContentLoadedMs": 601,
+      "loadMs": 610,
+      "interactiveMs": 721,
+      "wallMs": 743
+    },
+    {
+      "name": "battle_entry",
+      "taps": 1,
+      "msFromTap": 2393
+    },
+    {
+      "name": "first_deploy",
+      "taps": 4,
+      "wallMsFromCombat": 1667,
+      "combatSec": 0
+    },
+    {
+      "name": "first_ultimate_cast",
+      "taps": 5,
+      "wallMsFromCombat": 19622,
+      "combatSec": 17.62
+    },
+    {
+      "name": "tutorial_end",
+      "wallMsFromCombat": 24437,
+      "combatSec": 22
+    },
+    {
+      "name": "returning_lobby",
+      "progress": "8 / 60 阵",
+      "start": "出阵",
+      "sub": "关羽 · 曹操 · 夏侯惇 出战",
+      "gridVisible": true
+    }
+  ],
+  "layout": [
+    {
+      "screen": "lobby-new-390",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 630,
+        "scrollHeight": 630,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "battle-tutorial-390",
+      "smallCount": 1,
+      "small": [
+        {
+          "text": "跳过引导",
+          "fs": 11
+        }
+      ],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "battle-320x568",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 320,
+      "vh": 568
+    },
+    {
+      "screen": "battle-360x640",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 640
+    },
+    {
+      "screen": "battle-390x844",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "battle-430x932",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 430,
+      "vh": 932
+    },
+    {
+      "screen": "battle-844x390",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 844,
+      "vh": 390
+    },
+    {
+      "screen": "battle-390x844",
+      "state": "playing",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "lobby-returning-390",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 630,
+        "scrollHeight": 630,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "lobby-320x568",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 370,
+        "scrollHeight": 370,
+        "verticalOverflow": false,
+        "clientWidth": 320,
+        "scrollWidth": 320,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 320,
+      "vh": 568
+    },
+    {
+      "screen": "lobby-430x932",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 718,
+        "scrollHeight": 718,
+        "verticalOverflow": false,
+        "clientWidth": 430,
+        "scrollWidth": 430,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 430,
+      "vh": 932
+    },
+    {
+      "screen": "heroes-390",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 872,
+        "verticalOverflow": true,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "workshop-390",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 712,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "settings-390",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 907,
+        "verticalOverflow": true,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "v2-campaign-360x740",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 526,
+        "scrollHeight": 526,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 740
+    },
+    {
+      "screen": "v2-level-detail-360x740",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 526,
+        "scrollHeight": 526,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 740
+    },
+    {
+      "screen": "v2-hero-detail-360x740",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 608,
+        "scrollHeight": 608,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 684,
+        "scrollHeight": 684,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 740
+    },
+    {
+      "screen": "v2-hero-equipment-360x740",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 608,
+        "scrollHeight": 608,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 684,
+        "scrollHeight": 684,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 740
+    },
+    {
+      "screen": "v2-equipment-picker-360x740",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 608,
+        "scrollHeight": 823,
+        "verticalOverflow": true,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 1730,
+        "scrollHeight": 1730,
+        "verticalOverflow": false,
+        "clientWidth": 328,
+        "scrollWidth": 328,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 740
+    },
+    {
+      "screen": "v2-inventory-360x740",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 608,
+        "scrollHeight": 608,
+        "verticalOverflow": false,
+        "clientWidth": 360,
+        "scrollWidth": 360,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 360,
+      "vh": 740
+    },
+    {
+      "screen": "v2-campaign-390x844",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 630,
+        "scrollHeight": 630,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "v2-level-detail-390x844",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 630,
+        "scrollHeight": 630,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "v2-hero-detail-390x844",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 712,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 788,
+        "scrollHeight": 788,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "v2-hero-equipment-390x844",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 712,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 788,
+        "scrollHeight": 788,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "v2-equipment-picker-390x844",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 872,
+        "verticalOverflow": true,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 1730,
+        "scrollHeight": 1730,
+        "verticalOverflow": false,
+        "clientWidth": 358,
+        "scrollWidth": 358,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    },
+    {
+      "screen": "v2-inventory-390x844",
+      "smallCount": 0,
+      "small": [],
+      "targetCount": 0,
+      "targets": [],
+      "horizontalOverflow": false,
+      "lobbyScroll": {
+        "clientHeight": 712,
+        "scrollHeight": 712,
+        "verticalOverflow": false,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflow": false
+      },
+      "modalBody": {
+        "clientHeight": 0,
+        "scrollHeight": 0,
+        "verticalOverflow": false,
+        "clientWidth": 0,
+        "scrollWidth": 0,
+        "horizontalOverflow": false
+      },
+      "vw": 390,
+      "vh": 844
+    }
+  ],
+  "perf": [],
+  "errors": [],
+  "browser": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  "tutorial": [
+    {
+      "step": "deploy",
+      "hidden": false,
+      "title": "在发光的营位布一座军营",
+      "camp": false,
+      "time": 0,
+      "off": false,
+      "wallMs": 786
+    },
+    {
+      "step": "deploy",
+      "hidden": true,
+      "title": "在发光的营位布一座军营",
+      "camp": true,
+      "time": 0,
+      "off": false,
+      "wallMs": 1210
+    },
+    {
+      "step": "gather",
+      "hidden": false,
+      "title": "等敌潮聚起来",
+      "camp": false,
+      "time": 0.33,
+      "off": false,
+      "wallMs": 1938
+    },
+    {
+      "step": "ultimate",
+      "hidden": false,
+      "title": "点按金色无双",
+      "camp": false,
+      "time": 17.62,
+      "off": false,
+      "wallMs": 19388
+    },
+    {
+      "step": "complete",
+      "hidden": false,
+      "title": "这一刀，横扫 37 人",
+      "camp": false,
+      "time": 19.43,
+      "off": false,
+      "wallMs": 21866
+    },
+    {
+      "step": "complete",
+      "hidden": true,
+      "title": "这一刀，横扫 37 人",
+      "camp": false,
+      "time": 21.98,
+      "off": true,
+      "wallMs": 24437
+    }
+  ],
+  "returning": {
+    "progress": "8 / 60 阵",
+    "start": "出阵",
+    "sub": "关羽 · 曹操 · 夏侯惇 出战",
+    "gridVisible": true
+  },
+  "console": [],
+  "violations": []
+}

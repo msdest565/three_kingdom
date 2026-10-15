@@ -1,0 +1,40 @@
+{
+  "build": "dist/index.html",
+  "offline": true,
+  "checks": [
+    "standalone file opens with networking disabled and no HTTP assets",
+    "offline hero page has no vertical scroll",
+    "system reduced motion disables portrait rotation and skill movement",
+    "in-game reduced motion disables the same movements",
+    "offline forge uses the 96px shared equipment tile",
+    "offline public-UI battle wins and opens its saved reward",
+    "reward art is visible at both target sizes without horizontal overflow"
+  ],
+  "layout": [
+    {
+      "screen": "victory-loot-360x740",
+      "tile": {
+        "width": 96,
+        "height": 96,
+        "left": 43,
+        "top": 569.71875,
+        "right": 139,
+        "bottom": 665.71875
+      },
+      "horizontalOverflow": false
+    },
+    {
+      "screen": "victory-loot-390x844",
+      "tile": {
+        "width": 96,
+        "height": 96,
+        "left": 58,
+        "top": 575.390625,
+        "right": 154,
+        "bottom": 671.390625
+      },
+      "horizontalOverflow": false
+    }
+  ],
+  "errors": []
+}

@@ -1,10 +1,11 @@
 // Minimal Chrome DevTools Protocol driver for local playtests (no third-party dependencies).
 // Launches a local Chrome/Edge in headless mode, emulates a phone viewport and dispatches real touch/mouse input.
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { writeAtomic } from '../write-atomic.mjs';
 
 const CANDIDATES = [
   process.env.CHROME_PATH,
@@ -82,7 +83,7 @@ export class Page {
   }
   async screenshot(file) {
     const { data } = await this.send('Page.captureScreenshot', { format: 'png' });
-    await mkdir(path.dirname(file), { recursive: true }); await writeFile(file, Buffer.from(data, 'base64'));
+    await mkdir(path.dirname(file), { recursive: true }); await writeAtomic(file, Buffer.from(data, 'base64'));
     return file;
   }
 }

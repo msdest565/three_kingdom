@@ -1,0 +1,19 @@
+/* SVG art already includes the quality frame. Only the three shared badges go above it. */
+.gear-tile{position:relative;display:inline-block;flex:none;width:64px;height:64px;border-radius:14px;vertical-align:middle;isolation:isolate}
+.gear-tile-56{width:56px;height:56px}.gear-tile-96{width:96px;height:96px}
+.gear-tile>.gear-tile-art{display:block;width:100%;height:100%;border-radius:inherit;object-fit:contain}
+.gear-tile.quality-gold{box-shadow:0 0 18px #ffc94055}.gear-tile.quality-red{box-shadow:0 0 14px #ff6b5733}.gear-tile.quality-purple{box-shadow:0 0 12px #b98cff22}
+.gear-tile-level{position:absolute;right:-3px;bottom:-3px;min-width:24px;height:18px;padding:0 5px;border-radius:9px;background:#0b1712;border:1px solid var(--quality-color);color:var(--quality-color);font:900 11px/16px var(--f-serif);text-align:center;white-space:nowrap}
+.gear-tile-owner{position:absolute;left:-3px;top:-3px;width:22px;height:22px;border-radius:50%;box-shadow:0 0 0 2px #0b1712;overflow:hidden}
+.gear-tile-owner img{display:block;width:100%;height:100%;border-radius:50%}
+.gear-tile-exclusive{position:absolute;right:-3px;top:-3px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--q-gold);color:var(--paper-ink);box-shadow:0 0 0 2px #0b1712;font:900 12px/1 var(--f-sans)}
+.gear-tile.is-empty{display:grid;place-items:center;border:2px dashed #ffffff45;color:var(--text-2);font:26px/1 var(--f-sans)}
+.gear-tile.is-pop{animation:v2-pop .5s var(--ease-spring)}
+.equipment-card:has(>.gear-tile){grid-template-columns:64px minmax(0,1fr)}
+.equipment-card>.gear-tile{grid-row:span 3}
+.equipment-card .equipment-pick{min-height:44px}
+.lobby-modal .equipment-card small{font-size:12px}
+.result-loot-item>.gear-tile{grid-row:span 3}
+.result-loot-item:has(>.gear-tile){grid-template-columns:96px minmax(0,1fr)}
+body.reduce-motion .gear-tile,body.reduce-motion .gear-tile::before,body.reduce-motion .gear-tile::after{animation:none!important;transition:none!important}
+@media(prefers-reduced-motion:reduce){.gear-tile,.gear-tile::before,.gear-tile::after{animation:none!important;transition:none!important}}

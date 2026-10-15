@@ -1,0 +1,42 @@
+{
+  "label": "v2-keyboard",
+  "build": "dev server",
+  "checks": [
+    {
+      "name": "#route-sheet: Tab and Shift+Tab stay within the active dialog",
+      "controls": 24
+    },
+    {
+      "name": "route Escape returns keyboard focus to its entry button"
+    },
+    {
+      "name": "#level-intel: Tab and Shift+Tab stay within the active dialog",
+      "controls": 1
+    },
+    {
+      "name": "focus-visible intel entry opens, traps focus and restores keyboard focus"
+    },
+    {
+      "name": "#lobby-modal: Tab and Shift+Tab stay within the active dialog",
+      "controls": 9
+    },
+    {
+      "name": "#hero-gear-popover: Tab and Shift+Tab stay within the active dialog",
+      "controls": 2
+    },
+    {
+      "name": "first Escape closes only the equipment card and returns focus to its slot"
+    },
+    {
+      "name": "closing after a roster rerender restores a connected hero entry or its navigation fallback"
+    },
+    {
+      "name": "#lobby-modal: Tab and Shift+Tab stay within the active dialog",
+      "controls": 3
+    },
+    {
+      "name": "equipment picker keeps the shared modal focus trap and restores the hero entry"
+    }
+  ],
+  "errors": []
+}

@@ -1,5 +1,5 @@
 // Real-browser playtest audit (headless Chrome over CDP). Usage:
-//   node scripts/playtest/audit.mjs <label> [--full] [--dist]
+//   node scripts/playtest/audit.mjs <label> [--full] [--dist] [--ui-only]
 // Writes screenshots + report.json to docs/v1/playtest/<label>/. Primary taps are real touch events; the in-page
 // "average player" bot clicks visible DOM buttons only. Engine state is read (never written) through ?debug.
 import { spawn } from 'node:child_process';
@@ -12,7 +12,7 @@ import { encodeChallenge } from '../../experience.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const label = process.argv[2] || 'run';
-const full = process.argv.includes('--full'), useDist = process.argv.includes('--dist');
+const full = process.argv.includes('--full'), useDist = process.argv.includes('--dist'), uiOnly = process.argv.includes('--ui-only');
 const out = path.join(root, 'docs', 'v1', 'playtest', label);
 await mkdir(out, { recursive: true });
 const report = { label, startedAt: new Date().toISOString(), build: useDist ? 'dist/index.html (file://)' : 'dev server', steps: [], layout: [], perf: [], errors: [] };
@@ -31,20 +31,50 @@ const blank = useDist ? pathToFileURL(path.join(root, 'dist', 'favicon.svg')).hr
 const page = await launch(); report.browser = page.browserExe;
 
 const DOM_AUDIT = `(() => {
-  const vis = n => { const r = n.getBoundingClientRect(); const s = getComputedStyle(n); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0' && r.bottom > 0 && r.top < innerHeight && !n.closest('[hidden]'); };
+  const activeDialog = ['level-intel','lobby-modal','route-sheet'].map(id => document.getElementById(id)).find(n => n && !n.hidden && n.getBoundingClientRect().height > 0);
+  const vis = n => { const r = n.getBoundingClientRect(); const s = getComputedStyle(n); return (!activeDialog || activeDialog.contains(n)) && r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0' && s.clipPath !== 'inset(50%)' && s.clip !== 'rect(0px, 0px, 0px, 0px)' && r.bottom > 0 && r.top < innerHeight && !n.closest('[hidden]'); };
   const small = [], targets = [];
   for (const n of document.querySelectorAll('body *')) {
     if (!vis(n) || n.closest('.sr-only')) continue;
     const own = [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim());
     const fs = parseFloat(getComputedStyle(n).fontSize);
+    // Only numeric corner badges are exempt from the 12px copy requirement.
+    if (n.matches('.gear-tile-level, .filter-count, .lv-badge, .level-badge, .upgrade-count, #inventory-count') && /^[+\\d\\s]+$/.test(n.textContent.trim())) continue;
     if (own && fs < 12) small.push({ text: n.textContent.trim().slice(0, 24), fs });
   }
   for (const n of document.querySelectorAll('button, a[href], select, input, summary')) {
     if (!vis(n) || n.disabled) continue; const r = n.getBoundingClientRect();
     if (r.width < 44 || r.height < 44) targets.push({ id: n.id || String(n.className).slice(0, 30), text: n.textContent.trim().slice(0, 16), w: Math.round(r.width), h: Math.round(r.height) });
   }
-  return { smallCount: small.length, small: small.slice(0, 12), targetCount: targets.length, targets: targets.slice(0, 12), horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1, vw: innerWidth, vh: innerHeight };
+  const dimensions = id => { const n = document.getElementById(id); return n ? { clientHeight: n.clientHeight, scrollHeight: n.scrollHeight, verticalOverflow: n.scrollHeight > n.clientHeight + 1, clientWidth: n.clientWidth, scrollWidth: n.scrollWidth, horizontalOverflow: n.scrollWidth > n.clientWidth + 1 } : null; };
+  return { smallCount: small.length, small: small.slice(0, 12), targetCount: targets.length, targets: targets.slice(0, 12), horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1, lobbyScroll: dimensions('lobby-scroll'), modalBody: dimensions('modal-body'), vw: innerWidth, vh: innerHeight };
 })()`;
+
+async function auditV2Screens(prefix) {
+  for (const [w, h] of [[360, 740], [390, 844]]) {
+    await page.viewport(w, h); await page.tap('#campaign-tab'); await sleep(420);
+    await shot(page, `${prefix}-campaign-${w}x${h}`);
+    report.layout.push({ screen: `v2-campaign-${w}x${h}`, ...(await page.eval(DOM_AUDIT)) });
+    await page.tap('#route-button'); await sleep(450);
+    await shot(page, `${prefix}-level-detail-${w}x${h}`);
+    report.layout.push({ screen: `v2-level-detail-${w}x${h}`, ...(await page.eval(DOM_AUDIT)) });
+    await page.tap('#route-close'); await sleep(220);
+    await page.tap('#heroes-tab'); await sleep(200); await page.tap('#hero-roster .hero-card:not(.is-locked)');
+    await page.waitFor(`!document.getElementById('lobby-modal').hidden && document.getElementById('lobby-modal').classList.contains('is-page')`); await sleep(700);
+    await shot(page, `${prefix}-hero-detail-${w}x${h}`);
+    report.layout.push({ screen: `v2-hero-detail-${w}x${h}`, ...(await page.eval(DOM_AUDIT)) });
+    await page.tap('#hero-gear-weapon'); await sleep(220);
+    await shot(page, `${prefix}-hero-equipment-${w}x${h}`);
+    report.layout.push({ screen: `v2-hero-equipment-${w}x${h}`, ...(await page.eval(DOM_AUDIT)) });
+    await page.tap('#hero-gear-popover .gear-equip'); await sleep(220);
+    await shot(page, `${prefix}-equipment-picker-${w}x${h}`);
+    report.layout.push({ screen: `v2-equipment-picker-${w}x${h}`, ...(await page.eval(DOM_AUDIT)) });
+    await page.tap('#modal-close'); await page.tap('#workshop-tab'); await page.tap('#ws-tab-bag'); await sleep(250);
+    await shot(page, `${prefix}-inventory-${w}x${h}`);
+    report.layout.push({ screen: `v2-inventory-${w}x${h}`, ...(await page.eval(DOM_AUDIT)) });
+  }
+  await page.viewport(390, 844); await page.tap('#campaign-tab'); await sleep(200);
+}
 const BOT = `window.__bot = setInterval(() => {
   const q = s => document.querySelector(s);
   if (!q('#lobby-modal').hidden) return;
@@ -70,6 +100,7 @@ try {
   const nav = await page.eval(`(() => { const n = performance.getEntriesByType('navigation')[0]; return { domContentLoadedMs: Math.round(n.domContentLoadedEventEnd), loadMs: Math.round(n.loadEventEnd), interactiveMs: Math.round(performance.now()) }; })()`);
   step('first_screen_interactive', { ...nav, wallMs: Date.now() - t0 });
   await shot(page, '01-first-screen-new'); report.layout.push({ screen: 'lobby-new-390', ...(await page.eval(DOM_AUDIT)) });
+  if (!uiOnly) {
   const tEntry = Date.now(); await page.tap('#campaign-start'); await sleep(450);
   step('battle_entry', { taps: 1, msFromTap: Date.now() - tEntry });
   await shot(page, '02-story-sheet');
@@ -151,6 +182,7 @@ try {
     await page.eval('clearInterval(window.__bot); window.__noBuild = false; window.__noCast = false; true');
   }
 
+  }
   // ===== 3. Returning player (save created through real battles and settlements) =====
   const save = await buildReturningSave(8);
   await page.viewport(390, 844); await page.goto(blank);
@@ -166,6 +198,7 @@ try {
   await page.tap('#settings-tab'); await sleep(250); await shot(page, '23-settings'); report.layout.push({ screen: 'settings-390', ...(await page.eval(DOM_AUDIT)) });
   await page.tap('#campaign-tab'); await sleep(200);
   await page.tap('#prepare-button'); await sleep(300); await shot(page, '24-prepare-modal'); await page.eval(`document.getElementById('modal-close').click(); true`);
+  await auditV2Screens('25');
 
   if (full) {
     // ===== 4. Boss + stress via a friend challenge link (Wei 8 boss, 3 heroes, 2×, every skill cast) =====
@@ -197,7 +230,19 @@ try {
   await shot(page, 'zz-fatal').catch(() => {});
 } finally {
   report.errors = page.errors;
+  report.violations = report.layout.flatMap(layout => {
+    const failures = [];
+    if (layout.horizontalOverflow) failures.push('horizontal overflow');
+    if (layout.screen.startsWith('v2-')) {
+      if (layout.smallCount) failures.push('visible copy below 12px');
+      if (layout.targetCount) failures.push('click targets below 44px');
+      if (/^v2-(campaign|hero-detail)-/.test(layout.screen) && layout.lobbyScroll?.verticalOverflow) failures.push('lobby scrolls vertically');
+      if (layout.screen.startsWith('v2-hero-detail-') && layout.modalBody?.verticalOverflow) failures.push('hero page scrolls vertically');
+    }
+    return failures.map(reason => ({ screen: layout.screen, reason }));
+  });
   await writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
   await page.close(); server?.kill();
 }
 console.log('report:', path.join(out, 'report.json'), 'errors:', report.errors.length, report.fatal ? 'FATAL' : '');
+if (report.fatal || report.errors.length || report.violations.length) process.exitCode = 1;
