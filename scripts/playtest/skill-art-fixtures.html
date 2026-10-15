@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>技能与战场美术审查夹具</title>
+<style>body{margin:0;background:#0d1b16;color:#efe6cf;font:12px/1.5 system-ui}header{box-sizing:border-box;padding:10px 12px;height:52px}h1{font-size:15px;margin:0}canvas{display:block;width:390px;height:600px;max-width:100vw}small{font-size:12px;color:#b8b296}</style>
+<header><h1 id="title"></h1><small id="copy">确定性布兵夹具 · 实际引擎命中与战场渲染</small></header><canvas id="field"></canvas>
+<script type="module">
+import {V1Game,seededRandom} from '../../v1-engine.js';
+import {V1Renderer} from '../../v1-renderer.js';
+import {BALANCE} from '../../runtime-data.js';
+let renderer,game;
+const canvas=document.querySelector('canvas'),title=document.querySelector('#title');
+const make=(ids=['guan_yu'],levelId='wei_012',reduced=false)=>{
+  renderer?.destroy();renderer=new V1Renderer(canvas,{reducedMotion:reduced});renderer.releaseLabel=false;
+  game=new V1Game({levelId,party:ids.map(heroId=>({heroId,level:1,skillLevel:1,equipment:{}})),rng:seededRandom(2026),unlockedCamps:Object.keys(BALANCE.camps),onEvent:e=>renderer.handleEvent(e)});
+  game.start();game._spawnQueue=[];game._spawnIndex=0;game.enemies=[];game.effects=[];game.projectiles=[];
+  for(const h of game.heroes)h.attackCooldown=10;
+  return game;
+};
+const draw=options=>{const before=JSON.stringify(game);renderer.draw(game,{realDt:1/60,...options});if(JSON.stringify(game)!==before)throw Error('render mutated fixture');};
+const settleEntry=async()=>{draw();await new Promise(resolve=>setTimeout(resolve,420));draw();};
+window.artFixture={
+  async skill(id,age,reduced=false){
+    make([id],'wei_012',reduced);
+    for(let i=0;i<84;i++)game._spawn({type:i%9===0?'armor':i%5===0?'cavalry':'infantry',lane:i%game.paths.length,progress:190+Math.floor(i/game.paths.length)*12,wave:game.level.waves[0]});
+    game._refreshTargets();await settleEntry();game.heroes[0].rage=100;
+    const cast=game.castUltimate(id);if(!cast.ok)throw Error(cast.reason);
+    for(let t=0;t<age-1e-8;t+=1/120){game.update(Math.min(1/120,age-t));draw();}
+    draw();title.textContent=`${BALANCE.heroes[id].name} · ${BALANCE.heroes[id].ultimate.name} · ${age.toFixed(2)} 秒${reduced?' · 减弱动态':''}`;
+    return{heroId:id,age,reducedMotion:reduced,target:game.heroes[0].target,cast:game._casts[0]?.target,kills:game.kills,enginePosition:{x:game.heroes[0].x,y:game.heroes[0].y}};
+  },
+  camp(type){
+    make();game.camps=[];const slot=game.map.campSlots.find(s=>s.x>120&&s.x<300)||game.map.campSlots[0];game._addCamp(slot.slot,type,3);
+    game.camps[0].attackFlash=.13;draw({selectedSlot:slot.slot});title.textContent=`${BALANCE.camps[type].name} · 三级 · 实际营位与攻击反馈`;
+    return{type,slot:slot.slot,position:{x:slot.x,y:slot.y},level:3};
+  },
+  party(){
+    make(['guan_yu','xiahou_dun','cao_cao']);for(const h of game.heroes)h.rage=60;draw();title.textContent='三人编队 · 城墙造型与青玉脚环';return{heroes:game.heroes.map(h=>h.id)};
+  },
+  async crowd(){
+    make(['guan_yu'],'wei_001');game._addCamp(3,'shield',3);
+    for(let i=0;i<72;i++)game._spawn({type:i%13===0?'armor':i%9===0?'cavalry':'infantry',lane:i%2,progress:190+Math.floor(i/2)*2.5,wave:game.level.waves[0]});
+    await settleEntry();game.update(.4);draw();title.textContent='第 1 关 · 盾营减速后的密集敌潮';
+    return{levelId:game.level.id,living:game.activeEnemyCount,slowed:game.enemies.filter(e=>e.slow<1).length};
+  },
+  get game(){return game;},get renderer(){return renderer;}
+};
+window.ready=true;
+</script>

@@ -19,6 +19,7 @@
  */
 import { Renderer, CAMP_SLOTS, WORLD_WIDTH, WORLD_HEIGHT } from './renderer.js';
 import { HERO_ART } from './hero-portraits.js';
+import { getBattleSprite, HERO_MOTION } from './battle-sprites.js';
 
 const TAU = Math.PI * 2;
 const CAMP_NAMES = { shield: '盾营', archer: '弓营', crossbow: '弩营', catapult: '投石营', fire_oil: '火油营', war_drum: '战鼓营' };
@@ -65,7 +66,7 @@ function line(ctx, points, color, width = 1.5) {
   ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
   points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
 }
-function text(ctx, value, x, y, size = 11, color = '#eedfb3') {
+function text(ctx, value, x, y, size = 12, color = '#eedfb3') {
   ctx.font = `600 ${size}px "Microsoft YaHei", "PingFang SC", sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(value).width + 10;
@@ -91,6 +92,30 @@ function partialPath(path, fraction) {
   }
   return points;
 }
+
+// Arc-length helpers use the same polylines as the engine, without changing path progress.
+function routeGeometry(path) {
+  const points = path?.points ?? path ?? [], lengths = [0];
+  for (let i = 1; i < points.length; i++) lengths.push(lengths[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
+  return { points, lengths, length: lengths.at(-1) ?? 0 };
+}
+function atDistance(path, distance) {
+  const s = clamp(distance, 0, path.length), points = path.points;
+  if (points.length < 2) return { ...(points[0] ?? { x: 210, y: 530 }), tx: 0, ty: 1 };
+  let i = 1;
+  while (i < points.length - 1 && path.lengths[i] < s) i++;
+  const a = points[i - 1], b = points[i], length = path.lengths[i] - path.lengths[i - 1] || 1;
+  const t = clamp((s - path.lengths[i - 1]) / length), tx = (b.x - a.x) / length, ty = (b.y - a.y) / length;
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, tx, ty };
+}
+function routeSection(path, start, end) {
+  const a = clamp(Math.min(start, end), 0, path.length), b = clamp(Math.max(start, end), 0, path.length);
+  const points = [atDistance(path, a)];
+  for (let i = 1; i < path.points.length - 1; i++) if (path.lengths[i] > a && path.lengths[i] < b) points.push(path.points[i]);
+  points.push(atDistance(path, b));
+  return start > end ? points.reverse() : points;
+}
+const REDESIGNED_SHAPES = new Set(['leap_strike_circle', 'thrown_banner_circle', 'gate_lane_surge', 'gate_half_wave', 'lane_fire_strip', 'delayed_multi_circle', 'lane_volley_strip']);
 
 /** V1 visual layer only. Gameplay, clocks and hit outcomes belong to the engine. */
 export class V1Renderer extends Renderer {
@@ -124,6 +149,9 @@ export class V1Renderer extends Renderer {
     this.lastEnemy = null;
     this.tracked = null;
     this.lastDrawAt = -Infinity;
+    this.enemyOffsets = new Map();
+    this.enemyPositions = new Map();
+    this.actorAttacks = new Map();
   }
 
   /** Returns and clears the queued DOM cues. See the comment at the top of this file. */
@@ -147,6 +175,7 @@ export class V1Renderer extends Renderer {
 
   setMap(map) {
     this.map = map?.paths?.length ? map : DEFAULT_MAP;
+    this.routes = this.map.paths.map(routeGeometry);
     const ctx = this.background.getContext('2d');
     ctx.setTransform(2, 0, 0, 2, 0, 0);
     this.drawBackground(ctx);
@@ -181,6 +210,91 @@ export class V1Renderer extends Renderer {
       this.shake('ultimate', this.flash.started);
       this.punchStarted = this.edgeFlashStarted = this.flash.started;
     }
+  }
+
+  hitTestHero(clientX, clientY, game) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height || clientX < rect.left || clientY < rect.top || clientX > rect.left + rect.width || clientY > rect.top + rect.height) return null;
+    const sx = rect.width / WORLD_WIDTH, sy = rect.height / WORLD_HEIGHT;
+    const radius = Math.max(22, Math.min(sx, sy) * 28);
+    let closest = null, distance = Infinity;
+    for (const [index, hero] of (game?.heroes ?? []).entries()) {
+      const d = Math.hypot(clientX - rect.left - (hero.x ?? [210, 140, 280][index]) * sx,
+        clientY - rect.top - (hero.y ?? 550) * sy + Math.min(sx, sy) * 16);
+      if (d <= radius && d < distance) { closest = hero.heroId ?? hero.id; distance = d; }
+    }
+    return closest;
+  }
+
+  route(laneId = 'route_0') { return this.routes[Number(String(laneId).replace('route_', '')) || 0] ?? this.routes[0]; }
+
+  // Sliding windows keep dense-wave placement O(n log n), including the 160-person stress case.
+  enemyDrawPositions(enemies) {
+    const lanes = new Map(), density = new Map();
+    for (const e of enemies) {
+      const key = e.laneId ?? 'route_0';
+      if (!lanes.has(key)) lanes.set(key, []);
+      lanes.get(key).push(e);
+    }
+    for (const group of lanes.values()) {
+      group.sort((a, b) => (a.progress ?? a.y) - (b.progress ?? b.y));
+      let lo = 0, hi = 0;
+      for (const e of group) {
+        const s = e.progress ?? e.y;
+        while (lo < group.length && (group[lo].progress ?? group[lo].y) < s - 40) lo++;
+        while (hi < group.length && (group[hi].progress ?? group[hi].y) <= s + 40) hi++;
+        density.set(e.id, hi - lo > 6);
+      }
+    }
+    this.enemyPositions.clear();
+    const positions = enemies.map(e => {
+      const column = ((Number(e.id) || 0) * 7 % 5 + 5) % 5;
+      const centered = ['armor', 'siege', 'boss'].includes(e.type) || e.class === 'boss';
+      const offset = centered ? 0 : clamp((column - 2) * 6 * (density.get(e.id) ? 1.4 : 1), -17, 17);
+      const stagger = centered ? 0 : column % 2 * 4;
+      const tangent = Number.isFinite(e.progress) ? atDistance(this.route(e.laneId), e.progress) : { tx: Math.cos(e.facing ?? Math.PI / 2), ty: Math.sin(e.facing ?? Math.PI / 2) };
+      const dx = -tangent.ty * offset + tangent.tx * stagger, dy = tangent.tx * offset + tangent.ty * stagger;
+      const position = { x: e.x + dx, y: e.y + dy };
+      this.enemyOffsets.set(e.id, { dx, dy }); this.enemyPositions.set(e.id, position);
+      return { ...e, ...position, kind: 'enemy' };
+    });
+    while (this.enemyOffsets.size > TRACK_LIMIT) this.enemyOffsets.delete(this.enemyOffsets.keys().next().value);
+    return positions;
+  }
+
+  heroVisualPosition(hero, game, index = 0) {
+    const position = { x: hero.x ?? [210, 140, 280][index], y: hero.y ?? 550 };
+    if (this.reducedMotion || !hero.casting) return position;
+    const id = hero.heroId ?? hero.id, age = clamp(0.9 - (hero.castingRemaining ?? 0), 0, 0.9);
+    const effect = (game.effects ?? []).find(e => e.type === 'ultimate' && e.heroId === id) ?? hero.target ?? {};
+    if (id === 'xiahou_dun') {
+      const land = effect.landAtSec ?? hero.definition?.ultimate?.landAtSec ?? 0.36;
+      const target = { x: effect.landX ?? effect.x ?? position.x, y: effect.landY ?? effect.y ?? position.y };
+      if (age < 0.12) return position;
+      if (age < land) {
+        const t = clamp((age - 0.12) / (land - 0.12));
+        return { x: position.x + (target.x - position.x) * t, y: position.y + (target.y - position.y) * t - Math.sin(t * Math.PI) * 90 };
+      }
+      if (age < 0.6) return target;
+      const t = clamp((age - 0.6) / 0.3);
+      return { x: target.x + (position.x - target.x) * t, y: target.y + (position.y - target.y) * t - Math.sin(t * Math.PI) * 70 };
+    }
+    if (id === 'xu_chu') {
+      const t = age < 0.18 ? age / 0.18 : age < 0.5 ? 1 : clamp((0.9 - age) / 0.4);
+      const angle = effect.angle ?? -Math.PI / 2;
+      return { x: position.x + Math.cos(angle) * 40 * t, y: position.y + Math.sin(angle) * 40 * t };
+    }
+    if (id === 'zhang_liao' && age < 0.75) {
+      const route = this.route(effect.laneId), length = effect.length ?? hero.definition?.ultimate?.length ?? 400;
+      const point = atDistance(route, route.length - length * clamp(age / 0.75));
+      return { x: point.x, y: point.y };
+    }
+    return position;
+  }
+
+  drawCachedActor(ctx, kind, id, options = {}) {
+    const sprite = getBattleSprite(kind, id, { ...options, reducedMotion: this.reducedMotion, dpr: this.dpr ?? globalThis.window?.devicePixelRatio ?? 1 });
+    ctx.drawImage(sprite.canvas, -sprite.anchorX, -sprite.anchorY, sprite.width, sprite.height);
   }
 
   pruneFeedback(now = nowSeconds()) {
@@ -254,6 +368,8 @@ export class V1Renderer extends Renderer {
     if (event.type === 'waveClear') { this.waveClearCue(event.wave, event.final); return; }
     if (event.type === 'lastEnemy') { this.lastEnemyCue(event.wave, { id: event.enemyId, x: event.x, y: event.y }, now); return; }
     if (!Number.isFinite(event.x) || !Number.isFinite(event.y)) return;
+    const offset = this.enemyOffsets.get(event.enemyId) ?? { dx: 0, dy: 0 };
+    const drawX = event.x + offset.dx, drawY = event.y + offset.dy;
     if (event.type === 'damage' && event.enemyId != null && Number.isFinite(event.amount) && event.amount > 0) {
       this.hitFlashes.set(event.enemyId, now);
       if (this.hitFlashes.size > TRACK_LIMIT) this.hitFlashes.delete(this.hitFlashes.keys().next().value);
@@ -270,13 +386,13 @@ export class V1Renderer extends Renderer {
         && event.enemyId != null && now - label.started <= 0.12);
       if (merged) { merged.amount += event.amount; merged.hits++; }
       else {
-        this.damageLabels.push({ enemyId: event.enemyId, x: event.x, y: event.y, amount: event.amount,
+        this.damageLabels.push({ enemyId: event.enemyId, x: drawX, y: drawY, amount: event.amount,
           heroId: event.heroId, source: event.source, castId: event.castId, executed: Boolean(event.executed),
           prominent, survivor, hits: 1, started: now, life: survivor ? 1.15 : prominent ? 0.95 : 0.7 });
         if (this.damageLabels.length > FEEDBACK_LIMIT) this.damageLabels.shift();
       }
     } else if (event.type === 'kill') {
-      this.deathSnapshots.push({ enemyId: event.enemyId, type: event.enemyType ?? 'infantry', x: event.x, y: event.y,
+      this.deathSnapshots.push({ enemyId: event.enemyId, type: event.enemyType ?? 'infantry', x: drawX, y: drawY,
         radius: clamp(Number(event.radius) || 10, 5, 28), facing: Number.isFinite(event.facing) ? event.facing : Math.PI / 2,
         heroId: event.heroId, source: event.source, castId: event.castId, started: now, life: DEATH_LIFE });
       if (this.deathSnapshots.length > FEEDBACK_LIMIT) this.deathSnapshots.shift();
@@ -389,32 +505,47 @@ export class V1Renderer extends Renderer {
           ctx.rotate(Math.min(1, progress / 0.4) * 1.1);
           ctx.scale(1, 1 - progress * 0.28);
           oval(ctx, 0, 4, death.radius * 1.2, 4, '#26382d55');
-          const heavy = ['armor', 'siege', 'boss'].includes(death.type);
-          polygon(ctx, [[-death.radius * 0.65, 1], [-death.radius * 0.75, -13], [0, -19], [death.radius * 0.75, -13], [death.radius * 0.65, 1]], heavy ? '#81755b' : '#a38769', '#c8ac78');
-          oval(ctx, 0, -22, 4, 5, '#c7a37a');
-          if (death.type === 'cavalry') oval(ctx, 0, 0, death.radius * 1.6, 5, '#8a7153');
-          if (death.type === 'banner') line(ctx, [[8, 0], [8, -35], [20, -30]], '#d2a474', 2);
+          this.drawCachedActor(ctx, 'enemy', death.type, { state: 'walk', frame: 0 });
         }
         this.sparks(ctx, this.reducedMotion ? 3 : 7, death.radius * 1.2, '#ffe4a8', progress);
       });
     }
   }
 
-  drawDamageLabels(ctx, now) {
-    for (const label of this.damageLabels) {
+  damageLabelLayout(ctx, now) {
+    const latest = new Map(), placed = [], casts = new Map();
+    this.damageLabels.forEach((label, index) => latest.set(label.enemyId ?? `label_${index}`, { label, index }));
+    const candidates = [...latest.values()].sort((a, b) => Number(b.label.prominent) - Number(a.label.prominent) || b.label.started - a.label.started || b.index - a.index);
+    for (const { label, index } of candidates) {
       const progress = clamp((now - label.started) / label.life);
       const amount = Number(label.amount.toFixed(1));
-      // Elites that survive a Peerless show their real remaining health, so "why is it still alive" is answered.
       const value = label.survivor ? `${amount} · 余${label.survivor}%` : `${label.executed ? '击破 ' : ''}${amount}${label.hits > 1 ? ` ·${label.hits}击` : ''}`;
       const age = now - label.started;
-      this.sprite(ctx, label.x, label.y - 27 - (this.reducedMotion ? 0 : easeOutCubic(progress) * 22), () => {
+      const position = this.enemyPositions.get(label.enemyId) ?? label;
+      const x = position.x, y = position.y - 38 - (this.reducedMotion ? 0 : easeOutCubic(progress) * 22);
+      const pop = !this.reducedMotion && age < 0.12 ? 1 + ((label.prominent ? 1.6 : 1.3) - 1) * (1 - easeOutCubic(age / 0.12)) : 1;
+      const size = Math.max(label.prominent ? 19 : 12, (label.prominent ? 17 : 12) / this.cssIso);
+      ctx.font = `${label.prominent ? 900 : 800} ${size}px "Microsoft YaHei", sans-serif`;
+      const width = (ctx.measureText(value).width + 10) * this.spriteScaleX * pop;
+      const height = (size + 8) * this.spriteScaleY * pop;
+      const bounds = { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+      const cast = label.castId ?? (/^ultimate_/.test(label.source ?? '') ? label.source : null);
+      if (placed.length >= 8 || cast != null && (casts.get(cast) ?? 0) >= 3) continue;
+      if (placed.some(p => bounds.left < p.bounds.right && bounds.right > p.bounds.left && bounds.top < p.bounds.bottom && bounds.bottom > p.bounds.top)) continue;
+      placed.push({ label, index, value, x, y, progress, pop, size, bounds });
+      if (cast != null) casts.set(cast, (casts.get(cast) ?? 0) + 1);
+    }
+    return placed.sort((a, b) => a.index - b.index);
+  }
+
+  drawDamageLabels(ctx, now) {
+    // Keep every bounded event record; suppress overlapping text only at paint time.
+    // A later tick replaces the same enemy's older number, and one cast shows at most three examples.
+    for (const { label, value, x, y, progress, pop, size } of this.damageLabelLayout(ctx, now)) {
+      this.sprite(ctx, x, y, () => {
         ctx.globalAlpha = clamp((1 - progress) / 0.3);
-        // Hero hits pop 1.6 → 1 over 120ms (crit-style gold); tower hits pop gently 1.3 → 1. Reduced motion: no pop.
-        if (!this.reducedMotion && age < 0.12) {
-          const pop = 1 + ((label.prominent ? 1.6 : 1.3) - 1) * (1 - easeOutCubic(age / 0.12));
-          ctx.scale(pop, pop);
-        }
-        ctx.font = `${label.prominent ? 900 : 800} ${Math.max(label.prominent ? 19 : 12, (label.prominent ? 17 : 11) / this.cssIso)}px "Microsoft YaHei", sans-serif`;
+        if (pop !== 1) ctx.scale(pop, pop);
+        ctx.font = `${label.prominent ? 900 : 800} ${size}px "Microsoft YaHei", sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = label.prominent ? 4 : 3;
         ctx.strokeStyle = label.prominent ? '#3a2208' : '#1b302c'; ctx.strokeText(value, 0, 0);
         ctx.fillStyle = label.survivor ? '#ffc58a' : label.prominent ? '#ffd257' : '#e7e4cd'; ctx.fillText(value, 0, 0);
@@ -470,6 +601,8 @@ export class V1Renderer extends Renderer {
       }
     }
     this.drawCastle(ctx);
+    // Keep the inherited gate plaque, but no single glyph that could read as a hero name tag.
+    ctx.fillStyle = '#243d32'; ctx.fillRect(204, 508, 12, 14);
     // Environment-specific gate fixtures stay behind every live unit.
     if (map.id?.startsWith('wei')) {
       ctx.fillStyle = '#485761'; ctx.fillRect(3, 548, 28, 42); ctx.fillRect(389, 548, 28, 42);
@@ -535,7 +668,7 @@ export class V1Renderer extends Renderer {
     ctx.restore();
   }
 
-  draw(game, { selectedSlot = -1, guideSlot = -1, realDt = 1 / 60 } = {}) {
+  draw(game, { selectedSlot = -1, guideSlot = -1, realDt = 1 / 60, heroNameIds = [], heroNameAlpha = new Map() } = {}) {
     if (!game || !this.ctx || this.destroyed) return;
     const now = nowSeconds();
     this.pruneFeedback(now); this.particlesRemaining = this.quality === 'low' ? PARTICLE_LIMIT / 2 : PARTICLE_LIMIT;
@@ -543,11 +676,15 @@ export class V1Renderer extends Renderer {
     this.resize();
     this.visualTime += clamp(Number(realDt) || 0, 0, 0.1);
     const rect = this.canvas.getBoundingClientRect();
+    this.dpr = rect.width > 0 ? this.width / rect.width : Math.min(globalThis.window?.devicePixelRatio ?? 1, 2);
     const sx = this.width / 420, sy = this.height / 600, iso = Math.min(sx, sy);
     this.cssIso = Math.max(0.1, Math.min(rect.width / 420, rect.height / 600));
     this.spriteScaleX = iso / sx; this.spriteScaleY = iso / sy;
     const ctx = this.ctx, time = this.reducedMotion ? 0 : this.visualTime;
     this.observe(game, now);
+    const enemies = this.enemyDrawPositions((game.enemies ?? []).filter(e => e.hp > 0 && !e.escaped));
+    this.heroNameIds = heroNameIds; this.heroNameAlpha = heroNameAlpha;
+    this.battleTime = game.time ?? this.visualTime;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
     // Edges exposed by shake/zoom read as dark ink rather than stale pixels.
     ctx.globalAlpha = 1; ctx.fillStyle = '#0d1b16'; ctx.fillRect(0, 0, 420, 600);
@@ -567,7 +704,11 @@ export class V1Renderer extends Renderer {
     for (const hero of game.heroes ?? []) {
       if ((hero.role === 'lead' || hero === game.heroes[0]) && hero.rage >= 100 && hero.target) this.drawSkillShape(ctx, { ...hero.target, heroId: hero.heroId ?? hero.id }, { preview: true, game });
     }
-    for (const effect of game.effects ?? []) if (['field', 'mine', 'telegraph', 'oil'].includes(effect.type)) this.drawSkillShape(ctx, effect, { ground: true, game });
+    for (const effect of game.effects ?? []) if (['field', 'mine', 'telegraph', 'oil'].includes(effect.type)
+      || effect.type === 'ultimate' && (REDESIGNED_SHAPES.has(effect.shape) || effect.heroId === 'xu_chu')) {
+      if (effect.type === 'ultimate' && (game.effects ?? []).some(other => other.type === 'field' && other.heroId === effect.heroId)) continue;
+      this.drawSkillShape(ctx, effect, { ground: true, game });
+    }
     slots.forEach((slot, index) => {
       if (!camps.some(c => c.slot === (slot.slot ?? index))) this.sprite(ctx, slot.x, slot.y, () => this.drawEmptyCamp(ctx, { x: 0, y: 0 }, (slot.slot ?? index) === selectedSlot, time));
     });
@@ -584,8 +725,8 @@ export class V1Renderer extends Renderer {
     this.drawAmbient(ctx, time);
     const units = [
       ...camps.map(c => { const slot = slots.find((s, i) => (s.slot ?? i) === c.slot); return { ...c, kind: 'camp', x: c.x ?? slot?.x, y: c.y ?? slot?.y }; }),
-      ...(game.enemies ?? []).filter(e => e.hp > 0 && !e.escaped).map(e => ({ ...e, kind: 'enemy' })),
-      ...(game.heroes ?? []).map((h, index) => ({ ...h, kind: 'hero', x: h.x ?? [210, 140, 280][index], y: h.y ?? 550 })),
+      ...enemies,
+      ...(game.heroes ?? []).map((h, index) => ({ ...h, ...this.heroVisualPosition(h, game, index), kind: 'hero' })),
     ].sort((a, b) => a.y - b.y);
     for (const unit of units) {
       if (!Number.isFinite(unit.x) || !Number.isFinite(unit.y)) continue;
@@ -617,7 +758,7 @@ export class V1Renderer extends Renderer {
     if ((game.hp ?? game.gateHp) < (game.maxHp ?? game.maxGateHp ?? 100) * 0.3) this.drawDanger(ctx, time);
     // World positions scale independently; text and actors use an isotropic transform.
     // The DOM #field-hint owns the map name; `mapLabel = true` restores the canvas label for standalone pages.
-    if (this.mapLabel) this.sprite(ctx, 210, 20, () => text(ctx, this.map.name ?? '演武沙盘', 0, 0, Math.max(11, 11 / this.cssIso), '#ead5a0'));
+    if (this.mapLabel) this.sprite(ctx, 210, 20, () => text(ctx, this.map.name ?? '演武沙盘', 0, 0, Math.max(12, 12 / this.cssIso), '#ead5a0'));
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
     this.drawEdgeFlash(ctx, now);
     if (this.flash) {
@@ -748,14 +889,8 @@ export class V1Renderer extends Renderer {
     const started = this.hitFlashes.get(enemy.id), age = started == null ? Infinity : now - started;
     const k = Math.max(age < HIT_FLASH ? 1 - age / HIT_FLASH : 0, clamp((Number(enemy.hitFlash) || 0) / 0.1) * 0.8);
     if (!(k > 0)) return;
-    const boss = enemy.type === 'boss' || enemy.class === 'boss', s = boss ? 1.5 : enemy.type === 'armor' ? 1.13 : 1;
-    ctx.save(); ctx.globalAlpha = 0.7 * k; ctx.fillStyle = '#ffffff';
-    if (enemy.type === 'siege') ctx.fillRect(-17, -29, 34, 34);
-    else {
-      ctx.beginPath(); ctx.ellipse(0, -6 * s, 6.5 * s, 8 * s, 0, 0, TAU); ctx.fill();
-      oval(ctx, 0, -15 * s, 4.5 * s, 4.5 * s, '#ffffff');
-      if (enemy.type === 'cavalry') oval(ctx, 0, 0, 10, 5, '#ffffff');
-    }
+    ctx.save(); ctx.globalAlpha = 0.7 * k;
+    this.drawCachedActor(ctx, 'enemy', enemy.type, { state: 'hit', frame: 0, variant: enemy.bossTemplateId ?? '' });
     ctx.restore();
   }
 
@@ -857,161 +992,66 @@ export class V1Renderer extends Renderer {
   }
 
   drawV1Camp(ctx, camp, selected, time) {
-    oval(ctx, 0, 11, 28, 12, '#15382e50');
-    oval(ctx, 0, 2, 27, 20, selected ? '#3f674f' : '#557059');
-    ctx.strokeStyle = selected ? '#efd698' : '#c0c8a1'; ctx.lineWidth = selected ? 2.5 : 1.3;
-    ctx.beginPath(); ctx.ellipse(0, 2, 27, 20, 0, 0, TAU); ctx.stroke();
-    this.drawStandard(ctx, -21, -14, '#276b57', -1, true);
     const level = clamp(camp.level ?? 1, 1, 3);
-    const count = level + 1;
-    if (camp.type === 'shield' || camp.type === 'archer') {
-      for (let i = 0; i < count; i++) this.drawDefender(ctx, (i % 2 ? 1 : -1) * 8, -7 + Math.floor(i / 2) * 13, camp.type, time, i);
-      if (level === 3 && camp.type === 'shield') {
-        line(ctx, [[-18, 7], [18, 7]], '#d0b181', 3);
-        for (const x of [-13, 0, 13]) line(ctx, [[x - 4, 2], [x + 4, 12]], '#bcaa7a', 2);
-      }
-    } else if (camp.type === 'crossbow') {
-      for (let i = 0; i < level; i++) {
-        const y = -8 + i * 9;
-        line(ctx, [[0, y + 8], [0, y - 13]], '#c8b582', 3);
-        line(ctx, [[-15, y + 1], [-12, y - 5], [12, y - 5], [15, y + 1]], '#b2c1a8', 2);
-        line(ctx, [[-15, y + 1], [0, y + 8], [15, y + 1]], '#ebe3bb', 0.8);
-      }
-      ctx.fillStyle = '#514a36'; ctx.fillRect(-7, 7, 14, 6);
-    } else if (camp.type === 'catapult') {
-      line(ctx, [[-13, 10], [0, -15], [13, 10]], '#5b5038', 4);
-      line(ctx, [[0, 2], [11, -27 - level * 2]], '#c9b781', 4);
-      oval(ctx, 11, -27 - level * 2, 7 + level, 4, '#728069');
-      for (const x of [-11, 11]) oval(ctx, x, 10, 5, 5, '#343f33');
-      for (let i = 0; i < level; i++) oval(ctx, -16 + i * 5, -5, 3, 3, '#c4c2a3');
-    } else if (camp.type === 'fire_oil') {
-      for (let i = 0; i < count; i++) {
-        const x = (i % 2 ? 1 : -1) * 8, y = Math.floor(i / 2) * 11 - 8;
-        oval(ctx, x, y, 6, 8, '#766441'); oval(ctx, x, y - 7, 3, 2, '#383d31');
-      }
-      ctx.fillStyle = '#5d503a'; ctx.fillRect(-7, 4, 14, 5);
-      polygon(ctx, [[-6, 4], [-2, -5], [0, -1], [3, -10], [6, 4]], '#d89853');
-    } else if (camp.type === 'war_drum') {
-      line(ctx, [[-12, 12], [-9, -17], [9, -17], [12, 12]], '#674f38', 3);
-      ctx.fillStyle = '#ac6450'; ctx.fillRect(-12, -15, 24, 17);
-      oval(ctx, 0, -15, 12, 6, '#ddc58b'); oval(ctx, 0, 1, 12, 5, '#a45f43');
-      for (let i = 1; i < level; i++) this.drawStandard(ctx, 13 + i * 3, -15, '#7b8960', 1, true);
+    const active = camp.attackFlash > 0;
+    const frame = this.reducedMotion ? (active ? 0 : 1) : active ? Math.min(4, Math.floor((0.12 - camp.attackFlash) / 0.12 * 5)) : Math.floor(time * 3) % 4;
+    this.drawCachedActor(ctx, 'camp', camp.type, { state: active ? 'attack' : 'idle', frame, level });
+    if (selected) text(ctx, (CAMP_NAMES[camp.type] ?? '军营') + ' ' + 'ⅠⅡⅢ'[level - 1], 0, 31, Math.max(12, 12 / this.cssIso), '#ffe3a1');
+  }
+
+  actorFrame(hero, time) {
+    const id = hero.heroId ?? hero.id, spec = HERO_MOTION[id] ?? {};
+    const clock = this.battleTime ?? time;
+    const flash = hero.attackFlash ?? 0;
+    let attack = this.actorAttacks.get(id);
+    if (flash > 0 && (!attack || flash > attack.flash + 0.001)) {
+      attack = { started: clock, flash, duration: Math.min(spec.attack?.duration ?? 0.6, Math.max(0.12, hero.attackCooldown ?? hero.definition?.attack?.intervalSec ?? 1)) };
+      this.actorAttacks.set(id, attack);
     }
-    if (camp.attackFlash > 0) {
-      ctx.strokeStyle = '#b7e1ae'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 23, Math.PI, TAU); ctx.stroke();
+    if (attack) attack.flash = flash;
+    if (hero.casting) {
+      const age = clamp(0.9 - (hero.castingRemaining ?? 0), 0, 0.9);
+      const count = spec.ultimate?.frames ?? 10;
+      const frame = spec.ultimate?.times ? Math.max(0, spec.ultimate.times.findLastIndex(t => t <= age + 1e-8)) : Math.min(count - 1, Math.floor(age / 0.9 * count));
+      return { state: 'ultimate', frame: this.reducedMotion ? (age < 0.45 ? 0 : count - 1) : frame };
     }
-    text(ctx, `${CAMP_NAMES[camp.type] ?? '军营'} ${'ⅠⅡⅢ'[level - 1]}`, 0, 31, Math.max(10.5, 11 / this.cssIso), selected ? '#ffe3a1' : '#ecdeb7');
+    if (attack && clock - attack.started < attack.duration) {
+      const count = spec.attack?.frames ?? 5;
+      // Frame zero is the release pose: observing an engine projectile never starts a new wind-up.
+      const age = (clock - attack.started) / attack.duration * (spec.attack?.duration ?? attack.duration);
+      const frame = spec.attack?.times ? Math.max(0, spec.attack.times.findLastIndex(t => t <= age + 1e-8)) : Math.min(count - 1, Math.floor((clock - attack.started) / attack.duration * count));
+      return { state: 'attack', frame: this.reducedMotion ? (flash > 0 ? 0 : count - 1) : frame };
+    }
+    const ready = hero.rage >= 100;
+    const count = spec.idle?.frames ?? 6, duration = spec.idle?.duration ?? 2.4;
+    return { state: ready ? 'ready' : 'idle', frame: this.reducedMotion ? 0 : Math.floor(time / duration * count * (ready ? 1.3 : 1)) % count };
   }
 
   drawV1Hero(ctx, hero, time) {
     const id = hero.heroId ?? hero.id, art = HERO_ART[id] ?? HERO_ART.guan_yu;
-    const ready = hero.rage >= 100, support = hero.role === 'support';
-    // Animation states read from real engine fields: casting 0.9 s → windup (first 0.25 s), cast, then recovery.
-    const castT = hero.casting ? clamp(1 - (hero.castingRemaining ?? 0) / 0.9) : -1;
-    const phase = castT < 0 ? (hero.rageRecovery > 0 ? 'recovery' : ready ? 'ready' : 'idle') : castT < 0.28 ? 'windup' : 'cast';
-    const aura = { wei: '#8fb5e0', shu: '#9ff2bd', wu: '#ffb08a' }[art.faction] ?? '#d8dfa6';
-    ctx.save(); ctx.scale(support ? 0.9 : 1, support ? 0.9 : 1);
-    oval(ctx, 0, 6, 16, 6, '#142b2760');
-    if (phase === 'windup' || phase === 'cast') {
-      const grow = phase === 'windup' ? castT / 0.28 : 1 - (castT - 0.28) / 0.72;
-      ctx.save(); ctx.globalAlpha = 0.25 + grow * 0.45; oval(ctx, 0, 4, 22 + grow * 12, 9 + grow * 4, aura + '66');
-      ctx.strokeStyle = aura; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 4, 24 + grow * 12, 10 + grow * 4, 0, 0, TAU); ctx.stroke(); ctx.restore();
+    const ready = hero.rage >= 100, lead = hero.role !== 'support';
+    const radius = lead ? 23 : 19;
+    oval(ctx, 0, 5, radius - 3, 6, '#142b2760');
+    ctx.strokeStyle = ready ? '#c4f4ca' : '#67bda2'; ctx.lineWidth = ready ? 2.5 : 1.5;
+    ctx.beginPath(); ctx.ellipse(0, 4, radius, radius * 0.4, 0, 0, TAU); ctx.stroke();
+    if (hero.rage > 0) {
+      ctx.strokeStyle = '#ecd58e'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, 4, radius, radius * 0.4, 0, Math.PI / 2, Math.PI / 2 + TAU * clamp(hero.rage / 100)); ctx.stroke();
     }
-    ctx.strokeStyle = ready ? '#ccf6c6' : phase === 'recovery' ? '#5d8b78' : '#77c5a1'; ctx.lineWidth = ready ? 2.3 : 1;
-    ctx.beginPath(); ctx.ellipse(0, 4, 20, 9, 0, 0, TAU); ctx.stroke();
-    // Rage arc on the ground ring: the gauge lives on the hero as well as the button.
-    if (!ready && phase !== 'recovery' && hero.rage > 0) {
-      ctx.strokeStyle = '#e8cf8a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 4, 20, 9, 0, Math.PI / 2, Math.PI / 2 + TAU * clamp(hero.rage / 100)); ctx.stroke();
+    const pose = this.actorFrame(hero, time);
+    if (id === 'zhang_liao' && hero.casting && !this.reducedMotion) {
+      // A short cached afterimage explains the charge without inventing extra combatants.
+      ctx.save(); ctx.globalAlpha = 0.16; ctx.translate(0, 13); this.drawCachedActor(ctx, 'hero', id, pose); ctx.restore();
     }
-    // Jade ownership chevrons remain common even for red/purple-clad allies.
-    polygon(ctx, [[-3, 9], [0, 13], [3, 9]], '#82c9a9');
-    if (!this.reducedMotion) {
-      if (phase === 'windup') ctx.translate(0, 2 * (castT / 0.28));
-      else if (phase === 'cast') ctx.translate(0, -4 * Math.sin(Math.min(1, (castT - 0.28) / 0.25) * Math.PI / 2) + 2);
-      else if (phase === 'ready') ctx.translate(0, Math.sin(time * 5) * 0.8);
-      else ctx.translate(0, Math.sin(time * 2.5) * 0.35);
+    this.drawCachedActor(ctx, 'hero', id, pose);
+    const visible = this.heroNameIds?.has?.(id) ?? this.heroNameIds?.includes?.(id);
+    if (visible || this.heroNameAlpha?.has?.(id)) {
+      ctx.save(); ctx.globalAlpha = clamp(this.heroNameAlpha?.get?.(id) ?? 1);
+      text(ctx, art.name, 0, 25, Math.max(12, 12 / this.cssIso), ready ? '#fff2bd' : '#f0d99a'); ctx.restore();
     }
-    const wide = ['broad', 'wide-beard', 'sleeves', 'crown'].includes(art.silhouette), half = wide ? 13 : 8;
-    if (['cloak', 'silver'].includes(art.silhouette)) polygon(ctx, [[-9, -17], [10, -17], [18, 9], [-16, 9]], art.silhouette === 'silver' ? '#d8e5de' : '#263b43');
-    polygon(ctx, [[-half, -15], [half, -15], [half + 4, 6], [-half - 3, 6]], art.accent, '#17382e');
-    line(ctx, [[-half + 1, -10], [half - 1, -10]], '#bbae77', 2);
-    line(ctx, [[-half, 0], [half + 1, 0]], '#dbc58a', 2);
-    if (art.silhouette === 'shoulders') {
-      polygon(ctx, [[-8, -15], [-20, -18], [-14, -4]], '#9fb5b1');
-      polygon(ctx, [[8, -15], [20, -18], [14, -4]], '#9fb5b1');
-    }
-    if (art.silhouette === 'sleeves') {
-      polygon(ctx, [[-12, -14], [-23, -3], [-12, 3]], '#acc1a6'); polygon(ctx, [[12, -14], [23, -3], [12, 3]], '#acc1a6');
-    }
-    if (art.silhouette === 'ribbon') {
-      line(ctx, [[-8, -10], [-18, 1], [-22, 0]], '#d7cb9d', 2);
-      line(ctx, [[8, -10], [18, 1], [22, 0]], '#d7cb9d', 2);
-    }
-    oval(ctx, 0, -23, 6, 7, id === 'guan_yu' ? '#ae5740' : '#dab58a');
-    if (art.silhouette === 'headband') {
-      ctx.fillStyle = '#c9b787'; ctx.fillRect(-7, -27, 14, 3);
-      line(ctx, [[-7, -26], [-14, -18]], '#c9b787', 2); ctx.fillStyle = '#20342d'; ctx.fillRect(-5, -24, 5, 2);
-    } else if (art.silhouette === 'topknot') {
-      ctx.fillStyle = '#25372f'; ctx.fillRect(-4, -33, 8, 7); line(ctx, [[3, -31], [11, -36]], '#d4bb79', 2);
-      for (let x = -9; x < 12; x += 5) oval(ctx, x, 0, 1.6, 2, '#e2c071');
-    } else if (art.silhouette === 'silver') {
-      polygon(ctx, [[-7, -26], [-4, -35], [2, -40], [8, -26]], '#c5dcd8'); line(ctx, [[2, -36], [10, -43]], '#e9e8cf', 3);
-    } else {
-      polygon(ctx, [[-7, -27], [-4, -33], [5, -33], [7, -27]], art.accent); line(ctx, [[-7, -27], [7, -27]], '#ddc88a');
-    }
-    if (art.silhouette === 'beard') polygon(ctx, [[-5, -20], [5, -20], [4, -9], [0, -3], [-4, -10]], '#233129');
-    if (art.silhouette === 'wide-beard') polygon(ctx, [[-7, -21], [-11, -17], [-5, -9], [0, -10], [8, -12], [11, -18], [6, -21]], '#25352d');
-    if (art.silhouette === 'crown') polygon(ctx, [[-5, -20], [5, -20], [3, -11], [-2, -12]], '#5b3d55');
-    this.drawHeroGear(ctx, art.gear, Boolean(hero.attackFlash > 0 || hero.casting), phase, castT);
-    ctx.restore();
-    text(ctx, art.name, 0, 25, Math.max(11, 11 / this.cssIso), ready ? '#fff2bd' : '#f0d99a');
-  }
-
-  drawHeroGear(ctx, gear, attacking, phase = 'idle', castT = -1) {
-    ctx.save();
-    if (!this.reducedMotion) {
-      // Windup draws the weapon back, the cast swings it through, recovery lets it hang low.
-      if (phase === 'windup') ctx.rotate(0.35 * (castT / 0.28));
-      else if (phase === 'cast') ctx.rotate(0.35 - 0.95 * Math.min(1, (castT - 0.28) / 0.22));
-      else if (phase === 'recovery') ctx.rotate(0.12);
-      else if (attacking) ctx.rotate(-0.12);
-    }
-    const shaft = '#d4c190', blade = '#c9e4d1';
-    if (['crescent', 'spear', 'hook', 'serpent', 'axe'].includes(gear)) {
-      line(ctx, [[15, 10], [15, -44]], shaft, 2.6);
-      if (gear === 'crescent') polygon(ctx, [[15, -45], [28, -47], [33, -41], [30, -28], [25, -36], [15, -36]], blade, '#e9ffe0');
-      if (gear === 'spear') polygon(ctx, [[15, -49], [11, -38], [15, -40], [19, -38]], '#e6eee0');
-      if (gear === 'hook') line(ctx, [[15, -44], [26, -40], [25, -33], [19, -35]], blade, 3);
-      if (gear === 'serpent') line(ctx, [[15, -44], [12, -48], [18, -53], [15, -57]], blade, 2);
-      if (gear === 'axe') polygon(ctx, [[15, -40], [4, -35], [4, -23], [15, -28], [26, -22], [28, -34]], '#d4d1ac', '#e8d599');
-    } else if (['fan', 'curved-fan', 'fire-fan'].includes(gear)) {
-      line(ctx, [[11, 1], [16, -14]], shaft, 2);
-      polygon(ctx, [[16, -12], [6, -23], [10, -32], [16, -27], [23, -33], [28, -24]], gear === 'fire-fan' ? '#e0b17b' : '#d3e8cc', '#b6c7ac');
-      for (const x of [10, 17, 24]) line(ctx, [[16, -13], [x, -27]], '#61765c', 0.8);
-      if (gear === 'curved-fan') line(ctx, [[11, 1], [6, -5], [16, -14]], '#baa4c0', 2);
-    } else if (gear === 'bow') {
-      ctx.strokeStyle = '#d9c296'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(10, -15, 17, -Math.PI / 2, Math.PI / 2); ctx.stroke();
-      line(ctx, [[10, -32], [10, 2]], '#f0deb5', 1); line(ctx, [[4, -14], [30, -14]], blade);
-      line(ctx, [[-10, -29], [-6, -8]], '#cdbe86', 3);
-    } else if (gear === 'seal') {
-      line(ctx, [[-13, 5], [-13, -27]], blade, 2); line(ctx, [[-18, -8], [-8, -8]], shaft, 2);
-      ctx.fillStyle = '#d7b877'; ctx.fillRect(10, -12, 10, 14); ctx.fillStyle = '#805b74'; ctx.fillRect(13, -9, 4, 6);
-    } else if (gear === 'halberds') {
-      for (const x of [-18, 17]) { line(ctx, [[x, 9], [x, -27]], shaft, 2); polygon(ctx, [[x, -33], [x - 6, -21], [x, -25], [x + 5, -20]], blade); }
-    } else if (gear === 'knives') {
-      line(ctx, [[-12, 1], [-21, -14]], blade, 3); line(ctx, [[12, 1], [21, -14]], blade, 3);
-    } else if (gear === 'swords') {
-      for (const x of [-15, 15]) { line(ctx, [[x, 7], [x, -30]], blade, 2); line(ctx, [[x - 5, -6], [x + 5, -6]], shaft, 2); }
-    } else if (gear === 'saber') {
-      polygon(ctx, [[-15, -3], [20, -28], [25, -21], [-11, 2]], blade); line(ctx, [[-21, 5], [-12, -1]], shaft, 3);
-    } else {
-      line(ctx, [[14, 8], [14, -36]], blade, 2.5); line(ctx, [[9, -9], [19, -9]], shaft, 2);
-    }
-    ctx.restore();
   }
 
   drawV1Enemy(ctx, enemy, time) {
-    const local = { ...enemy, x: 0, y: 0 };
     // Threat ground rings: bosses red and pulsing, elites amber, anything about to breach the gate gets a red rim.
     const boss = enemy.type === 'boss' || enemy.class === 'boss';
     const elite = !boss && (enemy.class === 'elite' || ['armor', 'siege', 'banner'].includes(enemy.type));
@@ -1022,29 +1062,10 @@ export class V1Renderer extends Renderer {
       ctx.lineWidth = boss ? 2.5 : 1.6;
       ctx.beginPath(); ctx.ellipse(0, 5, boss ? 26 + pulse * 3 : 15, boss ? 9 + pulse : 6, 0, 0, TAU); ctx.stroke();
     }
-    if (!['ranged', 'banner', 'siege'].includes(enemy.type)) {
-      super.drawEnemy(ctx, local, time);
-      if (boss && enemy.bossTemplateId) { ctx.save(); ctx.scale(1.5, 1.5); this.drawBossGear(ctx, enemy.bossTemplateId); ctx.restore(); }
-    } else if (enemy.type === 'siege') {
-      oval(ctx, 0, 5, 22, 7, '#323a3040');
-      for (const x of [-16, 16]) for (const y of [-2, 8]) oval(ctx, x, y, 5, 5, '#333d35');
-      ctx.fillStyle = enemy.hitFlash > 0 ? '#e7c69c' : '#765b43'; ctx.fillRect(-17, -15, 34, 20);
-      polygon(ctx, [[-20, -14], [-12, -29], [12, -29], [20, -14]], '#924738', '#c9ad79');
-      line(ctx, [[0, -18], [0, 18]], '#a6a086', 8); line(ctx, [[-15, -5], [15, -5]], '#c7ab78', 2);
-      this.drawEnemyHealth(ctx, enemy, 35, -35);
-    } else {
-      super.drawEnemy(ctx, { ...local, type: 'infantry' }, time);
-      // A bow/quiver or full-height banner distinguishes the specialist silhouettes.
-      if (enemy.type === 'ranged') {
-        ctx.strokeStyle = '#dec398'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(-6, -8, 9, Math.PI / 2, Math.PI * 1.5); ctx.stroke();
-        line(ctx, [[-6, -17], [-6, 1]], '#e8ddb8', 0.8); line(ctx, [[2, -24], [5, -5]], '#433f32', 3);
-      } else {
-        line(ctx, [[9, 4], [9, -42]], '#d2b582', 2);
-        polygon(ctx, [[9, -42], [28, -37], [23, -29], [28, -22], [9, -25]], '#9f3e37', '#edc98a');
-        line(ctx, [[14, -37], [14, -28]], '#e8cf91', 1.5);
-        ctx.strokeStyle = '#d3ac6a80'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 5, 12, 5, 0, 0, TAU); ctx.stroke();
-      }
-    }
+    const state = enemy.hitFlash > 0 ? 'hit' : 'walk';
+    const frame = this.reducedMotion ? 0 : Math.floor(time * 6 + (Number(enemy.id) || 0) * 0.7) % 6;
+    this.drawCachedActor(ctx, 'enemy', enemy.type, { state, frame, variant: enemy.bossTemplateId ?? '' });
+    this.drawEnemyHealth(ctx, enemy, boss ? 42 : enemy.type === 'siege' ? 35 : 24, boss ? -59 : enemy.type === 'banner' ? -49 : -39);
     if (enemy.invulnerable || enemy.bossPhase === 'invulnerable') {
       ctx.strokeStyle = '#c4d3d3'; ctx.setLineDash([3, 2]); ctx.beginPath(); ctx.ellipse(0, -12, 23, 33, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     }
@@ -1087,6 +1108,8 @@ export class V1Renderer extends Renderer {
         line(ctx, [[8, y], [length, y]], '#edffff', 1.5);
       }
     } else if (id === 'xu_chu') {
+      // His engine damage is immediate; the front lunge and fading cracks are the aftermath.
+      ring(length, '#d6aa60', 2);
       for (let i = 0; i < 3; i++) {
         const r = length * clamp(pulse - i * 0.18);
         ctx.strokeStyle = i ? '#c386465c' : '#f4c57f'; ctx.lineWidth = 8 - i * 2;
@@ -1154,9 +1177,179 @@ export class V1Renderer extends Renderer {
     }
   }
 
+  drawRedesignedSkill(ctx, effect, { preview, ground, game, definition }) {
+    const shape = effect.shape, age = effect.age ?? effect.time ?? 0;
+    const x = effect.x ?? 210, y = effect.y ?? 530;
+    const radius = effect.radius ?? definition.radius ?? 150;
+    const width = effect.width || definition.width || 110;
+    const reduced = this.reducedMotion;
+    const color = { leap_strike_circle: '#ff9a5a', thrown_banner_circle: '#ffe7a6', gate_lane_surge: '#b8ed99',
+      gate_half_wave: '#9fe3f0', lane_fire_strip: '#ff9b52', delayed_multi_circle: '#ddc9fa', lane_volley_strip: '#9ce6d9' }[shape];
+    const circle = (cx, cy, r, fill = false) => {
+      ctx.beginPath(); ctx.arc(cx, cy, Math.max(0, r), 0, TAU); ctx.stroke();
+      if (fill) { ctx.save(); ctx.globalAlpha *= 0.16; ctx.fill(); ctx.restore(); }
+    };
+    const band = (route, a, b, w, tint, alpha) => {
+      ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = tint; ctx.lineWidth = w;
+      ctx.lineCap = 'butt'; ctx.lineJoin = 'round'; roadPath(ctx, routeSection(route, a, b)); ctx.stroke(); ctx.restore();
+    };
+    ctx.save(); ctx.strokeStyle = ctx.fillStyle = color; ctx.lineWidth = preview ? 1.5 : 2;
+    ctx.globalAlpha = preview ? 0.45 : ground ? 0.65 : 0.9;
+    if (preview) ctx.setLineDash([5, 5]);
+    if (shape === 'leap_strike_circle' || shape === 'thrown_banner_circle') {
+      const landing = shape === 'leap_strike_circle' ? effect.landAtSec ?? definition.landAtSec ?? 0.36 : effect.flightSec ?? definition.flightSec ?? 0.42;
+      const landed = age + 1e-8 >= landing;
+      if (ground || preview) {
+        if (!landed || preview) ctx.setLineDash([6, 5]);
+        if (preview || shape === 'leap_strike_circle' || age < landing + 0.6) circle(x, y, radius, true);
+        ctx.setLineDash([]);
+        if (landed && !preview) {
+          const k = reduced ? 1 : clamp((age - landing) / 0.3);
+          ctx.lineWidth = 4; ctx.globalAlpha *= 1 - k * 0.65;
+          if (shape === 'leap_strike_circle' || age < landing + 0.6) circle(x, y, radius * (reduced ? 0.85 : 0.18 + 0.82 * k));
+          if (shape === 'leap_strike_circle') {
+            ctx.strokeStyle = '#402316'; ctx.lineWidth = 2;
+            for (let i = 0; i < 7; i++) {
+              const a = i * TAU / 7 + 0.2;
+              line(ctx, [[x, y], [x + Math.cos(a) * radius * 0.42, y + Math.sin(a) * radius * 0.42],
+                [x + Math.cos(a + 0.12) * radius * 0.82, y + Math.sin(a + 0.12) * radius * 0.82]], '#402316', 2);
+            }
+          } else {
+            ctx.globalAlpha = 0.65; ctx.lineWidth = 3; ctx.strokeStyle = color;
+            ctx.beginPath(); ctx.arc(x, y, 25, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(1 - age / (effect.life ?? 6))); ctx.stroke();
+          }
+        }
+      } else if (shape === 'thrown_banner_circle') {
+        if (landed || !reduced) {
+          const k = clamp(age / landing), ox = effect.originX ?? 210, oy = (effect.originY ?? 550) - 20;
+          const fx = landed ? x : ox + (x - ox) * k, fy = landed ? y : oy + (y - oy) * k - Math.sin(k * Math.PI) * 110;
+          ctx.save(); ctx.translate(fx, fy); if (!landed) ctx.rotate(k * 9);
+          line(ctx, [[0, 8], [0, -40]], '#ebd39d', 3);
+          const wave = reduced ? 0 : Math.sin(age * 8) * 3;
+          ctx.beginPath(); ctx.moveTo(1, -40); ctx.quadraticCurveTo(15, -37 + wave, 28, -38); ctx.lineTo(26, -16); ctx.quadraticCurveTo(14, -20 + wave, 1, -21); ctx.closePath(); ctx.fillStyle = '#b73529'; ctx.fill(); ctx.strokeStyle = '#f2d895'; ctx.lineWidth = 1.5; ctx.stroke();
+          line(ctx, [[10, -34], [21, -34], [15, -29], [15, -24]], '#ffe7a6', 2); ctx.restore();
+          if (landed && age - landing < 0.28) {
+            ctx.save(); ctx.globalAlpha *= 1 - (age - landing) / 0.28;
+            ctx.font = '900 40px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffe7a6'; ctx.fillText('令', x, y - 3); ctx.restore();
+          }
+        }
+        for (const camp of game?.camps ?? []) {
+          const slot = this.map.campSlots.find((s, i) => (s.slot ?? i) === camp.slot); if (!slot) continue;
+          line(ctx, [[slot.x - 6, slot.y - 34], [slot.x, slot.y - 41], [slot.x + 6, slot.y - 34]], '#f4d794a0', 2);
+        }
+      } else if (landed && age < 0.65) {
+        ctx.strokeStyle = '#ffe6a2'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(x, y - 8, 34, reduced ? Math.PI : age * 16, reduced ? TAU : age * 16 + 4.2); ctx.stroke();
+      }
+    } else if (shape === 'gate_lane_surge') {
+      const length = effect.length || effect.surgeLength || definition.surgeLength || 320;
+      const progress = reduced || preview ? 1 : clamp(age / (effect.surgeSec ?? definition.surgeSec ?? 0.6));
+      for (const id of effect.laneIds ?? this.routes.map((_, i) => `route_${i}`)) {
+        const route = this.route(id), start = Math.max(0, route.length - length), front = route.length - Math.min(route.length, length) * progress;
+        if (ground || preview) {
+          band(route, start, route.length, width, color, 0.12);
+          if (!preview) band(route, front, route.length, width, '#8bc875', 0.35);
+          band(route, start, route.length, 1.5, '#ddf5ba', 0.65);
+        } else if (!reduced && age < 0.95) {
+          const p = atDistance(route, front);
+          ctx.save(); ctx.globalAlpha *= age > 0.6 ? clamp((0.95 - age) / 0.35) : 1;
+          for (let i = -2; i <= 2; i++) {
+            const sx = p.x - p.ty * i * 18, sy = p.y + p.tx * i * 18;
+            polygon(ctx, [[sx - 6, sy - 8], [sx + 6, sy - 8], [sx + 6, sy + 4], [sx, sy + 9], [sx - 6, sy + 4]], '#2d5638', '#dcf3b2');
+            polygon(ctx, [[sx - 4, sy - 9], [sx, sy - 15], [sx + 4, sy - 9]], '#77cbb1', '#17382c');
+          }
+          ctx.restore();
+        }
+      }
+      if (!ground && !preview) {
+        ctx.strokeStyle = '#caf4a8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(210, 550, 37, Math.PI, TAU); ctx.stroke();
+      }
+    } else if (shape === 'gate_half_wave') {
+      const progress = reduced || preview ? 1 : clamp(age / (effect.waveSec ?? definition.waveSec ?? 0.4));
+      const half = (r, fill = false) => {
+        ctx.beginPath(); ctx.arc(x, y, Math.max(0, r), Math.PI, TAU);
+        if (fill) { ctx.lineTo(x, y); ctx.closePath(); ctx.save(); ctx.globalAlpha *= 0.12; ctx.fill(); ctx.restore(); } else ctx.stroke();
+      };
+      if (ground || preview) {
+        if (preview || age <= 0.9) { half(radius); if (!preview) half(radius * progress, true); }
+        if (!preview && age <= 0.9) {
+          for (let i = 0; i < (reduced ? 1 : 3); i++) {
+            ctx.strokeStyle = i ? '#a2e4e9' : '#efffff'; ctx.lineWidth = 4 - i;
+            half(Math.max(0, radius * progress - i * 11));
+          }
+        }
+      } else if (age >= 0.4) {
+        ctx.fillStyle = '#7bcddc30'; ctx.beginPath(); ctx.moveTo(x - 75, y + 3); ctx.quadraticCurveTo(x, y - 72, x + 75, y + 3); ctx.fill();
+        for (let i = 0; i < 3; i++) {
+          ctx.strokeStyle = i ? '#b0dcf3' : '#dcc1f1'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(x - 70 + i * 10, y); ctx.quadraticCurveTo(x, y - 64 + i * 12 + (reduced ? 0 : Math.sin(age * 4 + i) * 3), x + 70 - i * 10, y); ctx.stroke();
+        }
+      }
+    } else if (shape === 'delayed_multi_circle') {
+      const delay = effect.delaySec ?? definition.delaySec ?? 1, hit = age + 1e-8 >= delay;
+      for (const center of effect.circles ?? [{ x, y, radius }]) {
+        const r = center.radius ?? radius;
+        if (ground || preview) {
+          ctx.setLineDash(hit && !preview ? [] : [5, 5]); circle(center.x, center.y, r, true); ctx.setLineDash([]);
+          if (!hit && !preview) circle(center.x, center.y, r * (reduced ? 0.6 : 1 - clamp(age / delay) * 0.7));
+          if (hit && !preview) { ctx.lineWidth = 3; circle(center.x, center.y, r * 0.85); }
+        } else if (hit && age - delay < 0.4) {
+          // Lightning endpoints are inside each real hit circle; no enemy receives synthetic hit feedback.
+          ctx.save(); ctx.beginPath(); ctx.arc(center.x, center.y, r, 0, TAU); ctx.clip();
+          line(ctx, [[center.x + 9, center.y - r], [center.x - 12, center.y - 33], [center.x + 9, center.y - 39], [center.x, center.y + 8]], '#9271b0', 9);
+          line(ctx, [[center.x + 9, center.y - r], [center.x - 12, center.y - 33], [center.x + 9, center.y - 39], [center.x, center.y + 8]], '#f2e4ff', 3);
+          ctx.restore();
+        }
+      }
+    } else {
+      const route = this.route(effect.laneId), length = effect.length || definition.length || (shape === 'lane_fire_strip' ? 320 : 300);
+      const start = effect.s0 ?? Math.max(0, route.length - length), end = effect.s1 ?? Math.min(route.length, start + length);
+      const fire = shape === 'lane_fire_strip', tick = effect.tickIntervalSec ?? definition.tickIntervalSec ?? 0.25;
+      if (ground || preview) {
+        band(route, start, end, width, color, fire ? 0.22 : 0.13);
+        band(route, start, end, 2, fire ? '#f4bd73' : '#d3fff0', 0.8);
+        if (fire && !preview && age >= tick) band(route, start, end, width * 0.55, '#ef5834', 0.28);
+      } else if (fire) {
+        if (age >= tick) {
+          for (let s = start + 9; s < end; s += 22) {
+            const p = atDistance(route, s), flame = reduced ? 0.8 : 0.65 + Math.sin(age * 12 + s) * 0.25;
+            for (const offset of [-width * 0.25, width * 0.25]) {
+              const px = p.x - p.ty * offset, py = p.y + p.tx * offset;
+              polygon(ctx, [[px - 5, py + 4], [px - 2, py - 9 * flame], [px + 2, py - 20 * flame], [px + 6, py + 4]], '#f57b3b');
+              polygon(ctx, [[px - 3, py + 3], [px + 1, py - 10 * flame], [px + 4, py + 3]], '#ffd88a');
+            }
+          }
+        }
+        if (!reduced && age >= 0.05 && age < 0.55) {
+          const p = atDistance(route, start + (end - start) * clamp((age - 0.05) / 0.4));
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.ty, p.tx));
+          polygon(ctx, [[21, 0], [9, -10], [-16, -10], [-21, 0], [-16, 10], [9, 10]], '#563323', '#efbf7e');
+          line(ctx, [[-13, -5], [12, -5], [17, 0], [12, 5], [-13, 5]], '#bf7145', 2);
+          polygon(ctx, [[-9, 6], [-9, -9], [-3, -4], [0, -25], [6, -11], [13, -6], [12, 7]], '#ff9d38', '#f9d684'); ctx.restore();
+        }
+      } else if (age >= tick) {
+        const count = this.takeParticles(this.quality === 'low' ? 10 : 18);
+        for (let i = 0; i < count; i++) {
+          const p = atDistance(route, start + (end - start) * (i + 0.5) / count);
+          const across = ((i * 7) % 9 - 4) / 4 * width * 0.4;
+          const ax = p.x - p.ty * across, ay = p.y + p.tx * across;
+          const flight = reduced ? 0 : 1 - ((age - tick) * 4 + i * 0.37) % 1;
+          const side = i % 2 ? 1 : -1;
+          const fx = ax + side * flight * 28, fy = ay - flight * 46;
+          line(ctx, [[fx + side * 5, fy - 11], [fx, fy]], '#e9e5bc', 1.7);
+          polygon(ctx, [[fx, fy + 3], [fx - 3, fy - 3], [fx + 3, fy - 3]], '#baf4e6');
+        }
+      }
+    }
+    ctx.restore();
+  }
+
   drawSkillShape(ctx, effect, { preview = false, ground = false, game } = {}) {
     const id = effect.heroId, shape = effect.shape ?? (effect.type === 'mine' ? 'lane_mines' : 'circle');
     const definition = game?.heroes?.find(h => (h.heroId ?? h.id) === id)?.definition?.ultimate ?? {};
+    if (REDESIGNED_SHAPES.has(shape)) {
+      this.drawRedesignedSkill(ctx, effect, { preview, ground, game, definition }); return;
+    }
     const art = HERO_ART[id], age = effect.age ?? effect.time ?? 0;
     const lifeRatio = effect.life == null ? 1 : clamp(1 - age / (effect.life || 1));
     const x = effect.x ?? effect.originX ?? 210, y = effect.y ?? effect.originY ?? 550;
@@ -1166,7 +1359,7 @@ export class V1Renderer extends Renderer {
     if (id === 'lv_meng' && effect.type === 'ultimate') return;
     if (this.reducedMotion && !preview && !ground) {
       this.drawSkillShape(ctx, effect, { preview: true, game });
-      this.sprite(ctx, x, y - 24, () => text(ctx, art?.skill ?? '技能范围', 0, 0, Math.max(11, 11 / this.cssIso), color));
+      this.sprite(ctx, x, y - 24, () => text(ctx, art?.skill ?? '技能范围', 0, 0, Math.max(12, 12 / this.cssIso), color));
       return;
     }
     ctx.save(); ctx.globalAlpha = preview ? 0.2 : ground ? 0.17 : Math.min(0.75, 0.35 + lifeRatio * 0.4);
@@ -1215,7 +1408,7 @@ export class V1Renderer extends Renderer {
       const width = effect.width ?? (id === 'zhao_yun' ? 110 : 180), length = effect.length ?? effect.range ?? 400;
       ctx.translate(x, y); ctx.rotate(effect.angle ?? -Math.PI / 2);
       if (cone) {
-        const half = (effect.angleDegrees ?? 70) * Math.PI / 360;
+        const half = (effect.angleDegrees ?? definition.angleDegrees ?? 70) * Math.PI / 360;
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, length, -half, half); ctx.closePath();
       } else { ctx.beginPath(); ctx.rect(0, -width / 2, length, width); }
       ctx.stroke();
@@ -1248,7 +1441,7 @@ export class V1Renderer extends Renderer {
           const delayed = age < (definition.delaySec ?? 1);
           if (delayed) {
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.7, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(age / (definition.delaySec ?? 1))); ctx.stroke();
-            text(ctx, '落雷预告', 0, -radius - 12, 11, '#e1d4ed');
+            text(ctx, '落雷预告', 0, -radius - 12, Math.max(12, 12 / this.cssIso), '#e1d4ed');
           } else for (const offset of [-radius / 3, radius / 3]) line(ctx, [[offset, -radius * 0.8], [offset - 8, -20], [offset + 9, -27], [offset, 5]], '#ded2f3', 3);
         } else if (id === 'zhou_yu' || effect.type === 'oil') {
           for (let i = 0; i < 7; i++) {

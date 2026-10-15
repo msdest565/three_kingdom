@@ -5,7 +5,7 @@
 | 资源 | 来源与源文件 | 当前使用方式 |
 | --- | --- | --- |
 | 十五位武将头像 | 本项目原创程序 SVG，`hero-portraits.js` | 本地 SVG data URI，按武器、服饰与轮廓区分；无外部图像引用 |
-| 固定阵位武将、敌军、六营、技能效果 | 本项目原创 Canvas 绘制，`v1-renderer.js`、`renderer.js` | 程序几何、颜色与动画；不是外购图集或精修位图角色 |
+| 固定阵位武将、敌军、六营、技能效果 | 本项目原创 Canvas 绘制，`battle-sprites.js`、`v1-renderer.js`、`renderer.js`；造型来源 `hero-portraits.js` 的 `PORTRAIT` | 程序绘制按状态、帧与 DPR 缓存到离屏 canvas；无新增位图文件或远程资源 |
 | 十二地图主题、道路、营位与装饰 | 本项目原创 Canvas 绘制，`v1-renderer.js`；路线数据见 `docs/v1/data/levels.json` | 根据本地配置绘制 |
 | UI、图标与 favicon | 本项目编写的 HTML/CSS/SVG，入口与样式文件、`favicon.svg` | 自包含本地资源 |
 | 战报分享卡（1080×1350） | 本项目原创 Canvas 绘制，`share-card.js`；武将头像复用 `hero-portraits.js` | 玩家本地生成并保存的 PNG，程序边框、阵营色与系统字体文字；无远程图片或字体 |

@@ -2,7 +2,8 @@ import { BALANCE, CONTENT } from './runtime-data.js';
 import { CampaignStore } from './campaign-state.js';
 import { V1Game } from './v1-engine.js';
 import { V1Renderer } from './v1-renderer.js';
-import { heroPortrait, heroSilhouette, HERO_ART } from './hero-portraits.js';
+import { heroPortrait, heroSilhouette, HERO_ART, PORTRAIT } from './hero-portraits.js';
+import { HeroNameCards } from './hero-name-cards.js';
 import { gearTile } from './gear-tile.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialController } from './tutorial.js';
@@ -82,6 +83,7 @@ const WEAPON_TIMBRES = {
   'fire-fan':{frequency:280,endFrequency:200,duration:.15,volume:.026,noiseDuration:.18,noiseVolume:.05,cutoff:1900},
 };
 const safeStorage = (() => { try { return globalThis.localStorage ?? null; } catch { return null; } })();
+const heroNameCards = new HeroNameCards({storage:safeStorage});
 const telemetry = new Telemetry({ storage: safeStorage });
 const combo = new ComboTracker();
 const store = new CampaignStore();
@@ -92,13 +94,16 @@ const sound = new AudioSystem({ ...store.state.settings, timbres: {
     war_drum:{frequency:85,endFrequency:42,duration:.20,volume:.055,noiseDuration:.07,noiseVolume:.01,cutoff:750,interval:.6},
   },
   // Hero timbre follows the weapon family: heavy blades low and metallic, spears bright, fans airy, bows plucked.
-  heroes:Object.fromEntries(Object.keys(BALANCE.heroes).map(id => [id,WEAPON_TIMBRES[HERO_ART[id]?.gear] || WEAPON_TIMBRES.sword]))
+  heroes:Object.fromEntries(Object.keys(BALANCE.heroes).map(id => { const weapon=PORTRAIT[id]?.weapon, family={glaive:'crescent',hammer:'axe',twin:'swords',feather:'fan',firefan:'fire-fan',book:'fan'}[weapon] || weapon; return [id,WEAPON_TIMBRES[family] || WEAPON_TIMBRES.sword]; }))
 } });
 const tutorial = new TutorialController({ flow: 'v1' });
 const combatClock = new CombatClock();
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const renderer = new V1Renderer($('battle-canvas'),{ reducedMotion:store.state.settings.reducedMotion || motionPreference.matches });
 renderer.releaseLabel = false; // the DOM cut-in names the hero and skill; the canvas keeps the battlefield clear
+$('battle-canvas').setAttribute('aria-label','敌军沿可见道路进攻。点击营位布阵，点按武将查看姓名，使用下方无双按钮施放技能。');
+const heroNameKeys=make('div','','battle-hero-keys');
+$('battle-canvas').parentElement?.append(heroNameKeys);
 let game = null;
 let mode = 'lobby';
 let selectedLevelId = CONTENT.levels.find(level => store.isLevelUnlocked(level.id) && !store.state.levels[level.id]?.cleared)?.id || CONTENT.levels.at(-1).id;
@@ -855,6 +860,7 @@ function enterBattle(levelId = selectedLevelId, guide = false, { friend = null, 
   resetClock(); void sound.unlock(); sound.setScene('battle'); if (!storyVisible) beginCombat(); syncBattle(true);
 }
 function resetBattleState(levelId) {
+  heroNameCards.clear();
   resetCombo(); selectedLevelId = levelId; settlement = null; lootRevealed = false; selectedSlot = -1; formationCursor = -1; choiceRevealRemaining = 0; choiceRevealFrame = null;
   battleWallStart = performance.now(); battleFrozenMs = 0; unusedRageSec = 0; battleDeployed = false; battleCast = false; previousRecord = null; lastCutin = -Infinity;
   clearTimeout(cutinTimer); clearTimeout(tutorialDismissTimer); $('skill-cutin').classList.remove('is-visible');
@@ -922,7 +928,19 @@ function finishTutorial(skipped = false) {
 
 function renderCommands() {
   const key = game.heroes.map(h => h.id).join('|'); if (key === commandsKey) return; commandsKey = key; $('hero-commands').replaceChildren(); $('lead-command').replaceChildren(); commandNodes.clear();
-  for (const [index,hero] of game.heroes.entries()) { const lead = index === 0; const node = button('',`hero-command ${lead ? 'is-lead' : 'is-support'}`,() => cast(hero.id)); node.setAttribute('aria-label',`${hero.name} · ${hero.definition.ultimate.name} · 无双技能`); node.setAttribute('title',`${hero.name} · ${hero.definition.ultimate.name}`); const fill = make('span','','rage-fill'); fill.setAttribute('aria-hidden','true'); const copy = make('span','','skill-copy'); const name = make('strong',`${hero.name} · ${hero.definition.ultimate.name}`); const sub = make('small'); const state = make('span','','skill-state'); copy.append(name,sub); node.append(fill,portrait(hero.id),copy,state); (lead ? $('lead-command') : $('hero-commands')).append(node); commandNodes.set(hero.id,{node,fill,sub,state}); }
+  heroNameKeys.replaceChildren();
+  for (const [index,hero] of game.heroes.entries()) {
+    const nameKey=button(hero.name,'battle-hero-name-key',()=>heroNameCards.show(hero.id));
+    nameKey.setAttribute('aria-label',`查看${hero.name}姓名`);nameKey.style.left=`${hero.x/420*100}%`;nameKey.style.top=`${hero.y/600*100}%`;
+    nameKey.addEventListener('focus',()=>heroNameCards.show(hero.id));heroNameKeys.append(nameKey);
+    const lead = index === 0, node = button('',`hero-command ${lead ? 'is-lead' : 'is-support'}`,() => cast(hero.id));
+    node.setAttribute('aria-label',`${hero.name} · ${hero.definition.ultimate.name} · 无双技能`);
+    node.setAttribute('title',`${hero.name} · ${hero.definition.ultimate.name}`);
+    node.addEventListener('focus',()=>heroNameCards.show(hero.id));
+    const fill = make('span','','rage-fill'); fill.setAttribute('aria-hidden','true');
+    const copy = make('span','','skill-copy'), name = make('strong',`${hero.name} · ${hero.definition.ultimate.name}`), sub = make('small'), state = make('span','','skill-state');
+    copy.append(name,sub); node.append(fill,portrait(hero.id),copy,state); (lead ? $('lead-command') : $('hero-commands')).append(node); commandNodes.set(hero.id,{node,fill,sub,state});
+  }
 }
 function renderChoices() { const key = game.upgrades.map(t => t.id).join('|'); if (key === choicesKey) return; choicesKey = key; $('upgrade-choices').replaceChildren(); for (const choice of game.upgrades) { const node = button('','upgrade-choice',() => { if (choiceRevealRemaining > 0 || $('choice-overlay').hidden) return; notify(game.selectUpgrade(choice.id),'战术已整备'); resetClock(); syncBattle(true); }); node.append(make('strong',choice.name),make('span',choice.description || tacticCopy(choice.id))); $('upgrade-choices').append(node); } }
 function tacticCopy(id) { const def = BALANCE.tactics[id]; if (def?.camp) return `${BALANCE.camps[def.camp].name} · 强化${campCopy[def.camp]}`; if (def?.hero) return `${heroName(def.hero)} · 强化无双`; return '强化阵势'; }
@@ -1114,11 +1132,11 @@ $('result-overlay').addEventListener('click',event => { if (!event.target?.close
 bind('result-open-box',() => { if (settlement?.ok && settlement.loot?.item && !lootRevealed) { lootRevealed = true; lootJustOpened = true; renderLootResult(); } });
 bind('formation-button',cycleCamp); bind('close-camp',closeCamp); bind('speed-button',() => { if (!tutorial.active) { changeSetting('speed',nextSpeed(store.state.settings.speed)); resetClock(); } }); bind('music-button',() => changeSetting('musicEnabled',!store.state.settings.musicEnabled)); bind('sound-button',() => changeSetting('sfxEnabled',!store.state.settings.sfxEnabled));
 bind('tutorial-skip',() => finishTutorial(true)); bind('tutorial-action',() => { if (tutorial.step === 'intro') { tutorial.advance(); syncBattle(); } else if (tutorial.step === 'deploy') { const slot = guideSlot(); slot >= 0 ? openCamp(slot) : cycleCamp(); } else if (tutorial.step === 'ultimate') cast(); else if (tutorial.step === 'complete') finishTutorial(); });
-$('battle-canvas').addEventListener('pointerup',event => { if (mode !== 'battle') return; const slot = renderer.hitTest(event.clientX,event.clientY); if (slot >= 0) { void sound.unlock(); openCamp(slot); } else if (selectedSlot >= 0) closeCamp(); });
+$('battle-canvas').addEventListener('pointerup',event => { if (mode !== 'battle' || storyVisible || !['playing','paused'].includes(game?.state)) return; const heroId=renderer.hitTestHero(event.clientX,event.clientY,game); if(heroId){heroNameCards.show(heroId);$('battle-announcer').textContent=heroName(heroId);return;} const slot = renderer.hitTest(event.clientX,event.clientY); if (slot >= 0) { void sound.unlock(); openCamp(slot); } else if (selectedSlot >= 0) closeCamp(); });
 document.addEventListener('keydown',event => { if (event.code === 'Escape') { if (!$('level-intel').hidden) closeIntel(); else if (!$('route-sheet').hidden) closeRoute(); else if (!$('lobby-modal').hidden && $('hero-gear-popover') && !$('hero-gear-popover').hidden) closeHeroGear(); else if (!$('lobby-modal').hidden) closeModal(); else if (selectedSlot >= 0) closeCamp(); else if (mode === 'battle') togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'KeyP') { togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'Space' && !/^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(event.target.tagName)) { cast(); event.preventDefault(); } });
 document.addEventListener('visibilitychange',() => { resetClock(); if (document.hidden && game?.state === 'playing') { selectedSlot = -1; game.pause(); } syncAudio(); syncBattle(true); });
 window.addEventListener('pagehide',() => { pageSuspended = true; resetClock(); if (game?.state === 'playing') game.pause(); sound.setActive(false); audioActive = false; store.save(); });
-window.addEventListener('pageshow',() => { pageSuspended = false; resetClock(); audioActive = null; syncAudio(); syncBattle(true); }); window.addEventListener('resize',() => renderer.resize()); motionPreference.addEventListener('change',() => { renderer.reducedMotion = store.state.settings.reducedMotion || motionPreference.matches; if (renderer.reducedMotion) combatClock.clearImpact(); });
+window.addEventListener('pageshow',() => { pageSuspended = false; resetClock(); audioActive = null; syncAudio(); syncBattle(true); }); window.addEventListener('resize',() => renderer.resize()); motionPreference.addEventListener('change',() => { renderer.reducedMotion = store.state.settings.reducedMotion || motionPreference.matches; document.body?.classList?.toggle('reduce-motion',renderer.reducedMotion); if (renderer.reducedMotion) combatClock.clearImpact(); });
 
 function frame(now) {
   const realDt = Math.max(0,(now-last) / 1000); last = now;
@@ -1134,7 +1152,9 @@ function frame(now) {
         if (!battleCanAdvance()) battleFrozenMs += Math.min(100, realDt * 1000);
         else if (game.heroes[0].rage >= 100 - 1e-8 && game.heroes[0].rageRecovery <= 1e-8 && !game.heroes[0].reserved && game.activeEnemyCount > 0) unusedRageSec += Math.min(.1,realDt) * (tutorial.active ? 1 : store.state.settings.speed);
       }
-      renderer.draw(game,{selectedSlot,guideSlot:tutorial.step === 'deploy' ? guideSlot() : -1,realDt:Math.min(.1,realDt)}); consumeCues(); elapsedUi += Math.min(.1,realDt); if (elapsedUi >= .08) { syncBattle(); elapsedUi = 0; }
+      if(!storyVisible && game.state === 'playing') heroNameCards.discover(game.heroes.map(h=>h.id));
+      const heroNameAlpha=heroNameCards.visible(calm());
+      renderer.draw(game,{selectedSlot,guideSlot:tutorial.step === 'deploy' ? guideSlot() : -1,heroNameIds:new Set(heroNameAlpha.keys()),heroNameAlpha,realDt:Math.min(.1,realDt)}); consumeCues(); elapsedUi += Math.min(.1,realDt); if (elapsedUi >= .08) { syncBattle(); elapsedUi = 0; }
       samplePerformance(realDt);
     }
     else syncAudio();

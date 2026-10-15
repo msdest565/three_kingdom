@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { maximumCircleCoverage } from '../skill-targeting.js';
+import { maximumCircleCoverage, maximumSeparatedCircleCoverage } from '../skill-targeting.js';
 import { V1Game, seededRandom } from '../v1-engine.js';
 import { BALANCE, CONTENT } from '../runtime-data.js';
 
@@ -68,8 +68,8 @@ test('traveling Guan Yu blade anticipates current path motion without mutating u
   }
 });
 
-test('all movable circular heroes cover triangle clusters whose optimal center is between enemies', () => {
-  for (const id of ['sima_yi', 'zhuge_liang', 'zhou_yu', 'gan_ning']) {
+test('movable single circles cover triangle clusters whose optimal center is between enemies', () => {
+  for (const id of ['xiahou_dun', 'cao_cao', 'zhuge_liang']) {
     const { game, hero, unit } = fixture(id);
     for (const [x, y] of [[120, 148], [300, 148], [210, 304]]) unit(x, y);
     const target = game._target(hero);
@@ -78,13 +78,15 @@ test('all movable circular heroes cover triangle clusters whose optimal center i
 });
 
 test('circle aiming favors maximum population, skips unattackable units and is stable without RNG', () => {
-  for (const id of ['sima_yi', 'zhuge_liang', 'zhou_yu', 'gan_ning']) {
+  for (const id of ['sima_yi', 'zhuge_liang', 'cao_cao', 'xiahou_dun']) {
     const { game, hero, unit } = fixture(id);
     const good = [unit(80, 50), unit(85, 55)]; unit(400, 480, 'boss');
     for (let i = 0; i < 12; i++) unit(400, 480, 'infantry', { invulnerable: true });
     let calls = 0; game.rng = () => { calls++; return .5; };
     const target = game._target(hero);
-    assert.equal(target.count, 2, id); assert.deepEqual(target.targetIds, good.map(e => e.id));
+    assert.equal(target.count, id==='sima_yi' ? 3 : 2, id);
+    if (id==='sima_yi') assert.ok(good.every(e=>Math.hypot(e.x-target.circles[0].x,e.y-target.circles[0].y)<=target.radius+e.radius), 'first thunder circle still prioritizes population');
+    else assert.deepEqual(target.targetIds, good.map(e => e.id));
     assert.deepEqual(game._target(hero), target); assert.equal(calls, 0);
   }
 });
@@ -123,10 +125,68 @@ test('circular optimizer handles full capacity, coincident and tangential target
   assert.equal(same.count, 160); close(same.x, 200); close(same.y, 200);
 });
 
-test('command/rescue heroes retain their own fixed circles and snipes retain three distinct targets', () => {
-  for (const id of ['cao_cao', 'xiahou_dun', 'liu_bei', 'sun_quan']) {
+function constrainedCircleOracle(units,radius,fallback,constraints) {
+  const disks=units.map(e=>({x:e.x,y:e.y,radius:radius+e.radius}));
+  if(constraints.origin)disks.push({...constraints.origin,radius:constraints.maxDistance});
+  for(const point of constraints.avoid||[])disks.push({...point,radius:constraints.minGap});
+  const candidates=[fallback,...disks];
+  for(let i=0;i<disks.length;i++)for(let j=i+1;j<disks.length;j++) {
+    const a=disks[i],b=disks[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+    if(d<1e-9||d>a.radius+b.radius+1e-8||d<Math.abs(a.radius-b.radius)-1e-8)continue;
+    const along=(a.radius*a.radius-b.radius*b.radius+d*d)/(2*d),height=Math.sqrt(Math.max(0,a.radius*a.radius-along*along));
+    const x=a.x+along*dx/d,y=a.y+along*dy/d;
+    candidates.push({x:x-height*dy/d,y:y+height*dx/d},{x:x+height*dy/d,y:y-height*dx/d});
+  }
+  const legal=p=>(!constraints.origin||Math.hypot(p.x-constraints.origin.x,p.y-constraints.origin.y)<=constraints.maxDistance+1e-7)&&
+    (constraints.avoid||[]).every(a=>Math.hypot(p.x-a.x,p.y-a.y)>=constraints.minGap-1e-7);
+  return Math.max(0,...candidates.filter(legal).map(p=>units.filter(e=>Math.hypot(e.x-p.x,e.y-p.y)<=radius+e.radius+1e-7).length));
+}
+
+test('reachable circle centers include exact reach-boundary optima beyond enemy-center candidates',()=>{
+  const units=[{x:140,y:-20,radius:0},{x:140,y:20,radius:0}],constraints={origin:{x:0,y:0},maxDistance:100};
+  const target=maximumCircleCoverage(units,55,{x:0,y:0},()=>1,constraints);
+  assert.equal(target.count,2);assert.ok(Math.hypot(target.x,target.y)<=100+1e-7);
+  assert.ok(units.every(e=>Math.hypot(e.x-target.x,e.y-target.y)<=55+1e-7));
+});
+
+test('constrained circle sweep matches independent disk-intersection oracle for reach and minimum gaps',()=>{
+  const rng=seededRandom(20261016);
+  for(let layout=0;layout<100;layout++) {
+    const units=Array.from({length:14},(_,id)=>({id,x:rng()*600,y:rng()*600,radius:[0,7,11,21][id%4]})),fallback={x:210,y:400};
+    const constraints=layout%2 ? {origin:{x:210,y:530},maxDistance:430} : {avoid:[{x:210,y:260},{x:330,y:380}],minGap:140};
+    const target=maximumCircleCoverage(units,layout%2?150:90,fallback,()=>1,constraints);
+    const actual=units.filter(e=>Math.hypot(e.x-target.x,e.y-target.y)<= (layout%2?150:90)+e.radius+1e-7).length;
+    assert.equal(target.count,actual,'reported membership matches geometry');
+    assert.equal(actual,constrainedCircleOracle(units,layout%2?150:90,fallback,constraints),'layout '+layout);
+    assert.deepEqual(maximumCircleCoverage(units,layout%2?150:90,fallback,()=>1,constraints),target,'deterministic ties');
+  }
+});
+
+test('three greedy circles maximize only newly covered targets and retain spacing even in an empty battle',()=>{
+  const fallback={x:210,y:400};
+  for(const units of [[],[{x:210,y:240,radius:7}],Array.from({length:24},(_,id)=>({id,x:40+(id%3)*170,y:100+Math.floor(id/3)*2,radius:7}))]) {
+    const circles=maximumSeparatedCircleCoverage(units,90,3,140,fallback,()=>1);
+    assert.equal(circles.length,3);let remaining=[...units];
+    for(let i=0;i<3;i++) {
+      for(let j=0;j<i;j++)assert.ok(Math.hypot(circles[i].x-circles[j].x,circles[i].y-circles[j].y)>=140-1e-7);
+      const covered=remaining.filter(e=>Math.hypot(e.x-circles[i].x,e.y-circles[i].y)<=90+e.radius+1e-7);
+      assert.equal(covered.length,constrainedCircleOracle(remaining,90,fallback,{avoid:circles.slice(0,i),minGap:140}),'each greedy choice is exact');
+      remaining=remaining.filter(e=>!covered.includes(e));
+    }
+  }
+});
+
+test('banner and leap reach remote armies; gate spells retain fixed origins and snipes retain distinct targets', () => {
+  for (const id of ['cao_cao', 'xiahou_dun']) {
     const { game, hero, unit } = fixture(id); for (let i = 0; i < 20; i++) unit(100, 100);
-    const target = game._target(hero); assert.equal(target.count, 0); assert.equal(target.x, hero.x); assert.equal(target.y, hero.y);
+    const origin={x:hero.x,y:hero.y}, target = game._target(hero); assert.equal(target.count, 20);
+    assert.deepEqual({x:hero.x,y:hero.y},origin); assert.notEqual(target.y,hero.y);
+    if (id==='xiahou_dun') assert.ok(Math.hypot(target.x-hero.x,target.y-hero.y)<=430+1e-7);
+  }
+  for (const id of ['liu_bei','sun_quan']) {
+    const { game, hero, unit } = fixture(id); unit(100,100);
+    const target=game._target(hero), center=game.paths.reduce((p,path)=>({x:p.x+path.points.at(-1).x/game.paths.length,y:p.y+path.points.at(-1).y/game.paths.length}),{x:0,y:0});
+    close(target.x,center.x); close(target.y,center.y); assert.equal(target.count,0);
   }
   const { game, hero, unit } = fixture('taishi_ci'); for (let i = 0; i < 8; i++) unit(210, 300);
   const target = game._target(hero); assert.equal(target.count, 3); assert.equal(new Set(target.targetIds).size, 3);

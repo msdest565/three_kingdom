@@ -1,0 +1,29 @@
+
+> wushuang-guard-prototype@1.1.0-alpha.1 docs:validate
+> node scripts/validate-v1-design.mjs
+
+V1 design data PASS: 15 heroes / 60 levels / 12 maps / 516 waves / 15 boss encounters. Static audit; no V1 combat simulation or implementation verification.
+S01: all-kill food 606–1511; cheapest full-field construction margin >= 366; full-Lv3 all-kill margin -1074–-169.
+S02: all-kill food 1044–1857; cheapest full-field construction margin >= 744; full-Lv3 all-kill margin -936–-123.
+S03: all-kill food 1389–1874; cheapest full-field construction margin >= 1089; full-Lv3 all-kill margin -591–7.
+S04: all-kill food 1463–1908; cheapest full-field construction margin >= 1103; full-Lv3 all-kill margin -817–228.
+S05: all-kill food 768–2178; cheapest full-field construction margin >= 528; full-Lv3 all-kill margin -912–498.
+S06: all-kill food 1331–2069; cheapest full-field construction margin >= 1031; full-Lv3 all-kill margin -649–389.
+S07: all-kill food 1570–2105; cheapest full-field construction margin >= 1270; full-Lv3 all-kill margin -613–125.
+S08: all-kill food 1675–2168; cheapest full-field construction margin >= 1315; full-Lv3 all-kill margin -605–92.
+S09: all-kill food 875–2454; cheapest full-field construction margin >= 635; full-Lv3 all-kill margin -805–774.
+S10: all-kill food 1415–2499; cheapest full-field construction margin >= 1175; full-Lv3 all-kill margin -353–519.
+S11: all-kill food 1840–2558; cheapest full-field construction margin >= 1599; full-Lv3 all-kill margin -321–878.
+S12: all-kill food 1988–2609; cheapest full-field construction margin >= 1628; full-Lv3 all-kill margin -292–329.
+S01: core Lv1/skill1/white weapon0; required books/copper/iron 0/0/0; prior 1/2/3-star copper 0/0/0.
+S02: core Lv3/skill1/white weapon1; required books/copper/iron 6/840/6; prior 1/2/3-star copper 3150/3465/3780.
+S03: core Lv6/skill1/blue weapon2; required books/copper/iron 18/4050/75; prior 1/2/3-star copper 7350/8085/8820.
+S04: core Lv8/skill2/blue weapon2; required books/copper/iron 30/6390/75; prior 1/2/3-star copper 12600/13860/15120.
+S05: core Lv11/skill2/blue weapon3; required books/copper/iron 51/9150/87; prior 1/2/3-star copper 19200/21120/23040.
+S06: core Lv13/skill3/blue weapon3; required books/copper/iron 69/13290/87; prior 1/2/3-star copper 26550/29205/31860.
+S07: core Lv16/skill3/purple weapon4; required books/copper/iron 99/20100/222; prior 1/2/3-star copper 34950/38445/41940.
+S08: core Lv18/skill3/purple weapon5; required books/copper/iron 123/23340/240; prior 1/2/3-star copper 44400/48840/53280.
+S09: core Lv21/skill4/purple weapon5; required books/copper/iron 162/31500/240; prior 1/2/3-star copper 55400/60940/66480.
+S10: core Lv23/skill4/purple weapon6; required books/copper/iron 192/35490/261; prior 1/2/3-star copper 66950/73645/80340.
+S11: core Lv26/skill5/purple weapon7; required books/copper/iron 240/48150/285; prior 1/2/3-star copper 79550/87505/95460.
+S12: core Lv28/skill5/purple weapon7; required books/copper/iron 276/51690/285; prior 1/2/3-star copper 93200/102520/111840.

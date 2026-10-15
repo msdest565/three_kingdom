@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>无双出城 技能重做稿</title>
+<link rel="stylesheet" href="../../brush-font.css">
+<style>
+/* 武将技能重做稿 v1：沿用 ui-redesign-v2 色板；每节左为可播放的 420×600 战场样机，右为数值与美术说明 */
+:root{color-scheme:dark;
+--ink:#0d1b16;--ink-2:#13261f;--jade:#1d3d30;--jade-2:#2a5544;--line:#f2c46b2e;--line-2:#f2c46b66;
+--gold:#f2c46b;--gold-hi:#ffe7a6;--gold-deep:#a8702a;--paper:#f1e4c3;--paper-ink:#3b2b18;
+--cinnabar:#e2493b;--spirit:#7ff0c4;--text:#efe6cf;--text-2:#b8b296;--text-3:#7b7f6b;
+--wei:#6fa8ff;--shu:#4fd68f;--wu:#ff8a4c;
+--f-brush:"WSBrush","Ma Shan Zheng","STXingkai","KaiTi",cursive;
+--f-serif:"Noto Serif SC","Songti SC",SimSun,serif;
+--f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--f-sans);font-size:15px;line-height:1.65;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+.page{max-width:1200px;margin:0 auto;padding:28px 16px 96px}
+.masthead{display:grid;gap:14px;padding:24px 0 30px}
+.masthead h1{margin:0;font-family:var(--f-brush);font-weight:400;font-size:clamp(44px,8vw,84px);line-height:1;color:var(--gold-hi)}
+.masthead p{margin:0;max-width:66ch;color:var(--text-2)}
+.eyebrow{font-size:12px;letter-spacing:.2em;color:var(--gold)}
+.brief{display:flex;flex-wrap:wrap;gap:8px}.brief span{padding:5px 12px;border:1px solid var(--line-2);border-radius:999px;font-size:13px;color:var(--gold-hi);background:#f2c46b10}
+.toc{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 16px;margin:0 -16px;background:linear-gradient(var(--ink) 70%,transparent);scrollbar-width:none}
+.toc a{flex:none;padding:6px 14px;border-radius:999px;color:var(--text-2);text-decoration:none;font-size:14px;border:1px solid var(--line)}
+.toc a:hover{color:var(--gold-hi);border-color:var(--line-2)}
+.mapswitch{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
+.mapswitch button{padding:6px 14px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--text-2)}
+.mapswitch button[aria-pressed=true]{background:var(--gold);color:var(--paper-ink);border-color:var(--gold)}
+.sec{display:grid;grid-template-columns:380px minmax(0,1fr);gap:44px;align-items:start;padding:52px 0;border-top:1px solid var(--line);scroll-margin-top:56px}
+.sec.wide{grid-template-columns:minmax(0,1fr)}
+@media (max-width:880px){.sec{grid-template-columns:minmax(0,1fr);gap:24px}}
+.stage{width:100%;max-width:380px;justify-self:center;display:grid;gap:10px;min-width:0;position:sticky;top:64px}
+@media (max-width:880px){.stage{position:static}}
+.stage canvas{width:100%;aspect-ratio:420/600;border-radius:16px;background:#10221b;box-shadow:0 0 0 1px var(--line),0 18px 40px #0008;display:block}
+.demo-bar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.demo-bar button{min-height:40px;padding:0 14px;border-radius:999px;font-size:13px;background:var(--jade);border:1px solid var(--line-2);color:var(--gold-hi)}
+.demo-bar button[aria-pressed=true]{background:var(--gold);color:var(--paper-ink);border-color:var(--gold)}
+.demo-bar button:active{transform:scale(.95)}
+.meter{display:grid;grid-template-columns:44px minmax(0,1fr) 48px;gap:8px;align-items:center;font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.meter i{display:block;height:8px;border-radius:4px;background:#ffffff10;overflow:hidden}.meter i b{display:block;height:100%;border-radius:4px;background:var(--text-3)}
+.meter.new i b{background:linear-gradient(90deg,var(--gold-deep),var(--gold-hi))}.meter.new{color:var(--gold-hi)}
+.notes{min-width:0;display:grid;gap:22px;align-content:start}
+.notes h2,.sec>h2{margin:0;font-family:var(--f-brush);font-weight:400;font-size:clamp(36px,4.6vw,54px);line-height:1.05;color:var(--gold-hi)}
+.notes h2 small{font-family:var(--f-serif);font-size:16px;color:var(--text-2);margin-left:10px;letter-spacing:.05em}
+.notes h3{margin:0 0 8px;font-family:var(--f-serif);font-size:17px}
+.lede{margin:0;color:var(--text-2);max-width:64ch}
+.tag{display:inline-block;padding:1px 8px;margin-right:6px;border-radius:6px;font-size:12px;font-weight:900;vertical-align:2px}
+.tag.p0{background:var(--cinnabar);color:#fff}.tag.p1{background:var(--gold);color:var(--paper-ink)}.tag.p2{background:var(--jade-2);color:var(--gold-hi)}
+.swaps{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.swaps li{display:grid;grid-template-columns:72px minmax(0,1fr) 18px minmax(0,1.3fr);gap:10px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--ink-2);border:1px solid var(--line);font-size:14px}
+.swaps .k{color:var(--gold);font-size:12px}.swaps .old{color:var(--text-3);font-size:13px}.swaps .old.x{text-decoration:line-through;text-decoration-color:#e2493b99}
+.swaps .arr{color:var(--gold);text-align:center}
+@media (max-width:560px){.swaps li{grid-template-columns:minmax(0,1fr)}.swaps .arr{display:none}}
+.tl{display:grid;gap:0;margin:0;padding:0;list-style:none;border-left:2px solid var(--line-2);margin-left:6px}
+.tl li{position:relative;padding:4px 0 10px 18px;font-size:14px;color:var(--text)}
+.tl li::before{content:"";position:absolute;left:-6px;top:10px;width:10px;height:10px;border-radius:50%;background:var(--ink);border:2px solid var(--gold)}
+.tl li.hit::before{background:var(--cinnabar);border-color:var(--cinnabar)}
+.tl time{display:inline-block;min-width:52px;margin-right:8px;font:700 13px var(--f-serif);color:var(--gold-hi);font-variant-numeric:tabular-nums}
+.tl small{display:block;color:var(--text-2);font-size:13px}
+.why{padding:14px 16px;border-radius:12px;background:#e2493b12;border:1px solid #e2493b44;font-size:14px}
+.why b{color:#ffb3a8}
+.chart{display:grid;gap:7px;font-size:13px}
+.chart .row{display:grid;grid-template-columns:62px minmax(0,1fr) 92px;gap:10px;align-items:center}
+.chart .row span:first-child{font-family:var(--f-serif);font-weight:700}
+.chart .bars{position:relative;height:18px;border-radius:5px;background:#ffffff08}
+.chart .bars i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.chart .bars .o{background:#7b7f6b66}.chart .bars .n{background:linear-gradient(90deg,var(--gold-deep),var(--gold));top:5px;bottom:5px}
+.chart .bars .ref{position:absolute;top:-3px;bottom:-3px;width:0;border-left:1px dashed var(--spirit)}
+.chart .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2)}.chart .num b{color:var(--gold-hi)}
+.chart .row.same .num b{color:var(--text-2)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-2)}.legend i{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:5px;vertical-align:1px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.card{padding:14px 16px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line)}
+.card b{display:block;margin-bottom:4px;font-family:var(--f-serif)}.card p{margin:0;font-size:13px;color:var(--text-2)}
+.card code,.notes code{font-size:12px;color:var(--spirit);word-break:break-all}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--gold);font-weight:500;background:#0004}td:nth-child(n+3){font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}td.up{color:var(--gold-hi);font-weight:700}
+.review{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:r}
+.review li{counter-increment:r;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:12px 14px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line);font-size:14px}
+.review li::before{content:counter(r);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--paper-ink);font-weight:900;font-size:13px}
+.review p{margin:2px 0 0;color:var(--text-2);font-size:13px}
+.foot{margin-top:40px;font-size:12px;color:var(--text-3)}
+</style>
+<div class="page">
+<header class="masthead">
+  <span class="eyebrow">无双守关 · 武将技能重做稿 · 2026-10-15</span>
+  <h1>出城一击</h1>
+  <p>原地圆形技能只能打到关前一小块。这一稿把八名武将的无双改成“出城”打法：跳进兵堆、掷出令旗、沿路冲杀、潮水外推，让范围落在敌人真正密集的地方。伤害、斩杀、怒气和演出锁一律不改，只改形状、落点和美术。</p>
+  <div class="brief"><span>8 将重做</span><span>7 将保留</span><span>伤害数值不变</span><span>演出锁仍为 0.9 秒</span><span>每个样机可播放</span></div>
+  <div class="mapswitch" role="group" aria-label="样机地图"><span>样机地图</span><button type="button" data-map="wei_gate" aria-pressed="true">平原寨门 · 两路</button><button type="button" data-map="wei_fort" aria-pressed="false">合肥堡垒 · 三路</button></div>
+</header>
+<nav class="toc" aria-label="目录"><a href="#overview">总览</a><a href="#xiahou_dun">夏侯惇</a><a href="#cao_cao">曹操</a><a href="#liu_bei">刘备</a><a href="#sun_quan">孙权</a><a href="#zhou_yu">周瑜</a><a href="#sima_yi">司马懿</a><a href="#xu_chu">许褚</a><a href="#gan_ning">甘宁</a><a href="#rules">不变的规则</a><a href="#data">数据字段</a><a href="#review">待确认</a><a href="battle-art-redesign.html">战场美术稿 →</a></nav>
+
+<section class="sec wide" id="overview">
+  <span class="eyebrow">问题</span>
+  <h2>关前一圈，打不到兵潮</h2>
+  <p class="lede">武将站在城墙 y=550，敌军从 y=0 走到 y=530。半径 145 的原地圆只能盖住最后约 145 单位路程，敌人到这里时往往已经被军营削过，或者马上就要撞门。下表是“敌军道路落在技能范围内的比例”，按 12 张地图平均、领衔阵位计算。敌潮沿路分布时，它近似正比于一次无双能打到的人数。</p>
+  <div class="legend"><span><i style="background:#7b7f6b66"></i>现版</span><span><i style="background:var(--gold)"></i>重做稿</span><span><i style="border-left:1px dashed var(--spirit);width:0;height:10px"></i>关羽基准 77%</span></div>
+  <div class="chart" id="chart" role="img" aria-label="15 名武将技能覆盖率，现版与重做稿对比"></div>
+  <p class="lede" style="font-size:13px">吕蒙伏雷和太史慈点杀不按面积计，不列入。曹操、刘备、孙权常做协战，协战阵位更偏，现版覆盖更低（刘备 19%，曹操 27%）；重做后的落点和阵位无关。</p>
+</section>
+<div id="skills"></div>
+
+<section class="sec wide" id="kept">
+  <span class="eyebrow">保留</span>
+  <h2>七将不动</h2>
+  <div class="grid2">
+    <div class="card"><b>关羽 · 青龙横扫 · 77%</b><p>宽刀波本来就是全图最大覆盖，作为这次重做的上限基准。</p></div>
+    <div class="card"><b>张辽 · 合肥突阵 · 62%</b><p>已经沿路冲杀，本身就是“出城”打法。只补一笔美术：兵影换成张辽本人骑马冲出，再化烟回到阵位（纯表现）。</p></div>
+    <div class="card"><b>张飞 · 长坂怒吼 · 59%</b><p>宽短声浪罩住关前路口，配合击退定位为“守门”，保留。</p></div>
+    <div class="card"><b>赵云 · 龙胆三穿 · 58%</b><p>三次命中补足了单次覆盖，对精锐的总伤害够高。</p></div>
+    <div class="card"><b>诸葛亮 · 八阵风牢 · 55%</b><p>已经是自由落点圆，靠牵退和易伤吃收益。</p></div>
+    <div class="card"><b>吕蒙 · 白衣伏兵 / 太史慈 · 笃烈三矢</b><p>按道路布雷、按目标点杀，不受“原地圆”问题影响。</p></div>
+  </div>
+</section>
+
+<section class="sec wide" id="rules">
+  <span class="eyebrow">边界</span>
+  <h2>不变的规则</h2>
+  <div class="grid2">
+    <div class="card"><b>数值不动</b><p><code>damageByClass</code>、<code>tickDamageByClass</code>、斩杀名单、击退量、增益量与时长全部沿用。只改形状、落点和表现。</p></div>
+    <div class="card"><b>每敌每次最多命中一次</b><p>多段技能（司马懿三雷、刘备援军推进）的 <code>maxHitsPerEnemyPerCast</code> 仍为 1；持续技能的跳数上限不变。</p></div>
+    <div class="card"><b>演出锁 0.9 秒</b><p>夏侯惇跳出跳回、许褚前扑都在 0.9 秒内完成，全队技能队列的节奏不变。</p></div>
+    <div class="card"><b>武将不会受伤</b><p>跳进兵堆只是表现：武将没有 HP、不被攻击、不阻挡敌人。命中判定只看锁定落点。</p></div>
+    <div class="card"><b>落点在施放时锁定</b><p>手动施放在入队时锁定，自动施放在执行时复核，和现在的 <code>targetLockedAtCast</code> 一致。特效只解释已经命中的范围，范围外的敌人不画受击。</p></div>
+    <div class="card"><b>减弱动态</b><p>去掉跳跃弧线、旗帜飞行、潮浪推进的位移，改为落点直接闪现 + 范围描边；保留命中、倒地、增益图标。</p></div>
+  </div>
+</section>
+
+<section class="sec wide" id="data">
+  <span class="eyebrow">交接</span>
+  <h2>数据字段</h2>
+  <p class="lede">实现时改 <code>docs/v1/data/balance.json</code> 的 <code>heroes[id].ultimate</code>，再跑 <code>npm run data:build</code>。新增四种 shape，引擎 <code>_target</code> / <code>_inShape</code> 各加一个分支。<code>maximumCircleCoverage</code> 可直接复用给跳跃、掷旗和多点落雷。</p>
+  <div class="tbl"><table id="data-table"><thead><tr><th>武将</th><th>现 shape</th><th>新 shape</th><th>新字段</th><th>选点规则</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="sec wide" id="review">
+  <span class="eyebrow">动手前</span>
+  <h2>请确认这几处</h2>
+  <ol class="review">
+    <li><div><b>整体强度会明显上升</b><p>八将的覆盖从 20–35% 提到 52–65%，单次无双打到的人数大约翻倍。现有 60 关回归是按旧覆盖调的。实现后请先跑 <code>npm run audit:campaign</code>；如果通关率过高，优先调敌潮密度或怒气回复，别把范围再缩回去。</p></div></li>
+    <li><div><b>夏侯惇跳出期间普攻暂停</b><p>0.9 秒内他不在城墙上，普攻停一下更好理解。也可以让普攻照常（不影响平衡），二选一。</p></div></li>
+    <li><div><b>刘备与孙权都从城门出发</b><p>区分方式：刘备的援军沿每条路纵深推进（细长、跟路走），孙权的潮浪是关前半圆（宽、不跟路）。如果觉得还是像，孙权可以改成“沿路潮线”。</p></div></li>
+    <li><div><b>周瑜火船只走一路</b><p>三路图上只烧压力最大的一路。现有局内强化“连营火势”（半径 +16）需改成“火带宽 +24”。</p></div></li>
+    <li><div><b>美术成本</b><p>夏侯惇、许褚需要新增“跳起 / 落地”两帧动作，曹操需要令旗投掷物，刘备需要小兵群组件（可复用盾营盾牌），其余都是特效。按 art-design.md 的增量规则计费。</p></div></li>
+  </ol>
+  <p class="foot">覆盖率按 12 张地图的敌军道路（y 0–530，每 4 单位取样）计算，领衔阵位 (210, 550)。它衡量“沿路分布的敌潮”能被罩住多少，不等于实际击杀；真实效果以战斗回归为准。</p>
+</section>
+</div>
+<script>
+// 地图与阵位取自 docs/v1/data/levels.json；样机敌兵为确定性取样，只用于示意覆盖。
+const MAPS = {
+  wei_gate: { name: '平原寨门', paths: [[{x:100,y:-16},{x:95,y:150},{x:210,y:310},{x:210,y:530}],[{x:320,y:-16},{x:325,y:150},{x:210,y:310},{x:210,y:530}]],
+    camps: [[53,142],[367,142],[67,290],[353,290],[88,420],[332,420]] },
+  wei_fort: { name: '合肥堡垒', paths: [[{x:70,y:-16},{x:130,y:130},{x:65,y:250},{x:170,y:350},{x:210,y:450},{x:210,y:530}],[{x:210,y:-16},{x:210,y:130},{x:260,y:260},{x:210,y:450},{x:210,y:530}],[{x:350,y:-16},{x:310,y:180},{x:355,y:300},{x:250,y:395},{x:210,y:450},{x:210,y:530}]],
+    camps: [[53,142],[367,142],[67,290],[353,290],[88,420],[332,420],[170,215],[260,360]] },
+};
+const LEAD = { x: 210, y: 550 }, GATE = { x: 210, y: 540 };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hypot = Math.hypot, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), ease = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const lerp = (a, b, t) => a + (b - a) * t;
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 4294967296; }; }
+// 道路按 4 单位取样，带累计里程 s。
+function sampleLane(path) {
+  const pts = [];
+  for (let i = 1; i < path.length; i++) { const a = path[i - 1], b = path[i]; const n = Math.max(1, Math.round(hypot(b.x - a.x, b.y - a.y) / 4));
+    for (let k = 0; k < n; k++) pts.push({ x: lerp(a.x, b.x, k / n), y: lerp(a.y, b.y, k / n) }); }
+  pts.push({ ...path[path.length - 1] }); let s = 0; pts[0].s = 0;
+  for (let i = 1; i < pts.length; i++) { s += hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); pts[i].s = s; }
+  return pts;
+}
+const atS = (lane, s) => { const i = clamp(Math.round(s / lane[lane.length - 1].s * (lane.length - 1)), 0, lane.length - 1); return lane[i]; };
+const segDist = (p, lane, s0, s1) => { let d = 1e9, at = 0; for (const q of lane) if (q.s >= s0 && q.s <= s1) { const v = hypot(p.x - q.x, p.y - q.y); if (v < d) { d = v; at = q.s; } } return { d, s: at }; };
+// 敌潮：每路沿路排布，普通兵为主，夹少量精锐，主路中段一名首领。
+function buildEnemies(map, lanes) {
+  const r = rng(7 + lanes.length), list = [];
+  lanes.forEach((lane, li) => {
+    const end = lane[lane.length - 1].s;
+    for (let s = 40; s < end - 10; s += lanes.length > 2 ? 15 : 12) {
+      const p = atS(lane, s); if (p.y < 18 || p.y > 522) continue;
+      for (let k = 0; k < (r() < .35 ? 2 : 1); k++) {
+        const roll = r(), type = roll < .1 ? 'elite' : 'ordinary';
+        list.push({ x: p.x + (r() - .5) * 24, y: p.y + (r() - .5) * 14, lane: li, s, type, hp: type === 'elite' ? 55 : 28, ph: r() * 6.28 });
+      }
+    }
+  });
+  const main = lanes[0]; const bp = atS(main, main[main.length - 1].s * .52);
+  list.push({ x: bp.x + 6, y: bp.y, lane: 0, s: main[main.length - 1].s * .52, type: 'boss', hp: 1000, ph: 0 });
+  return list;
+}
+// 通用选点：网格扫描最多覆盖（敌兵权重 普通1 / 精锐1.25 / 首领2.5，与引擎一致）。
+const weight = e => e.type === 'boss' ? 2.5 : e.type === 'elite' ? 1.25 : 1;
+function bestCircle(enemies, r, opt = {}) {
+  let best = { x: 210, y: 300, v: -1 };
+  for (let x = 30; x <= 390; x += 8) for (let y = 60; y <= 480; y += 8) {
+    if (opt.from && hypot(x - opt.from.x, y - opt.from.y) > opt.reach) continue;
+    if (opt.avoid && opt.avoid.some(c => hypot(c.x - x, c.y - y) < opt.gap)) continue;
+    let v = 0; for (const e of enemies) if (!(opt.skip && opt.skip.has(e)) && hypot(e.x - x, e.y - y) <= r) v += weight(e);
+    if (v > best.v) best = { x, y, v };
+  }
+  return best;
+}
+function bestCone(enemies, o, r, deg) {
+  let best = { a: -Math.PI / 2, v: -1 };
+  for (let d = -126; d <= -54; d += 2) { const a = d * Math.PI / 180; let v = 0; for (const e of enemies) if (inCone(e, o, a, r, deg)) v += weight(e); if (v > best.v) best = { a, v }; }
+  return best.a;
+}
+function inCone(e, o, a, r, deg) { const dx = e.x - o.x, dy = e.y - o.y, f = dx * Math.cos(a) + dy * Math.sin(a), side = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)); return f >= 0 && hypot(dx, dy) <= r && side <= f * Math.tan(deg * Math.PI / 360); }
+function bestStrip(enemies, lanes, len, w) {
+  let best = { lane: 0, s0: 0, v: -1 };
+  lanes.forEach((lane, li) => { const end = lane[lane.length - 1].s; for (let s0 = 0; s0 <= end - len; s0 += 12) {
+    let v = 0; for (const e of enemies) if (segDist(e, lane, s0, s0 + len).d <= w / 2) v += weight(e); if (v > best.v) best = { lane: li, s0, v }; } });
+  return best;
+}
+// 覆盖率（12 图平均，领衔阵位）：o = 现版，n = 重做稿；null = 保留。
+const COVER = [
+  ['关羽', 77.1, null], ['司马懿', 44.9, 69.5], ['刘备', 22.0, 65.3], ['许褚', 47.4, 63.2], ['张辽', 62.1, null], ['曹操', 29.4, 60.6],
+  ['张飞', 58.9, null], ['赵云', 57.6, null], ['甘宁', 48.8, 57.0], ['孙权', 22.9, 55.2], ['夏侯惇', 22.0, 55.0], ['诸葛亮', 55.0, null], ['周瑜', 35.1, 51.8],
+];
+const SKILLS = [
+ { id: 'xiahou_dun', hero: '夏侯惇', faction: 'wei', color: '#ff7a45', oldName: '独眼破军', name: '拔矢破军', role: '跳入兵堆 · 圆形重击 · 跳回城墙', cover: [22.0, 55.0], prio: 'p0',
+   lede: '他不再等敌人走到脚下。拔矢一声怒吼，纵身跃进最密的兵堆，落地一刀震开半径 150 的圆，再一跃回到城墙。命中伤害、斩杀步兵和击退全部照旧。',
+   swaps: [['形状', '原地圆 r145', '跳跃落点圆 r150'], ['落点', '武将脚下', '距阵位 430 内覆盖最多处'], ['伤害', '步兵斩杀 · 精锐 90 · 首领 260', '不变'], ['击退', '精锐 30 · 首领 6', '不变，从落点向外']],
+   tl: [['0.00', '下蹲蓄力，单眼亮红光', '刀背横在身前，地面出现落点虚线圈'], ['0.12', '起跳', '赤橙拖影划出抛物线，高点约 90 单位'], ['0.36', '落地重击', '圆内敌军受击，落地裂纹 + 赤橙冲击环向外推开', 1], ['0.36–0.60', '刀风旋斩一圈', '纯表现，不追加命中'], ['0.60–0.90', '跳回城墙', '反向抛物线，落回阵位时一圈尘土']],
+   why: '落点按 <code>maximumCircleCoverage</code> 在阵位 430 单位内选，常落在双路汇合处或军营前的拥堵点，那里正好是军营减速后敌兵最密的地方。',
+   data: ['circle_shock', 'leap_strike_circle', '<code>radius:150, leapReach:430, landAtSec:0.36, returnAtSec:0.9</code>', '阵位 430 内最大覆盖圆心'] },
+ { id: 'cao_cao', hero: '曹操', faction: 'wei', color: '#f2c46b', oldName: '魏武号令', name: '魏武号令', role: '掷令旗 · 落点震击 · 全军攻速', cover: [29.4, 60.6], prio: 'p1',
+   lede: '曹操把军令旗掷向敌阵，旗落之处金印砸地，震击半径 165。全军攻速 +25% 持续 6 秒照旧，旗子插在战场上直到增益结束，玩家一眼能看到“号令还在”。',
+   swaps: [['形状', '原地圆 r185', '令旗落点圆 r165'], ['落点', '武将脚下', '全图覆盖最多处（不限距离）'], ['伤害', '50 / 50 / 160', '不变'], ['增益', '全军攻速 +25%，6 秒', '不变；令旗留场 6 秒作计时']],
+   tl: [['0.00', '拔剑指向敌阵', '剑尖金光'], ['0.10', '掷出令旗', '旗杆旋转飞行，金色尾迹'], ['0.42', '令旗插地', '金色“令”字印砸出冲击波，圆内受击', 1], ['0.42–6.4', '令旗留场', '旗面随风，旗杆底部一圈细金环倒计时；受益军营头顶小旗光'], ['6.4', '令旗淡出', '']],
+   why: '原版半径虽大（185），可圆心在城墙上，一半面积落在城外空地。掷旗把整个圆送进兵潮。',
+   data: ['allied_command_with_local_shock', 'thrown_banner_circle', '<code>radius:165, flightSec:0.42, bannerLingerSec:6</code>', '全图最大覆盖圆心'] },
+ { id: 'liu_bei', hero: '刘备', faction: 'shu', color: '#9be27a', oldName: '仁德援军', name: '仁德援军', role: '城门开 · 援军沿每路推进 · 修城增伤', cover: [22.0, 65.3], prio: 'p0',
+   lede: '名字里有“援军”，现在真的出来了。城门洞开，一队持盾援军沿每一条路向外推进 320，碾过整段关前道路后化作金绿光点回城。修复城关 8% 和军营增伤 20% 照旧。',
+   swaps: [['形状', '原地圆 r145', '每路一条推进带 长 320 宽 110'], ['落点', '武将脚下', '固定：从城门沿所有道路向外'], ['伤害', '70 / 70 / 180', '不变，每敌最多一次'], ['修城 / 增伤', '8%（上限 10%）/ 军营 +20% 6 秒', '不变']],
+   tl: [['0.00', '刘备举双股剑', '城门亮起金绿光'], ['0.10', '城门开，援军列阵冲出', '每路一排盾兵剪影'], ['0.10–0.70', '沿路推进', '推进带前沿扫过的敌人受击，被推开半步（纯表现）', 1], ['0.70', '援军化光', '金绿光点飞回城门，城关耐久条上涨'], ['0.70–6.7', '军营增伤旗纹', '受益军营旗面金绿描边']],
+   why: '按路走的推进带不需要选点，任何地图都能覆盖关前全部道路。三路图上会出三队，覆盖反而更高。',
+   data: ['recovery_with_circle_shock', 'gate_lane_surge', '<code>surgeLength:320, width:110, surgeSec:0.6</code>', '所有道路，从终点倒推 320'] },
+ { id: 'sun_quan', hero: '孙权', faction: 'wu', color: '#c79bd8', oldName: '江东铁壁', name: '江东潮壁', role: '城前潮浪外推 · 城关减伤', cover: [22.9, 55.2], prio: 'p1',
+   lede: '孙权一剑劈下，江潮从城门向外涌出一道半圆，半径 320，把关前敌人整片拍中。退潮后在城门留下 6 秒的水纹护壁，城关受到的伤害 ×0.8 照旧。',
+   swaps: [['形状', '原地圆 r150', '城前半圆潮浪 r320'], ['落点', '武将脚下', '固定：以城门为圆心，只向城外'], ['伤害', '90 / 75 / 210', '不变'], ['护城', '城关受伤 ×0.8，6 秒', '不变']],
+   tl: [['0.00', '孙权举剑', '城门前地面泛起水光'], ['0.15', '潮浪涌出', '紫青色浪头从城门推向外圈'], ['0.15–0.55', '浪头扫过', '浪头经过的敌人受击，溅起水花', 1], ['0.55–0.90', '退潮', '浪回卷到城门，凝成水纹护壁'], ['0.90–6.9', '护壁', '城门前一道半透明水幕，受击时泛起涟漪']],
+   why: '半圆只朝城外开，原版圆形落在城墙后面的那一半面积全部收回，半径也能放大到 320。和刘备的区别：刘备沿路细长，孙权关前一大片。',
+   data: ['barrier_with_circle_shock', 'gate_half_wave', '<code>radius:320, arcDegrees:180, waveSec:0.4</code>', '固定城门圆心'] },
+ { id: 'zhou_yu', hero: '周瑜', faction: 'wu', color: '#ff6a3d', oldName: '赤壁烈焰', name: '赤壁火船', role: '火船顺路冲下 · 留一条火带', cover: [35.1, 51.8], prio: 'p1',
+   lede: '周瑜挥扇，一艘火船沿压力最大的那条路冲下，烧出一条长 320、宽 110 的火带，持续 4 秒。每跳伤害、16 跳上限、新进入者也会受伤都照旧，只是火从一个小圆变成了一整段路。',
+   swaps: [['形状', '锁定圆 r98', '沿路火带 长 320 宽 110'], ['落点', '覆盖最多的圆心', '压力最大的一路中覆盖最多的一段'], ['伤害', '每 0.25 秒 8 / 6 / 15，最多 16 跳', '不变'], ['持续', '4 秒', '不变']],
+   tl: [['0.00', '周瑜挥扇', '扇面赤金'], ['0.05', '火船出现在火带上端', '一艘燃烧的小艨艟'], ['0.05–0.45', '火船顺路冲下', '船身经过处点燃，火带逐段亮起'], ['0.25 起', '第一跳伤害', '整条火带同时生效（判定不随船逐段开启）', 1], ['4.0', '火带熄灭', '余烬淡出']],
+   why: '敌人沿路走，火也沿路烧，驻留时间更长，16 跳上限更容易打满。',
+   data: ['locked_circle', 'lane_fire_strip', '<code>length:320, width:110</code>（时长、跳伤不变）', '压力最大道路上覆盖最多的 320 段'] },
+ { id: 'sima_yi', hero: '司马懿', faction: 'wei', color: '#b48cff', oldName: '幽雷诡阵', name: '三才幽雷', role: '三处预警 · 1 秒后同时落雷', cover: [44.9, 69.5], prio: 'p2',
+   lede: '一个大圆拆成三个小圆，分布在三处兵堆上，1 秒预警后同时落雷。每个圆半径 90，圆心至少相距 140。每名敌人只会被劈一次，斩杀步兵和 3 秒减速照旧。',
+   swaps: [['形状', '锁定圆 r125 × 1', '锁定圆 r90 × 3'], ['落点', '覆盖最多的圆心', '依次选覆盖最多处，间距 ≥ 140'], ['伤害', '步兵斩杀 · 精锐 110 · 首领 340', '不变，每敌最多一次'], ['减速', '×0.65，3 秒', '不变']],
+   tl: [['0.00', '羽扇一指', '三处地面浮现紫色八卦虚线圈'], ['0.00–1.00', '预警', '圈内雷纹逐渐收紧，敌人头顶出现雷标'], ['1.00', '三雷同落', '三道紫白落雷，命中者脚底减速纹', 1], ['1.00–1.30', '余电', '']],
+   why: '一个大圆只能罩一处，三个小圆能同时罩住双路和汇合点。总面积和原版接近（3×90² ≈ 1.6×125²）。',
+   data: ['delayed_locked_circle', 'delayed_multi_circle', '<code>radius:90, count:3, minGap:140</code>（delaySec 不变）', '贪心依次选覆盖最多处'] },
+ { id: 'xu_chu', hero: '许褚', faction: 'wei', color: '#e0b25a', oldName: '虎痴撼地', name: '虎痴撼地', role: '扑出城墙 · 重斧砸地 · 长扇裂地', cover: [47.4, 63.2], prio: 'p2',
+   lede: '许褚扑出城墙半步，抡斧砸地，裂缝沿前方 75° 扇面一路裂开，长度从 280 拉到 360。他仍然是重击型：精锐 150、首领 390 不变，只是裂缝能追到第二排兵。',
+   swaps: [['形状', '扇形 r280 · 70°', '扇形 r360 · 75°'], ['朝向', '合法角度内覆盖最多', '不变'], ['伤害', '步兵斩杀 · 精锐 150 · 首领 390', '不变'], ['动作', '原地砸', '向前扑 40 再落回（纯表现）']],
+   tl: [['0.00', '举斧过顶', '肌肉剪影鼓起，地面尘土上扬'], ['0.18', '前扑砸地', '斧刃落点迸出碎石'], ['0.22–0.50', '裂缝沿扇面推进', '土金色裂纹由近到远亮起，经过的敌人受击', 1], ['0.50–0.90', '退回城墙', '尘片缓慢落下']],
+   why: '扇形的问题是太短，打不到汇合点以外。长度 +80、角度 +5° 就够了，不需要换打法。',
+   data: ['frontal_cone', 'frontal_cone', '<code>range:360, angleDegrees:75</code>', '不变'] },
+ { id: 'gan_ning', hero: '甘宁', faction: 'wu', color: '#3fd0c8', oldName: '锦帆箭雨', name: '锦帆夜袭', role: '铃声为号 · 箭雨沿路扫过', cover: [48.8, 57.0], prio: 'p2',
+   lede: '铃声一响，锦帆军从路旁齐射，箭雨落成一条长 300、宽 150 的带，从远端向城门方向扫过 2 秒。每跳伤害、8 跳上限和 4 秒易伤照旧。',
+   swaps: [['形状', '锁定圆 r135', '沿路箭雨带 长 300 宽 150'], ['落点', '覆盖最多的圆心', '任意一路覆盖最多的 300 段'], ['伤害', '每 0.25 秒 10 / 8 / 18，最多 8 跳', '不变'], ['易伤', '受伤 ×1.2，4 秒', '不变']],
+   tl: [['0.00', '甘宁摇铃', '铃铛金光，路旁浮现锦帆旗影'], ['0.10', '第一轮齐射', '箭影从两侧斜落'], ['0.25–2.0', '箭雨扫过', '整条带持续生效，落箭密集处由远及近移动（表现）', 1], ['2.0–6.0', '易伤标记', '命中者头顶青色破甲纹']],
+   why: '和周瑜同为沿路带，靠颜色和动势区分：周瑜是赤金火船、自上而下冲，甘宁是青色箭雨、从两侧斜落。宽 150 比火带更宽、更短时。',
+   data: ['volley_locked_circle', 'lane_volley_strip', '<code>length:300, width:150</code>（时长、跳伤不变）', '任意道路覆盖最多的 300 段'] },
+];
+// —— 每个技能的判定与时序。hit(e) 返回该敌人的受击时刻（秒）或 null；判定只看锁定形状。
+const FIELD = new Set(['zhou_yu', 'gan_ning']);
+function plans(id, env) {
+  const { enemies, lanes } = env;
+  const circleAt = (c, r, at) => e => hypot(e.x - c.x, e.y - c.y) <= r ? at : null;
+  const OLD = {
+    xiahou_dun: { kind: 'circle', c: LEAD, r: 145, dur: 1.2 }, cao_cao: { kind: 'circle', c: LEAD, r: 185, dur: 1.2 },
+    liu_bei: { kind: 'circle', c: LEAD, r: 145, dur: 1.2 }, sun_quan: { kind: 'circle', c: LEAD, r: 150, dur: 1.2 },
+    zhou_yu: { kind: 'circle', c: bestCircle(enemies, 98), r: 98, dur: 2.4, field: true },
+    sima_yi: { kind: 'circle', c: bestCircle(enemies, 125), r: 125, dur: 1.6, delay: 1 },
+    gan_ning: { kind: 'circle', c: bestCircle(enemies, 135), r: 135, dur: 2.2, field: true },
+    xu_chu: { kind: 'cone', r: 280, deg: 70, dur: 1.2 },
+  }[id];
+  if (OLD.kind === 'cone') OLD.a = bestCone(enemies, LEAD, 280, 70);
+  const oldAt = OLD.delay || (OLD.field ? .25 : .3);
+  OLD.hit = OLD.kind === 'cone' ? e => inCone(e, LEAD, OLD.a, OLD.r, OLD.deg) ? oldAt : null : circleAt(OLD.c, OLD.r, oldAt);
+  let NEW;
+  if (id === 'xiahou_dun') { const c = bestCircle(enemies, 150, { from: LEAD, reach: 430 }); NEW = { c, r: 150, dur: 1.5, hit: circleAt(c, 150, .36) }; }
+  if (id === 'cao_cao') { const c = bestCircle(enemies, 165); NEW = { c, r: 165, dur: 2.8, hit: circleAt(c, 165, .42) }; }
+  if (id === 'liu_bei') {
+    const bands = lanes.map(l => { const end = l[l.length - 1].s; return { lane: l, s0: end - 320, s1: end }; });
+    NEW = { bands, dur: 2.0, hit: e => { let t = null; for (const b of bands) { const q = segDist(e, b.lane, b.s0, b.s1); if (q.d <= 55) { const at = .1 + .6 * (b.s1 - q.s) / 320; t = t === null ? at : Math.min(t, at); } } return t; } };
+  }
+  if (id === 'sun_quan') NEW = { c: GATE, r: 320, dur: 2.2, hit: e => { const d = hypot(e.x - GATE.x, e.y - GATE.y); return d <= 320 && e.y <= GATE.y ? .15 + .4 * d / 320 : null; } };
+  if (id === 'zhou_yu' || id === 'gan_ning') {
+    const len = id === 'zhou_yu' ? 320 : 300, w = id === 'zhou_yu' ? 110 : 150, b = bestStrip(enemies, lanes, len, w);
+    NEW = { lane: lanes[b.lane], s0: b.s0, s1: b.s0 + len, w, dur: 2.6, hit: e => segDist(e, lanes[b.lane], b.s0, b.s0 + len).d <= w / 2 ? .25 : null };
+  }
+  if (id === 'sima_yi') {
+    const cs = [], skip = new Set();
+    for (let k = 0; k < 3; k++) { const c = bestCircle(enemies, 90, { avoid: cs, gap: 140, skip }); cs.push(c); for (const e of enemies) if (hypot(e.x - c.x, e.y - c.y) <= 90) skip.add(e); }
+    NEW = { cs, r: 90, dur: 1.7, hit: e => cs.some(c => hypot(e.x - c.x, e.y - c.y) <= 90) ? 1 : null };
+  }
+  if (id === 'xu_chu') { const a = bestCone(enemies, LEAD, 360, 75); NEW = { a, r: 360, deg: 75, dur: 1.4, hit: e => inCone(e, LEAD, a, 360, 75) ? .22 + .28 * hypot(e.x - LEAD.x, e.y - LEAD.y) / 360 : null }; }
+  return { old: OLD, neu: NEW };
+}
+// —— 画布：战场底图
+function drawField(g, env, hero) {
+  g.fillStyle = '#132a20'; g.fillRect(0, 0, 420, 600);
+  const grd = g.createRadialGradient(210, 300, 40, 210, 300, 420); grd.addColorStop(0, '#1d3d3000'); grd.addColorStop(1, '#0a1611cc'); g.fillStyle = grd; g.fillRect(0, 0, 420, 600);
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const p of env.map.paths) { g.beginPath(); p.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y));
+    g.strokeStyle = '#4a4130'; g.lineWidth = 46; g.stroke(); g.strokeStyle = '#5c5038'; g.lineWidth = 36; g.stroke(); }
+  for (const [x, y] of env.map.camps) { g.fillStyle = '#0d1b16'; g.strokeStyle = '#f2c46b55'; g.lineWidth = 1.5; g.beginPath(); g.roundRect(x - 15, y - 15, 30, 30, 6); g.fill(); g.stroke();
+    g.fillStyle = '#f2c46b88'; g.font = '700 13px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('营', x, y + 1); }
+  // 城墙
+  g.fillStyle = '#3a2f22'; g.fillRect(0, 532, 420, 68); g.fillStyle = '#5a4630';
+  for (let x = 0; x < 420; x += 28) g.fillRect(x + 2, 524, 20, 12);
+  g.fillStyle = '#241c14'; g.beginPath(); g.roundRect(184, 530, 52, 22, [10, 10, 0, 0]); g.fill();
+}
+function drawHero(g, p, color, glyph, scale = 1, alpha = 1) {
+  g.save(); g.globalAlpha = alpha; g.translate(p.x, p.y); g.scale(scale, scale);
+  g.fillStyle = '#0008'; g.beginPath(); g.ellipse(0, 12, 16, 5, 0, 0, 7); g.fill();
+  g.fillStyle = '#0d1b16'; g.strokeStyle = color; g.lineWidth = 3; g.beginPath(); g.arc(0, -2, 15, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = color; g.font = '900 15px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyph, 0, -1);
+  g.restore();
+}
+// 持续技能（火、箭雨）每跳 8–10，普通兵约 0.75 秒后才倒下；瞬发技能命中即倒。
+function drawEnemies(g, env, hit, t, dieAfter = 0) {
+  for (const e of env.enemies) {
+    const at = hit(e), struck = at !== null && t >= at, since = struck ? t - at : 0;
+    const dies = struck && e.type === 'ordinary' && since >= dieAfter, fade = dies ? clamp(1 - (since - dieAfter) / .45, 0, 1) : 1;
+    const r = e.type === 'boss' ? 11 : e.type === 'elite' ? 6 : 4.2;
+    const bob = reduce ? 0 : Math.sin(t * 6 + e.ph) * .8;
+    if (dies && fade > 0) { const k = since - dieAfter; g.fillStyle = `rgba(20,10,8,${.5 * fade})`; g.beginPath(); g.ellipse(e.x, e.y + 3, r + k * 14, (r + k * 14) * .45, 0, 0, 7); g.fill(); }
+    if (fade <= 0) continue;
+    g.globalAlpha = fade;
+    g.fillStyle = struck && since < .12 ? '#fff' : e.type === 'boss' ? '#7a1f1a' : e.type === 'elite' ? '#a33b2c' : '#c9483a';
+    g.strokeStyle = e.type === 'ordinary' ? '#2a0d0a' : struck ? '#ffe7a6' : '#ffb3a8'; g.lineWidth = e.type === 'ordinary' ? 1 : struck ? 2.4 : 1.6;
+    g.beginPath(); g.arc(e.x, e.y + bob, r, 0, 7); g.fill(); g.stroke();
+    if (e.type === 'boss') { g.fillStyle = '#ffe7a6'; g.font = '900 12px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('帅', e.x, e.y + bob + 1); }
+    g.globalAlpha = 1;
+    if (struck && e.type === 'boss' && since < 1.1) {
+      g.globalAlpha = clamp(1.4 - since * 1.3, 0, 1); g.fillStyle = '#ffe7a6'; g.font = '900 12px serif'; g.textAlign = 'center';
+      g.fillText('重创', e.x, e.y - r - 6 - since * 14); g.globalAlpha = 1;
+    }
+  }
+}
+// —— 特效工具
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; };
+function disc(g, c, r, fill, stroke, lw = 2, dash) { g.beginPath(); g.arc(c.x, c.y, Math.max(0, r), 0, 7); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.setLineDash(dash || []); g.strokeStyle = stroke; g.lineWidth = lw; g.stroke(); g.setLineDash([]); } }
+function lanePath(g, lane, s0, s1) { g.beginPath(); let first = true; for (const q of lane) if (q.s >= s0 && q.s <= s1) { first ? g.moveTo(q.x, q.y) : g.lineTo(q.x, q.y); first = false; } }
+function strokeLane(g, lane, s0, s1, w, style) { lanePath(g, lane, s0, s1); g.strokeStyle = style; g.lineWidth = w; g.lineCap = 'round'; g.stroke(); }
+function arcPos(a, b, k, h) { return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k) - Math.sin(Math.PI * k) * h }; }
+function cone(g, a, r, deg, fill, stroke) { const h = deg * Math.PI / 360; g.beginPath(); g.moveTo(LEAD.x, LEAD.y); g.arc(LEAD.x, LEAD.y, r, a - h, a + h); g.closePath(); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.strokeStyle = stroke; g.lineWidth = 2; g.stroke(); } }
+function bolt(g, x, y, color, a) { g.save(); g.globalAlpha = a; g.strokeStyle = color; g.lineWidth = 3; g.shadowColor = color; g.shadowBlur = 12; g.beginPath(); g.moveTo(x + 8, y - 120); g.lineTo(x - 6, y - 70); g.lineTo(x + 6, y - 64); g.lineTo(x - 4, y); g.stroke(); g.restore(); }
+// 旧版：只画范围与一次冲击，让对比聚焦在“打在哪”。
+function drawOld(g, s, P, t, top) {
+  const o = P.old, col = '#b8b296';
+  if (!top) {
+    if (o.kind === 'cone') { const k = ease((t - .1) / .3); cone(g, o.a, o.r * Math.max(.05, k), o.deg, rgba(s.color, .18), rgba(s.color, .7)); return; }
+    if (o.delay && t < o.delay) { disc(g, o.c, o.r, rgba(s.color, .08), rgba(s.color, .8), 2, [6, 5]); return; }
+    const k = ease((t - (o.delay || .1)) / .3);
+    if (o.field) { if (t < o.dur) disc(g, o.c, o.r, rgba(s.color, .16 + .05 * Math.sin(t * 14)), rgba(s.color, .7)); return; }
+    if (t < o.dur) disc(g, o.c, o.r * k, rgba(s.color, .14 * (1 - k * .5)), rgba(s.color, .9 * (1 - k * .4)), 3);
+  } else {
+    if (o.delay && t >= o.delay && t < o.delay + .3) bolt(g, o.c.x, o.c.y, s.color, 1 - (t - o.delay) / .3);
+    drawHero(g, LEAD, s.color, s.hero[0]);
+    g.fillStyle = col; g.font = '12px sans-serif'; g.textAlign = 'center'; g.fillText('现版', LEAD.x, 590);
+  }
+}
+// 重做稿：每位武将一套特效。under 画在敌兵下方，top 画在上方。
+const NEW_FX = {
+  xiahou_dun(g, s, n, t, top) {
+    const land = .36, back = .6, c = n.c;
+    if (!top) {
+      if (t < land) disc(g, c, n.r, rgba(s.color, .06), rgba(s.color, .7), 2, [6, 5]);
+      if (t >= land && t < 1.5) { const k = ease((t - land) / .35);
+        disc(g, c, n.r * k, rgba(s.color, .22 * (1 - k)), null);
+        disc(g, c, n.r * k, null, rgba('#ffe7a6', 1 - k * .7), 4);
+        g.strokeStyle = rgba('#2a0d0a', .8 * clamp(1.4 - (t - land), 0, 1)); g.lineWidth = 2;
+        for (let i = 0; i < 7; i++) { const a = i * .9 + .3; g.beginPath(); g.moveTo(c.x, c.y); g.lineTo(c.x + Math.cos(a) * 40, c.y + Math.sin(a) * 26); g.lineTo(c.x + Math.cos(a + .2) * 62, c.y + Math.sin(a + .2) * 40); g.stroke(); } }
+      return;
+    }
+    let p = LEAD, sc = 1;
+    if (t < .12) { sc = 1 - t * 1.2; }
+    else if (t < land) { const k = (t - .12) / (land - .12); p = arcPos(LEAD, c, k, 90); sc = 1 + Math.sin(Math.PI * k) * .35;
+      for (let i = 1; i <= 5; i++) drawHero(g, arcPos(LEAD, c, Math.max(0, k - i * .06), 90), s.color, '惇', sc, .12 * (6 - i) / 5); }
+    else if (t < back) { p = c; if (!reduce) { g.strokeStyle = rgba('#ffe7a6', .8 * (1 - (t - land) / .24)); g.lineWidth = 3; g.beginPath(); g.arc(c.x, c.y, 34, t * 16, t * 16 + 4.2); g.stroke(); } }
+    else if (t < .9) { const k = (t - back) / .3; p = arcPos(c, LEAD, k, 70); sc = 1 + Math.sin(Math.PI * k) * .25; }
+    drawHero(g, p, s.color, '惇', sc);
+    if (t >= .9 && t < 1.2) disc(g, LEAD, 22 * ease((t - .9) / .3), null, rgba('#d9c08a', 1 - (t - .9) / .3), 2);
+  },
+  cao_cao(g, s, n, t, top, env) {
+    const fly = .42, c = n.c, dur = 2.6;
+    if (!top) {
+      if (t < fly) disc(g, c, n.r, rgba(s.color, .05), rgba(s.color, .6), 2, [6, 5]);
+      if (t >= fly) { const k = ease((t - fly) / .32); if (t < fly + .6) { disc(g, c, n.r * k, rgba(s.color, .2 * (1 - k)), rgba('#ffe7a6', 1 - k * .6), 4); }
+        const left = clamp(1 - (t - fly) / (dur - fly), 0, 1); g.strokeStyle = rgba(s.color, .7); g.lineWidth = 3; g.beginPath(); g.arc(c.x, c.y, 24, -Math.PI / 2, -Math.PI / 2 + left * 6.283); g.stroke(); }
+      return;
+    }
+    drawHero(g, LEAD, s.color, '操');
+    let p = c, rot = 0;
+    if (t < fly) { const k = t / fly; p = arcPos({ x: LEAD.x, y: LEAD.y - 20 }, c, k, 110); rot = reduce ? 0 : k * 9; }
+    if (t >= fly && t < fly + .5) { g.save(); g.globalAlpha = 1 - (t - fly) / .5; g.fillStyle = '#ffe7a6'; g.font = '900 44px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('令', c.x, c.y - 4); g.restore(); }
+    g.save(); g.translate(p.x, p.y); g.rotate(rot);
+    g.strokeStyle = '#d9c08a'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 10); g.lineTo(0, -34); g.stroke();
+    const wave = reduce ? 0 : Math.sin(t * 8) * 3; g.fillStyle = '#c23a2c'; g.beginPath(); g.moveTo(1, -34); g.quadraticCurveTo(14, -30 + wave, 24, -32); g.lineTo(24, -14); g.quadraticCurveTo(14, -16 + wave, 1, -18); g.fill();
+    g.fillStyle = '#ffe7a6'; g.font = '900 11px serif'; g.textAlign = 'center'; g.fillText('魏', 12, -22); g.restore();
+    if (t > fly) for (const [x, y] of env.map.camps.slice(0, 6)) { g.fillStyle = rgba(s.color, .5 + .3 * Math.sin(t * 6 + x)); g.beginPath(); g.moveTo(x - 4, y - 22); g.lineTo(x + 4, y - 22); g.lineTo(x, y - 30); g.fill(); }
+  },
+  liu_bei(g, s, n, t, top) {
+    if (!top) {
+      for (const b of n.bands) {
+        const k = ease((t - .1) / .6), front = b.s1 - 320 * k;
+        if (t < .1) strokeLane(g, b.lane, b.s0, b.s1, 110, rgba(s.color, .06));
+        if (t >= .1 && t < 1.3) { strokeLane(g, b.lane, front, b.s1, 110, rgba(s.color, .14 * clamp(1.3 - t, 0, 1))); }
+      }
+      if (t > .7 && t < 2) { const k = (t - .7) / 1.3; g.fillStyle = rgba(s.color, .35 * (1 - k)); g.fillRect(0, 520, 420, 16); }
+      return;
+    }
+    drawHero(g, LEAD, s.color, '备');
+    for (const b of n.bands) {
+      if (t < .1 || t > .95) continue;
+      const k = ease((t - .1) / .6), front = atS(b.lane, b.s1 - 320 * k), back = atS(b.lane, Math.max(0, b.s1 - 320 * k + 16));
+      const dx = front.x - back.x, dy = front.y - back.y, L = hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, alpha = t > .7 ? 1 - (t - .7) / .25 : 1;
+      g.globalAlpha = clamp(alpha, 0, 1);
+      for (let i = -2; i <= 2; i++) { const x = front.x + nx * i * 18, y = front.y + ny * i * 18;
+        g.fillStyle = '#2f4a2a'; g.strokeStyle = s.color; g.lineWidth = 2; g.beginPath(); g.roundRect(x - 6, y - 7, 12, 14, 3); g.fill(); g.stroke();
+        g.fillStyle = s.color; g.fillRect(x - 1, y - 12, 2, 5); }
+      g.globalAlpha = 1;
+    }
+    if (t > .7 && t < 1.3) for (let i = 0; i < 14; i++) { const k = (t - .7) / .6, a = i * 2.4; const x = lerp(210 + Math.cos(a) * 160, GATE.x, k), y = lerp(330 + Math.sin(a) * 120, GATE.y, k);
+      disc(g, { x, y }, 2.5, rgba('#e8ffb0', 1 - k * .5)); }
+    if (t > .75 && t < 2) { g.fillStyle = '#e8ffb0'; g.font = '900 14px serif'; g.textAlign = 'center'; g.globalAlpha = clamp(2 - t, 0, 1); g.fillText('城关 +8%', 210, 516 - (t - .75) * 12); g.globalAlpha = 1; }
+  },
+  sun_quan(g, s, n, t, top) {
+    const half = (r, fill, stroke, lw = 3) => { g.beginPath(); g.arc(GATE.x, GATE.y, Math.max(0, r), Math.PI, 0); if (fill) { g.lineTo(GATE.x, GATE.y); g.closePath(); g.fillStyle = fill; g.fill(); } if (stroke) { g.beginPath(); g.arc(GATE.x, GATE.y, Math.max(0, r), Math.PI, 0); g.strokeStyle = stroke; g.lineWidth = lw; g.stroke(); } };
+    if (!top) {
+      if (t < .15) half(320, rgba(s.color, .05), rgba(s.color, .5), 2);
+      if (t >= .15 && t < .9) { const k = ease((t - .15) / .4); half(320 * k, rgba('#6fc3d8', .16), null);
+        for (let i = 0; i < 3; i++) half(320 * k - i * 10, null, rgba(i ? '#9fe3f0' : '#ffffff', (.9 - i * .3) * (t > .55 ? 1 - (t - .55) / .35 : 1)), 4 - i); }
+      if (t >= .55 && t < .9) { const k = ease((t - .55) / .35); half(320 * (1 - k), null, rgba('#9fe3f0', .5), 2); }
+      return;
+    }
+    drawHero(g, LEAD, s.color, '权');
+    if (t >= .85) { const a = clamp((t - .85) / .2, 0, 1);
+      g.save(); g.globalAlpha = a * .85; const grd = g.createLinearGradient(0, 500, 0, 532); grd.addColorStop(0, rgba('#9fe3f0', 0)); grd.addColorStop(1, rgba('#9fe3f0', .55)); g.fillStyle = grd;
+      g.beginPath(); g.moveTo(130, 532); g.quadraticCurveTo(210, 470, 290, 532); g.fill(); g.strokeStyle = rgba('#d8f6ff', .8); g.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(140 + i * 10, 532); g.quadraticCurveTo(210, 482 + i * 10 + (reduce ? 0 : Math.sin(t * 4 + i) * 3), 280 - i * 10, 532); g.stroke(); }
+      g.fillStyle = '#d8f6ff'; g.font = '900 13px serif'; g.textAlign = 'center'; g.fillText('城关受伤 ×0.8', 210, 470); g.restore(); }
+  },
+  zhou_yu(g, s, n, t, top) {
+    const shipK = ease((t - .05) / .4), shipS = n.s0 + (n.s1 - n.s0) * shipK;
+    if (!top) {
+      if (t < .05) { strokeLane(g, n.lane, n.s0, n.s1, n.w, rgba(s.color, .06)); return; }
+      const lit = t < .45 ? shipS : n.s1, fade = t > 2.2 ? clamp((2.6 - t) / .4, 0, 1) : 1;
+      strokeLane(g, n.lane, n.s0, lit, n.w, rgba('#ff4a1c', .22 * fade));
+      strokeLane(g, n.lane, n.s0, lit, n.w * .55, rgba('#ffb347', (.16 + .06 * Math.sin(t * 18)) * fade));
+      for (let s0 = n.s0; s0 < lit; s0 += 18) { const p = atS(n.lane, s0), f = reduce ? 1 : (Math.sin(t * 12 + s0) + 1.2) / 2.2;
+        g.fillStyle = rgba('#ffd27a', .55 * f * fade); g.beginPath(); g.moveTo(p.x - 5, p.y + 4); g.quadraticCurveTo(p.x, p.y - 14 * f, p.x + 5, p.y + 4); g.fill(); }
+      return;
+    }
+    drawHero(g, LEAD, s.color, '瑜');
+    if (t >= .05 && t < .55) { const p = atS(n.lane, shipS), q = atS(n.lane, Math.min(n.s1, shipS + 10)), a = Math.atan2(q.y - p.y, q.x - p.x);
+      g.save(); g.translate(p.x, p.y); g.rotate(a); g.globalAlpha = t > .45 ? 1 - (t - .45) / .1 : 1;
+      g.fillStyle = '#5a2c18'; g.beginPath(); g.moveTo(16, 0); g.lineTo(-12, -8); g.lineTo(-16, 0); g.lineTo(-12, 8); g.closePath(); g.fill();
+      g.fillStyle = '#ff7a2a'; g.shadowColor = '#ff4a1c'; g.shadowBlur = 16; g.beginPath(); g.moveTo(-8, -6); g.quadraticCurveTo(0, -26, 6, -4); g.fill(); g.restore(); }
+  },
+  sima_yi(g, s, n, t, top) {
+    if (!top) {
+      for (const c of n.cs) {
+        if (t < 1) { const k = t; disc(g, c, n.r, rgba(s.color, .07 + .08 * k), rgba(s.color, .9), 2, [5, 5]); disc(g, c, n.r * (1 - k * .7), null, rgba('#e6d4ff', .5 * k), 1.5);
+          g.save(); g.translate(c.x, c.y); g.rotate(reduce ? 0 : t * 1.4); g.strokeStyle = rgba(s.color, .5); g.lineWidth = 1.5;
+          for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.beginPath(); g.moveTo(Math.cos(a) * (n.r - 14), Math.sin(a) * (n.r - 14)); g.lineTo(Math.cos(a) * (n.r - 4), Math.sin(a) * (n.r - 4)); g.stroke(); } g.restore(); }
+        else if (t < 1.5) { const k = (t - 1) / .5; disc(g, c, n.r * (1 + k * .15), rgba('#e6d4ff', .3 * (1 - k)), rgba('#ffffff', 1 - k), 3); }
+      }
+      return;
+    }
+    drawHero(g, LEAD, s.color, '懿');
+    for (const c of n.cs) if (t >= 1 && t < 1.3) bolt(g, c.x, c.y, '#e6d4ff', 1 - (t - 1) / .3);
+  },
+  xu_chu(g, s, n, t, top) {
+    if (!top) {
+      if (t < .22) { cone(g, n.a, n.r, n.deg, rgba(s.color, .05), rgba(s.color, .5)); return; }
+      const k = ease((t - .22) / .28), fade = t > 1 ? clamp((1.4 - t) / .4, 0, 1) : 1;
+      cone(g, n.a, n.r * k, n.deg, rgba(s.color, .18 * fade), rgba(s.color, .8 * fade));
+      g.strokeStyle = rgba('#2a1a08', .9 * fade); g.lineWidth = 2.5;
+      for (let i = -2; i <= 2; i++) { const a = n.a + i * n.deg * Math.PI / 900; g.beginPath(); g.moveTo(LEAD.x, LEAD.y - 10);
+        for (let d = 20; d <= n.r * k; d += 24) g.lineTo(LEAD.x + Math.cos(a) * d + Math.sin(d * .3 + i) * 5, LEAD.y + Math.sin(a) * d + Math.cos(d * .3) * 3); g.stroke(); }
+      return;
+    }
+    let p = LEAD, sc = 1;
+    if (t < .18) { const k = t / .18; p = { x: LEAD.x + Math.cos(n.a) * 40 * k, y: LEAD.y + Math.sin(n.a) * 40 * k - Math.sin(Math.PI * k) * 26 }; sc = 1 + k * .2; }
+    else if (t < .5) { p = { x: LEAD.x + Math.cos(n.a) * 40, y: LEAD.y + Math.sin(n.a) * 40 }; sc = 1.2; }
+    else if (t < .9) { const k = (t - .5) / .4; p = { x: LEAD.x + Math.cos(n.a) * 40 * (1 - k), y: LEAD.y + Math.sin(n.a) * 40 * (1 - k) }; sc = 1.2 - k * .2; }
+    drawHero(g, p, s.color, '褚', sc);
+  },
+  gan_ning(g, s, n, t, top) {
+    if (!top) {
+      const fade = t < .1 ? .4 : t > 2.2 ? clamp((2.6 - t) / .4, 0, 1) : 1;
+      strokeLane(g, n.lane, n.s0, n.s1, n.w, rgba(s.color, .1 * fade)); lanePath(g, n.lane, n.s0, n.s1); g.setLineDash([4, 8]); g.strokeStyle = rgba(s.color, .5 * fade); g.lineWidth = 1; g.stroke(); g.setLineDash([]);
+      return;
+    }
+    drawHero(g, LEAD, s.color, '宁');
+    if (t < .1 || t > 2.2) return;
+    const sweep = n.s0 + (n.s1 - n.s0) * ((t - .1) / 2.1);
+    for (let i = 0; i < 26; i++) { const r = rng(i * 97 + Math.floor(t * 10)); const s0 = clamp(sweep + (r() - .5) * 120, n.s0, n.s1), p = atS(n.lane, s0), off = (r() - .5) * n.w;
+      const side = r() < .5 ? -1 : 1, x = p.x + off, y = p.y + (r() - .5) * 20;
+      g.strokeStyle = rgba('#bff6f0', .85); g.lineWidth = 1.5; g.beginPath(); g.moveTo(x - side * 14, y - 18); g.lineTo(x, y); g.stroke();
+      g.fillStyle = rgba(s.color, .7); g.beginPath(); g.arc(x, y, 1.6, 0, 7); g.fill(); }
+  },
+};
+// —— 页面装配
+function sectionHtml(s) {
+  const [o, n] = s.cover;
+  return `<section class="sec" id="${s.id}">
+  <div class="stage">
+    <canvas width="840" height="1200" data-skill="${s.id}" role="img" aria-label="${s.hero}${s.name}技能演示：现版与重做稿对比"></canvas>
+    <div class="demo-bar" role="group" aria-label="${s.hero}演示控制">
+      <button type="button" data-mode="new" aria-pressed="true">重做稿</button><button type="button" data-mode="old" aria-pressed="false">现版</button><button type="button" data-act="replay">↻ 重播</button>
+    </div>
+    <div class="meter"><span>现版</span><i><b style="width:${o}%"></b></i><span>${o.toFixed(0)}%</span></div>
+    <div class="meter new"><span>重做</span><i><b style="width:${n}%"></b></i><span>${n.toFixed(0)}%</span></div>
+    <p class="hitcount" data-count="${s.id}" style="margin:0;text-align:center;font-size:13px;color:var(--text-2)"></p>
+  </div>
+  <div class="notes">
+    <span class="eyebrow">${s.hero} · ${s.faction === 'wei' ? '魏' : s.faction === 'shu' ? '蜀' : '吴'}</span>
+    <h2>${s.name}${s.name !== s.oldName ? `<small>原「${s.oldName}」</small>` : ''}</h2>
+    <p class="lede"><span class="tag ${s.prio}">${s.prio.toUpperCase()}</span>${s.role}</p>
+    <p class="lede" style="color:var(--text)">${s.lede}</p>
+    <ul class="swaps">${s.swaps.map(([k, a, b]) => `<li><span class="k">${k}</span><span class="old${b.startsWith('不变') ? '' : ' x'}">${a}</span><span class="arr" aria-hidden="true">→</span><span class="new">${b}</span></li>`).join('')}</ul>
+    <div><h3>时间轴 · 0.9 秒演出锁内</h3><ol class="tl">${s.tl.map(([t, a, b, h]) => `<li class="${h ? 'hit' : ''}"><time>${t}s</time>${a}${b ? `<small>${b}</small>` : ''}</li>`).join('')}</ol></div>
+    <p class="why"><b>为什么有效：</b>${s.why}</p>
+  </div>
+</section>`;
+}
+const root = document.getElementById('skills');
+root.innerHTML = SKILLS.map(sectionHtml).join('');
+// 覆盖率总览
+document.getElementById('chart').innerHTML = COVER.slice().sort((a, b) => (b[2] ?? b[1]) - (a[2] ?? a[1])).map(([name, o, n]) => `<div class="row${n === null ? ' same' : ''}"><span>${name}</span><span class="bars"><i class="o" style="width:${o}%"></i>${n !== null ? `<i class="n" style="width:${n}%"></i>` : ''}<span class="ref" style="left:77.1%"></span></span><span class="num">${n === null ? `<b>${o.toFixed(0)}%</b> 保留` : `${o.toFixed(0)}% → <b>${n.toFixed(0)}%</b>`}</span></div>`).join('');
+// 数据表
+document.querySelector('#data-table tbody').innerHTML = SKILLS.map(s => `<tr><td>${s.hero}</td><td><code>${s.data[0]}</code></td><td class="up"><code>${s.data[1]}</code></td><td>${s.data[2]}</td><td>${s.data[3]}</td></tr>`).join('');
+// 动画
+let mapId = 'wei_gate';
+const views = [...document.querySelectorAll('canvas[data-skill]')].map(cv => ({ cv, g: cv.getContext('2d'), id: cv.dataset.skill, mode: 'new', t0: performance.now(), visible: false }));
+function envFor(id) { const map = MAPS[id], lanes = map.paths.map(sampleLane); return { map, lanes, enemies: buildEnemies(map, lanes) }; }
+let ENV = envFor(mapId), PLANS = {};
+function rebuild() { ENV = envFor(mapId); PLANS = {}; for (const s of SKILLS) PLANS[s.id] = plans(s.id, ENV); for (const v of views) { v.t0 = performance.now(); updateCount(v); } }
+function updateCount(v) { const P = PLANS[v.id], hitOld = ENV.enemies.filter(e => P.old.hit(e) !== null).length, hitNew = ENV.enemies.filter(e => P.neu.hit(e) !== null).length;
+  document.querySelector(`[data-count="${v.id}"]`).textContent = `本图样机：现版命中 ${hitOld} 名，重做稿命中 ${hitNew} 名（共 ${ENV.enemies.length}）`; }
+function frame(now) {
+  for (const v of views) {
+    if (!v.visible) continue;
+    const s = SKILLS.find(k => k.id === v.id), P = PLANS[v.id], g = v.g;
+    const dur = v.mode === 'new' ? P.neu.dur + .5 : P.old.dur + .5;
+    let t = (now - v.t0) / 1000 - .35; if (t > dur) { v.t0 = now + 700; t = -.35; }
+    // 减弱动态：不播放过程，定格在“全部命中之后”的一帧，只保留范围与受击状态。
+    const plan = v.mode === 'new' ? P.neu : P.old, lastHit = Math.max(0, ...ENV.enemies.map(e => plan.hit(e) ?? 0));
+    const tt = reduce ? lastHit + .06 : (t < 0 ? -1 : t);
+    const dieAfter = FIELD.has(v.id) ? .75 : 0;
+    g.setTransform(2, 0, 0, 2, 0, 0); drawField(g, ENV, s);
+    if (v.mode === 'new') {
+      NEW_FX[v.id](g, s, P.neu, Math.max(0, tt), false, ENV); drawEnemies(g, ENV, P.neu.hit, tt, dieAfter); NEW_FX[v.id](g, s, P.neu, Math.max(0, tt), true, ENV);
+      g.fillStyle = s.color; g.font = '12px sans-serif'; g.textAlign = 'center'; g.fillText('重做稿', LEAD.x, 590);
+    } else { drawOld(g, s, P, Math.max(0, tt), false); drawEnemies(g, ENV, P.old.hit, tt, dieAfter); drawOld(g, s, P, Math.max(0, tt), true); }
+  }
+  requestAnimationFrame(frame);
+}
+const io = new IntersectionObserver(list => { for (const en of list) { const v = views.find(x => x.cv === en.target); v.visible = en.isIntersecting; if (v.visible) v.t0 = performance.now(); } }, { rootMargin: '100px' });
+views.forEach(v => io.observe(v.cv));
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.map) { mapId = b.dataset.map; document.querySelectorAll('[data-map]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); rebuild(); return; }
+  const sec = b.closest('.sec'); const v = sec && views.find(x => sec.contains(x.cv)); if (!v) return;
+  if (b.dataset.mode) { v.mode = b.dataset.mode; sec.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }
+  v.t0 = performance.now();
+});
+rebuild(); requestAnimationFrame(frame);
+</script>

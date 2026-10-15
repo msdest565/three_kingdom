@@ -1,0 +1,4671 @@
+{
+  "schemaVersion": "1.1.0",
+  "status": "runtime_and_design_baseline",
+  "updatedAt": "2026-10-11",
+  "scope": {
+    "heroRosterStatus": "confirmed",
+    "heroCount": 15,
+    "chapterCount": 3,
+    "levelsPerChapter": 20,
+    "levelCount": 60,
+    "mapTemplateCount": 12,
+    "mapTemplatesPerChapter": 4,
+    "maxHeroesOnField": 3,
+    "leadHeroes": 1,
+    "supportHeroes": 2,
+    "heroIds": [
+      "cao_cao",
+      "xiahou_dun",
+      "zhang_liao",
+      "xu_chu",
+      "sima_yi",
+      "liu_bei",
+      "guan_yu",
+      "zhang_fei",
+      "zhao_yun",
+      "zhuge_liang",
+      "sun_quan",
+      "zhou_yu",
+      "lv_meng",
+      "gan_ning",
+      "taishi_ci"
+    ],
+    "referenceWaveCount": 8,
+    "referenceWaveCountIsGlobalRequirement": false,
+    "notes": "Confirmed V1 scope; the reference wave count does not force every level to have eight waves."
+  },
+  "units": {
+    "world": "420_by_600_logical_world_units",
+    "distance": "world_unit",
+    "speed": "world_unit_per_combat_second",
+    "time": "combat_second_excluding_pause_and_choices",
+    "damage": "hit_point",
+    "rage": "rage_point",
+    "food": "integer_military_food",
+    "multiplier": "dimensionless",
+    "angles": "radian",
+    "wallTime": "real_second_audio_and_performance_only"
+  },
+  "prototypeSnapshot": {
+    "sources": [
+      "game-engine.js",
+      "tests/game-engine.test.js",
+      "docs/game-design-v0.1.md"
+    ],
+    "sourceOfCurrentValues": "game-engine.js",
+    "heroId": "guan_yu",
+    "waveCount": 8,
+    "waveEnemyCountsExcludingBoss": [
+      70,
+      88,
+      108,
+      124,
+      136,
+      146,
+      156,
+      170
+    ],
+    "waveSpawnWindowSec": [
+      22,
+      13,
+      15,
+      17,
+      18,
+      19,
+      21,
+      24
+    ],
+    "firstSpawnAtSec": 0.3,
+    "bossSpawnWave": 8,
+    "bossSpawnAtSec": 3.5,
+    "betweenWavesSec": 1.8,
+    "choiceAfterWaves": [
+      2,
+      4,
+      6
+    ],
+    "startingFood": 120,
+    "freeCamps": [
+      {
+        "slot": 4,
+        "type": "shield",
+        "level": 1
+      },
+      {
+        "slot": 2,
+        "type": "archer",
+        "level": 1
+      }
+    ],
+    "gateHp": 100,
+    "campBuildCost": 60,
+    "campUpgradeCosts": [
+      80,
+      130
+    ],
+    "campDamageMultipliersByLevel": [
+      1,
+      1.3,
+      1.65
+    ],
+    "campIntervalMultipliersByLevel": [
+      1,
+      0.95,
+      0.9
+    ],
+    "campRangeBonusPerLevel": 9,
+    "camps": {
+      "shield": {
+        "damage": 5,
+        "intervalSec": 1.6,
+        "range": 145,
+        "maxTargets": 3,
+        "speedFactor": 0.5,
+        "slowApplication": "continuous_aura_independent_of_attack"
+      },
+      "archer": {
+        "damage": 12,
+        "intervalSec": 0.9,
+        "range": 205,
+        "projectileSpeed": 390
+      },
+      "catapult": {
+        "damage": 14,
+        "intervalSec": 3,
+        "range": 205,
+        "projectileSpeed": 225,
+        "blastRadius": 42,
+        "speedFactor": 0.8,
+        "damageTargetCap": 6,
+        "slowDurationSec": 1.5,
+        "controlTargetCap": null,
+        "impactSlowFactor": 0.8,
+        "impactSlowDurationSec": 1.5
+      }
+    },
+    "enemyBase": {
+      "infantry": {
+        "hp": 28,
+        "speed": 30,
+        "radius": 7,
+        "reward": 1,
+        "leak": 3
+      },
+      "cavalry": {
+        "hp": 43,
+        "speed": 46,
+        "radius": 9,
+        "reward": 3,
+        "leak": 5
+      },
+      "armor": {
+        "hp": 110,
+        "speed": 23,
+        "radius": 11,
+        "reward": 6,
+        "leak": 8
+      },
+      "boss": {
+        "hp": 1900,
+        "speed": 11,
+        "radius": 21,
+        "reward": 80,
+        "leak": 45
+      }
+    },
+    "enemyHpGrowth": {
+      "ordinaryAddPerWaveAfterFirst": 3,
+      "armorAddPerWaveAfterFirst": 9,
+      "bossAddPerWave": 0
+    },
+    "enemySpeedGrowthPerWaveAfterFirst": 0.008,
+    "heroAttack": {
+      "damage": 17,
+      "intervalSec": 1.05,
+      "range": 152,
+      "maxTargets": 2
+    },
+    "rage": {
+      "max": 100,
+      "initial": 40,
+      "engagedPerSec": 4,
+      "idlePerSec": 1,
+      "cost": 100,
+      "recoverySec": 6
+    },
+    "ultimate": {
+      "width": 184,
+      "length": 610,
+      "durationSec": 0.76,
+      "frontTravelSec": 0.64,
+      "executeEnemyTypes": [
+        "infantry",
+        "cavalry"
+      ],
+      "armorDamage": 85,
+      "bossDamage": 310,
+      "armorPushback": 22,
+      "bossPushback": 6
+    },
+    "upgradeEffects": {
+      "archer_pierce": {
+        "extraTargets": 1,
+        "extraDamageMultiplier": 0.45
+      },
+      "archer_volley": {
+        "extraProjectiles": 1,
+        "extraDamageMultiplier": 0.6
+      },
+      "archer_hunt": {
+        "eliteAndBossDamageMultiplier": 1.65
+      },
+      "shield_grasp": {
+        "speedFactor": 0.35
+      },
+      "shield_reach": {
+        "rangeAdd": 35
+      },
+      "shield_break": {
+        "maxTargets": 5,
+        "damageMultiplier": 1.25
+      },
+      "catapult_blast": {
+        "blastRadiusAdd": 16,
+        "damageMultiplier": 1.1
+      },
+      "catapult_shock": {
+        "speedFactor": 0.65,
+        "durationSec": 2.5,
+        "damageMultiplier": 1
+      },
+      "catapult_siege": {
+        "armorAndBossDamageMultiplier": 1.7
+      }
+    },
+    "validationEvidence": {
+      "existingTestFile": "tests/game-engine.test.js",
+      "historicalRunStatus": "passed_during_prototype_delivery_and_density_balance_revision",
+      "rerunDuringThisDesignTask": true,
+      "v1SimulationPerformed": false,
+      "coveredTestCountStatus": "current_count_reported_by_delivery_record",
+      "originalEngineTestFileCaseCount": 9,
+      "currentEngineRegressionStatus": "19_tests_passed_as_reported_by_engine_agent"
+    },
+    "enemyComposition": {
+      "cavalry": {
+        "minimumWave": 3,
+        "modulus": 11,
+        "remainder": 7
+      },
+      "armor": {
+        "minimumWave": 4,
+        "modulus": 15,
+        "remainder": 10
+      },
+      "priorityOrder": [
+        "cavalry",
+        "armor"
+      ]
+    },
+    "maximumAliveEnemies": 160,
+    "overflowPolicy": "retain_pending_spawns_until_capacity_frees; no_discard_no_reward",
+    "slowEffectFractionByType": {
+      "infantry": 1,
+      "cavalry": 1,
+      "armor": 0.7,
+      "boss": 0.4
+    },
+    "minimumSpeedFactor": 0.35,
+    "timedSlowStackRule": "track_each_source_independent_expiry_and_integrate_time_boundaries; strongest_active_factor",
+    "currentScheduledEnemyCount": 999
+  },
+  "v1Baseline": {
+    "status": "implemented_alpha_progression_update",
+    "world": {
+      "width": 420,
+      "height": 600,
+      "referenceSlotCount": 6,
+      "gateHp": 100,
+      "heroPosition": {
+        "x": 210,
+        "y": 550
+      },
+      "referencePaths": [
+        [
+          {
+            "x": 105,
+            "y": -16
+          },
+          {
+            "x": 100,
+            "y": 145
+          },
+          {
+            "x": 210,
+            "y": 300
+          },
+          {
+            "x": 210,
+            "y": 530
+          }
+        ],
+        [
+          {
+            "x": 315,
+            "y": -16
+          },
+          {
+            "x": 320,
+            "y": 145
+          },
+          {
+            "x": 210,
+            "y": 300
+          },
+          {
+            "x": 210,
+            "y": 530
+          }
+        ]
+      ],
+      "referenceSlots": [
+        {
+          "x": 53,
+          "y": 142
+        },
+        {
+          "x": 367,
+          "y": 142
+        },
+        {
+          "x": 67,
+          "y": 290
+        },
+        {
+          "x": 353,
+          "y": 290
+        },
+        {
+          "x": 88,
+          "y": 420
+        },
+        {
+          "x": 332,
+          "y": 420
+        }
+      ],
+      "mapOverridesAllowed": true,
+      "mapSlotCountRange": [
+        6,
+        8
+      ]
+    },
+    "rage": {
+      "max": 100,
+      "initial": 40,
+      "engagedPerSec": 4,
+      "idlePerSec": 1,
+      "cost": 100,
+      "recoverySec": 6,
+      "engagedDefinition": "One shared whole-army engagement flag: at least one damaging camp or hero has an alive attackable enemy in valid basic-attack range. Each hero then accrues rage once using its own role rate; aura camps and invulnerable targets alone do not create engagement.",
+      "scalesWithCampCount": false,
+      "scalesWithHitCount": false,
+      "killRageReward": 0,
+      "ultimateDamageRageReward": 0,
+      "freezeStates": [
+        "ready",
+        "paused",
+        "choosing",
+        "won",
+        "lost"
+      ],
+      "recoveryFreezesWithCombatClock": true,
+      "firstAttackContactTargetMaxSec": 6.5,
+      "formula": "for each hero: rage=min(100,rage+roleRate(sharedArmyEngaged)*unblockedCombatDt); roleRate uses lead/support; unblockedCombatDt=max(0,dt-min(dt,recoveryRemaining)); recoveryRemaining=max(0,recoveryRemaining-dt)",
+      "roles": {
+        "lead": {
+          "initial": 40,
+          "engagedPerSec": 4,
+          "idlePerSec": 1
+        },
+        "support": {
+          "initial": 0,
+          "engagedPerSec": 2,
+          "idlePerSec": 0.5
+        }
+      },
+      "flatFieldsRole": "lead_reference_only",
+      "firstSkillAutoContactIsNotRequired": true
+    },
+    "economy": {
+      "startingFood": 120,
+      "referenceFreeCamps": [
+        {
+          "slot": 4,
+          "type": "shield",
+          "level": 1
+        },
+        {
+          "slot": 2,
+          "type": "archer",
+          "level": 1
+        }
+      ],
+      "rewardOncePerEnemy": true,
+      "escapeReward": 0,
+      "waveCompletionReward": 0,
+      "ultimateKillFoodBonusMultiplier": 1,
+      "refundsEnabled": false,
+      "safetyReserveFood": 60,
+      "targetUnspentBudgetFractionRange": [
+        0.05,
+        0.2
+      ],
+      "rounding": "reward=max(0,round(baseReward*explicitRewardMultiplier)); costs are fixed positive integers",
+      "uniformBuildCost": false,
+      "costSource": "v1Baseline.camps.<campId>.buildCost and levels[].upgradeCost",
+      "referenceFinalBudgetEnemyPattern": "prototype snapshot composition scaled by V1 density once for nonboss enemies, V1 base rewards, one unscaled boss; arithmetic reference only",
+      "referenceCountMultiplier": 1.6,
+      "costRevision": "dense_army_upgrade_costs_about_1.5x_prior_design; basic_build_costs_unchanged",
+      "lateFullFieldPolicy": "Late all-kill income may fund a full field; income timing, camp mix and level-three priorities remain tradeoffs. Full camps must not replace hero ultimates; validate rather than claim a hard cash deficit on every stage.",
+      "rewardRevision": "infantry stays 1; cavalry and elites/boss have lower integer rewards to temper density-related inflation",
+      "referenceEnemyCompositionBeforeDensity": {
+        "infantry": 547,
+        "cavalry": 41,
+        "armor": 30,
+        "boss": 1
+      },
+      "referenceEnemyCompositionSource": "historical 619-enemy training pattern before this density revision; independent of the current prototypeSnapshot"
+    },
+    "camps": {
+      "shield": {
+        "name": "盾营",
+        "role": "gather_and_delay",
+        "buildCost": 60,
+        "levels": [
+          {
+            "level": 1,
+            "upgradeCost": 0,
+            "damage": 4,
+            "intervalSec": 1.8,
+            "range": 145,
+            "maxTargets": 3,
+            "speedFactor": 0.46
+          },
+          {
+            "level": 2,
+            "upgradeCost": 90,
+            "damage": 5,
+            "intervalSec": 1.7,
+            "range": 154,
+            "maxTargets": 3,
+            "speedFactor": 0.42
+          },
+          {
+            "level": 3,
+            "upgradeCost": 150,
+            "damage": 6,
+            "intervalSec": 1.6,
+            "range": 163,
+            "maxTargets": 3,
+            "speedFactor": 0.38
+          }
+        ],
+        "slowEffectFractionByClass": {
+          "ordinary": 1,
+          "elite": 0.7,
+          "boss": 0.4
+        },
+        "slowFormula": "max(minimumSpeedFactor,1-(1-speedFactor)*slowEffectFractionByClass[enemy.class]*enemySpecificControlFraction)",
+        "slowStackRule": "take_the_strongest_factor_do_not_multiply",
+        "minimumSpeedFactor": 0.3,
+        "slowApplication": "continuous aura while alive enemy is inside range; damage attack cadence never gates the slow"
+      },
+      "archer": {
+        "name": "弓营",
+        "role": "sustained_and_elite_damage",
+        "buildCost": 60,
+        "projectileSpeed": 390,
+        "levels": [
+          {
+            "level": 1,
+            "upgradeCost": 0,
+            "damage": 12,
+            "intervalSec": 0.9,
+            "range": 205,
+            "maxTargets": 1
+          },
+          {
+            "level": 2,
+            "upgradeCost": 90,
+            "damage": 18,
+            "intervalSec": 0.81,
+            "range": 214,
+            "maxTargets": 1
+          },
+          {
+            "level": 3,
+            "upgradeCost": 150,
+            "damage": 26,
+            "intervalSec": 0.72,
+            "range": 223,
+            "maxTargets": 1
+          }
+        ]
+      },
+      "catapult": {
+        "name": "投石营",
+        "role": "density_damage",
+        "buildCost": 80,
+        "projectileSpeed": 225,
+        "levels": [
+          {
+            "level": 1,
+            "upgradeCost": 0,
+            "damage": 14,
+            "intervalSec": 3,
+            "range": 205,
+            "blastRadius": 48
+          },
+          {
+            "level": 2,
+            "upgradeCost": 120,
+            "damage": 18,
+            "intervalSec": 2.85,
+            "range": 214,
+            "blastRadius": 48
+          },
+          {
+            "level": 3,
+            "upgradeCost": 180,
+            "damage": 23,
+            "intervalSec": 2.7,
+            "range": 223,
+            "blastRadius": 48
+          }
+        ],
+        "impactSlow": {
+          "speedFactor": 0.8,
+          "durationSec": 1.5,
+          "slowEffectFractionByClass": {
+            "ordinary": 1,
+            "elite": 0.7,
+            "boss": 0.4
+          },
+          "stackRule": "strongest_factor_and_refresh_duration_without_stacking",
+          "minimumSpeedFactor": 0.3
+        },
+        "damageTargetCap": 6,
+        "controlTargetCap": null,
+        "damageTargetSelection": "nearest_blast_center_then_highest_path_progress_then_enemy_id",
+        "damageAndControlSeparation": "Every alive enemy inside the explosion radius receives eligible impact slow; only the first six deterministic damage targets lose HP. The cap is public, identical at every level and never expanded by tactics."
+      },
+      "crossbow": {
+        "name": "弩营",
+        "role": "elite_precision",
+        "buildCost": 80,
+        "projectileSpeed": 460,
+        "eliteAndBossDamageMultiplier": 1.25,
+        "levels": [
+          {
+            "level": 1,
+            "upgradeCost": 0,
+            "damage": 20,
+            "intervalSec": 1.3,
+            "range": 205,
+            "maxTargets": 1
+          },
+          {
+            "level": 2,
+            "upgradeCost": 110,
+            "damage": 30,
+            "intervalSec": 1.17,
+            "range": 214,
+            "maxTargets": 1
+          },
+          {
+            "level": 3,
+            "upgradeCost": 170,
+            "damage": 44,
+            "intervalSec": 1.04,
+            "range": 223,
+            "maxTargets": 1
+          }
+        ]
+      },
+      "fire_oil": {
+        "name": "火油营",
+        "role": "fixed_area_damage_over_time",
+        "buildCost": 90,
+        "projectileSpeed": 200,
+        "tickIntervalSec": 0.75,
+        "fieldDurationSec": 3,
+        "firstTickAtSec": 0.75,
+        "maxFieldsPerCamp": 1,
+        "replaceRule": "refresh existing field duration without restarting tick schedule; one source never double-stacks",
+        "levels": [
+          {
+            "level": 1,
+            "upgradeCost": 0,
+            "tickDamage": 3,
+            "intervalSec": 3.6,
+            "range": 175,
+            "fieldRadius": 58
+          },
+          {
+            "level": 2,
+            "upgradeCost": 120,
+            "tickDamage": 4,
+            "intervalSec": 3.4,
+            "range": 184,
+            "fieldRadius": 58
+          },
+          {
+            "level": 3,
+            "upgradeCost": 180,
+            "tickDamage": 5,
+            "intervalSec": 3.2,
+            "range": 193,
+            "fieldRadius": 58
+          }
+        ],
+        "effectiveDpsFormula": "tickDamage/tickIntervalSec*min(1,fieldDurationSec/attackIntervalSec) for a stationary continuously covered target"
+      },
+      "war_drum": {
+        "name": "战鼓营",
+        "role": "attack_speed_aura",
+        "buildCost": 70,
+        "damage": 0,
+        "createsEngagement": false,
+        "affectsHeroBasicAttacks": true,
+        "affectsRage": false,
+        "overlapRule": "strongest aura bonus only, never multiply multiple drums",
+        "levels": [
+          {
+            "level": 1,
+            "upgradeCost": 0,
+            "range": 180,
+            "attackSpeedBonus": 0.1
+          },
+          {
+            "level": 2,
+            "upgradeCost": 110,
+            "range": 190,
+            "attackSpeedBonus": 0.15
+          },
+          {
+            "level": 3,
+            "upgradeCost": 170,
+            "range": 200,
+            "attackSpeedBonus": 0.2
+          }
+        ],
+        "intervalFormula": "baseIntervalSec/(1+strongestAttackSpeedBonus)",
+        "globalAttackSpeedBonusCap": 0.3
+      }
+    },
+    "enemies": {
+      "infantry": {
+        "name": "步兵",
+        "class": "ordinary",
+        "hp": 28,
+        "speed": 30,
+        "radius": 7,
+        "reward": 1,
+        "leak": 3,
+        "executeImmune": false,
+        "ultimateInstantKill": true,
+        "rangeUnit": "world_unit"
+      },
+      "cavalry": {
+        "name": "骑兵",
+        "class": "ordinary",
+        "hp": 34,
+        "speed": 36,
+        "radius": 9,
+        "reward": 2,
+        "leak": 5,
+        "executeImmune": true,
+        "ultimateInstantKill": false,
+        "rangeUnit": "world_unit"
+      },
+      "armor": {
+        "name": "重甲兵",
+        "class": "elite",
+        "hp": 55,
+        "speed": 23,
+        "radius": 11,
+        "reward": 4,
+        "leak": 8,
+        "executeImmune": true,
+        "ultimateInstantKill": false,
+        "rangeUnit": "world_unit"
+      },
+      "boss": {
+        "name": "攻城首领",
+        "class": "boss",
+        "hp": 1000,
+        "speed": 11,
+        "radius": 21,
+        "reward": 60,
+        "leak": 45,
+        "executeImmune": true,
+        "ultimateInstantKill": false,
+        "rangeUnit": "world_unit"
+      },
+      "ranged": {
+        "name": "扰阵弓手",
+        "class": "elite",
+        "hp": 35,
+        "speed": 27,
+        "radius": 8,
+        "reward": 2,
+        "leak": 4,
+        "executeImmune": true,
+        "ultimateInstantKill": false,
+        "abilities": [
+          {
+            "id": "ranged_disrupt",
+            "role": "one_camp_attack_speed_interference",
+            "range": 160,
+            "intervalSec": 8,
+            "durationSec": 2,
+            "maxCamps": 1,
+            "campIntervalMultiplier": 1.1,
+            "targetRule": "nearest_attack_capable_camp_in_range",
+            "affectsHeroes": false,
+            "affectedByResilience": true
+          }
+        ],
+        "rangeUnit": "world_unit"
+      },
+      "banner": {
+        "name": "军旗手",
+        "class": "elite",
+        "hp": 48,
+        "speed": 26,
+        "radius": 10,
+        "reward": 3,
+        "leak": 5,
+        "executeImmune": true,
+        "ultimateInstantKill": false,
+        "abilities": [
+          {
+            "id": "banner_march",
+            "role": "nearby_infantry_speed_aura",
+            "radius": 50,
+            "speedMultiplier": 1.15,
+            "affectedEnemyIds": [
+              "infantry"
+            ],
+            "sameAuraStacks": false
+          }
+        ],
+        "rangeUnit": "world_unit"
+      },
+      "siege": {
+        "name": "攻城车",
+        "class": "elite",
+        "hp": 100,
+        "speed": 11,
+        "radius": 14,
+        "reward": 8,
+        "leak": 15,
+        "executeImmune": true,
+        "ultimateInstantKill": false,
+        "controlEffectFraction": 0.35,
+        "abilities": [
+          {
+            "id": "siege_control_resistance",
+            "role": "reduced_control",
+            "slowEffectFraction": 0.35,
+            "pushbackMultiplier": 0.35
+          }
+        ],
+        "rangeUnit": "world_unit"
+      }
+    },
+    "enemyScaling": {
+      "automaticHpAddPerWave": 0,
+      "automaticSpeedGrowthPerWave": 0,
+      "hpFormula": "ceil(baseHp*variantHpMultiplier*difficultyHpMultiplier*stageTierHpMultiplier*waveHpMultiplier*(enemy.class===ordinary?1:partySizeHpMultiplier))",
+      "speedFormula": "baseSpeed*variantSpeedMultiplier*difficultySpeedMultiplier*stageTierSpeedMultiplier*waveSpeedMultiplier",
+      "rewardFormula": "round(baseReward*variantRewardMultiplier*difficultyRewardMultiplier*stageTierRewardMultiplier*waveRewardMultiplier)",
+      "defaultMultiplier": 1,
+      "rewardDoesNotAutomaticallyScaleWithHp": true,
+      "eliteVariantsRequireExplicitClassAndExecuteImmune": true,
+      "countFormula": "round_once_per_spawn_group(baseCount*difficultyCountMultiplier*stageTierCountMultiplier)"
+    },
+    "heroes": {
+      "cao_cao": {
+        "name": "曹操",
+        "faction": "wei",
+        "status": "v1_design_not_implemented",
+        "role": "army_command",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 14,
+          "intervalSec": 1,
+          "range": 180,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "wei_command",
+          "name": "魏武号令",
+          "shape": "allied_command_with_local_shock",
+          "radius": 185,
+          "damageByClass": {
+            "ordinary": 50,
+            "elite": 50,
+            "boss": 160
+          },
+          "ordinaryExecute": false,
+          "allyAttackSpeedBonus": 0.25,
+          "buffDurationSec": 6,
+          "buffUsesStrongestRule": true,
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 12,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "minimumBenefitingCamps": 2,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "xiahou_dun": {
+        "name": "夏侯惇",
+        "faction": "wei",
+        "status": "v1_design_not_implemented",
+        "role": "close_ring_rescue",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 19,
+          "intervalSec": 1.2,
+          "range": 150,
+          "maxTargets": 2
+        },
+        "ultimate": {
+          "id": "fierce_counter",
+          "name": "独眼破军",
+          "shape": "circle_shock",
+          "radius": 145,
+          "ordinaryExecute": true,
+          "damageByClass": {
+            "elite": 90,
+            "boss": 260,
+            "ordinary": 90
+          },
+          "pushbackByClass": {
+            "elite": 30,
+            "boss": 6
+          },
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "zhang_liao": {
+        "name": "张辽",
+        "faction": "wei",
+        "status": "v1_design_not_implemented",
+        "role": "narrow_lane_charge",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 16,
+          "intervalSec": 0.95,
+          "range": 175,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "hefei_charge",
+          "name": "合肥突阵",
+          "shape": "lane_following_charge",
+          "width": 100,
+          "length": 610,
+          "frontTravelSec": 0.8,
+          "durationSec": 0.95,
+          "ordinaryExecute": true,
+          "damageByClass": {
+            "elite": 95,
+            "boss": 280,
+            "ordinary": 95
+          },
+          "eliteStunSec": 1,
+          "pushbackByClass": {
+            "elite": 35,
+            "boss": 6
+          },
+          "maxHitsPerEnemyPerCast": 1,
+          "heroActuallyMoves": false,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "xu_chu": {
+        "name": "许褚",
+        "faction": "wei",
+        "status": "v1_design_not_implemented",
+        "role": "short_heavy_cone",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 26,
+          "intervalSec": 1.4,
+          "range": 145,
+          "maxTargets": 2
+        },
+        "ultimate": {
+          "id": "tiger_impact",
+          "name": "虎痴撼地",
+          "shape": "frontal_cone",
+          "range": 280,
+          "angleDegrees": 70,
+          "ordinaryExecute": true,
+          "damageByClass": {
+            "elite": 150,
+            "boss": 390,
+            "ordinary": 150
+          },
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 8,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "sima_yi": {
+        "name": "司马懿",
+        "faction": "wei",
+        "status": "v1_design_not_implemented",
+        "role": "delayed_prediction",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 13,
+          "intervalSec": 0.9,
+          "range": 195,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "shadow_thunder",
+          "name": "幽雷诡阵",
+          "shape": "delayed_locked_circle",
+          "radius": 125,
+          "delaySec": 1,
+          "ordinaryExecute": true,
+          "damageByClass": {
+            "elite": 110,
+            "boss": 340,
+            "ordinary": 110
+          },
+          "hitSpeedFactor": 0.65,
+          "hitSlowSec": 3,
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "liu_bei": {
+        "name": "刘备",
+        "faction": "shu",
+        "status": "v1_design_not_implemented",
+        "role": "gate_recovery_and_rally",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 12,
+          "intervalSec": 0.9,
+          "range": 175,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "benevolent_rally",
+          "name": "仁德援军",
+          "shape": "recovery_with_circle_shock",
+          "radius": 145,
+          "ordinaryExecute": false,
+          "damageByClass": {
+            "ordinary": 70,
+            "elite": 70,
+            "boss": 180
+          },
+          "healMaxGateHpFraction": 0.08,
+          "healUsesSkillLevelOnly": true,
+          "healFractionCap": 0.1,
+          "allyCampDamageBonus": 0.2,
+          "buffDurationSec": 6,
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 8,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "preferWhenGateHpFractionAtMost": 0.75,
+          "preferGateHealthIsPreferenceNotExtraCastingException": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "guan_yu": {
+        "name": "关羽",
+        "status": "v1_design_existing_prototype_identity",
+        "role": "instant_directional_clear",
+        "attack": {
+          "damage": 17,
+          "intervalSec": 1.05,
+          "range": 152,
+          "maxTargets": 2
+        },
+        "ultimate": {
+          "id": "qinglong_sweep",
+          "name": "青龙横扫",
+          "shape": "directional_swept_rectangle",
+          "width": 184,
+          "length": 610,
+          "durationSec": 0.76,
+          "frontTravelSec": 0.64,
+          "angleMinRad": -2.199114857512855,
+          "angleMaxRad": -0.9424777960769379,
+          "ordinaryExecute": true,
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "damageByClass": {
+            "elite": 85,
+            "boss": 310,
+            "ordinary": 90
+          },
+          "pushbackByClass": {
+            "elite": 22,
+            "boss": 6
+          },
+          "hitSlowSec": 0.65,
+          "maxHitsPerEnemyPerCast": 1,
+          "targetLockedAtCast": true,
+          "targetWeightsByClass": {
+            "ordinary": 1,
+            "elite": 1.25,
+            "boss": 2.5
+          },
+          "progressWeight": 0.15,
+          "targetTieBreak": "maximum_coverage_then_value_then_center",
+          "outsideShapeDamage": 0,
+          "presentationLockSec": 0.9,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "faction": "shu",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "auto": {
+          "minOrdinaryTargets": 12,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "zhang_fei": {
+        "name": "张飞",
+        "faction": "shu",
+        "status": "v1_design_not_implemented",
+        "role": "wide_short_road_push",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 18,
+          "intervalSec": 1.1,
+          "range": 160,
+          "maxTargets": 3
+        },
+        "ultimate": {
+          "id": "changban_roar",
+          "name": "长坂怒吼",
+          "shape": "wide_short_rectangle",
+          "width": 230,
+          "length": 340,
+          "ordinaryExecute": true,
+          "damageByClass": {
+            "elite": 85,
+            "boss": 240,
+            "ordinary": 90
+          },
+          "pushbackByClass": {
+            "elite": 45,
+            "boss": 8
+          },
+          "eliteStunSec": 1,
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "zhao_yun": {
+        "name": "赵云",
+        "faction": "shu",
+        "status": "v1_design_not_implemented",
+        "role": "multi_pass_pierce",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 14,
+          "intervalSec": 0.7,
+          "range": 180,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "dragon_passes",
+          "name": "龙胆三穿",
+          "shape": "three_narrow_passes",
+          "width": 85,
+          "length": 610,
+          "passAtSec": [
+            0,
+            0.25,
+            0.5
+          ],
+          "durationSec": 0.8,
+          "ordinaryExecute": true,
+          "damagePerPassByClass": {
+            "elite": 45,
+            "boss": 100,
+            "ordinary": 40
+          },
+          "maxHitsPerEnemyPerCast": 3,
+          "ordinaryExecuteAtMostOnce": true,
+          "heroActuallyMoves": false,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "zhuge_liang": {
+        "name": "诸葛亮",
+        "faction": "shu",
+        "status": "v1_design_not_implemented",
+        "role": "gather_and_expose",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 13,
+          "intervalSec": 0.95,
+          "range": 205,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "eight_trigrams_wind",
+          "name": "八阵风牢",
+          "shape": "pulling_locked_circle",
+          "radius": 150,
+          "durationSec": 3,
+          "tickIntervalSec": 0.25,
+          "firstTickAtSec": 0.25,
+          "tickDamageByClass": {
+            "ordinary": 5,
+            "elite": 3,
+            "boss": 8
+          },
+          "maxTicksPerEnemyPerCast": 12,
+          "ordinaryExecute": false,
+          "backwardProgressPerSecByClass": {
+            "ordinary": 12,
+            "elite": 6,
+            "boss": 0
+          },
+          "totalBackwardProgressCapByClass": {
+            "ordinary": 36,
+            "elite": 18,
+            "boss": 0
+          },
+          "incomingDamageMultiplier": 1.2,
+          "vulnerabilityDurationSec": 3,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 12,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "sun_quan": {
+        "name": "孙权",
+        "faction": "wu",
+        "status": "v1_design_not_implemented",
+        "role": "gate_protection",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 15,
+          "intervalSec": 1,
+          "range": 185,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "jiangdong_bulwark",
+          "name": "江东铁壁",
+          "shape": "barrier_with_circle_shock",
+          "radius": 150,
+          "ordinaryExecute": false,
+          "damageByClass": {
+            "ordinary": 90,
+            "elite": 75,
+            "boss": 210
+          },
+          "gateIncomingDamageFactor": 0.8,
+          "buffDurationSec": 6,
+          "maxHitsPerEnemyPerCast": 1,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "zhou_yu": {
+        "name": "周瑜",
+        "status": "v1_design_not_implemented",
+        "role": "sustained_area_and_new_arrivals",
+        "attack": {
+          "damage": 12,
+          "intervalSec": 0.8,
+          "range": 190,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "chibi_fire",
+          "name": "赤壁烈焰",
+          "shape": "locked_circle",
+          "radius": 98,
+          "durationSec": 4,
+          "tickIntervalSec": 0.25,
+          "firstTickAtSec": 0.25,
+          "tickDamageByClass": {
+            "ordinary": 8,
+            "elite": 6,
+            "boss": 15
+          },
+          "maxTicksPerEnemyPerCast": 16,
+          "ordinaryExecute": false,
+          "newArrivalsCanBeHit": true,
+          "damageAfterLeavingArea": 0,
+          "targetLockedAtCast": true,
+          "targetWeightsByClass": {
+            "ordinary": 1,
+            "elite": 1.25,
+            "boss": 2.5
+          },
+          "targetTieBreak": "maximum_coverage_then_value_then_cluster_center",
+          "outsideShapeDamage": 0,
+          "presentationLockSec": 0.9,
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "faction": "wu",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "lv_meng": {
+        "name": "吕蒙",
+        "faction": "wu",
+        "status": "v1_design_not_implemented",
+        "role": "prepared_ambush",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 17,
+          "intervalSec": 1.1,
+          "range": 190,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "white_cloak_ambush",
+          "name": "白衣伏兵",
+          "shape": "lane_mines",
+          "mineCount": 4,
+          "minesPerLane": 2,
+          "laneProgressFractions": [
+            0.25,
+            0.55
+          ],
+          "triggerRadius": 45,
+          "blastRadius": 65,
+          "durationSec": 8,
+          "ordinaryExecute": true,
+          "damagePerMineByClass": {
+            "elite": 45,
+            "boss": 75,
+            "ordinary": 55
+          },
+          "maxHitsPerEnemyPerCast": 2,
+          "oneTriggerPerMine": true,
+          "placementUsesMapPaths": true,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ],
+          "selectedLanePolicy": {
+            "maxSelectedLanes": 2,
+            "selection": "highest_pressure_living_enemy_routes",
+            "classWeights": {
+              "ordinary": 1,
+              "elite": 1.25,
+              "boss": 2.5
+            },
+            "progressWeight": 0.15,
+            "tieBreak": "routeId_lexicographic",
+            "emptyBattleFallback": "routeId_lexicographic",
+            "minesPerSelectedLane": 2,
+            "notes": "On three-route maps choose only the highest-pressure two routes, then place two mines on each. Do not silently spawn six mines."
+          }
+        },
+        "auto": {
+          "minOrdinaryTargets": 10,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "gan_ning": {
+        "name": "甘宁",
+        "faction": "wu",
+        "status": "v1_design_not_implemented",
+        "role": "rain_and_armor_break",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 14,
+          "intervalSec": 0.8,
+          "range": 200,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "jinfan_arrow_rain",
+          "name": "锦帆箭雨",
+          "shape": "volley_locked_circle",
+          "radius": 135,
+          "durationSec": 2,
+          "tickIntervalSec": 0.25,
+          "firstTickAtSec": 0.25,
+          "tickDamageByClass": {
+            "ordinary": 10,
+            "elite": 8,
+            "boss": 18
+          },
+          "maxTicksPerEnemyPerCast": 8,
+          "ordinaryExecute": false,
+          "incomingDamageMultiplier": 1.2,
+          "vulnerabilityDurationSec": 4,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 12,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      },
+      "taishi_ci": {
+        "name": "太史慈",
+        "faction": "wu",
+        "status": "v1_design_not_implemented",
+        "role": "elite_snipe",
+        "alwaysVisible": true,
+        "hpEnabled": false,
+        "movementEnabled": false,
+        "attack": {
+          "damage": 22,
+          "intervalSec": 1.15,
+          "range": 230,
+          "maxTargets": 1
+        },
+        "ultimate": {
+          "id": "decisive_three_arrows",
+          "name": "笃烈三矢",
+          "shape": "three_distinct_target_snipes",
+          "range": 610,
+          "maxDistinctTargets": 3,
+          "ordinaryExecute": true,
+          "damageByClass": {
+            "elite": 150,
+            "boss": 400,
+            "ordinary": 150
+          },
+          "maxHitsPerEnemyPerCast": 1,
+          "targetPriority": [
+            "attackable_boss",
+            "elite",
+            "closest_to_gate"
+          ],
+          "cannotRepeatSameTarget": true,
+          "presentationLockSec": 0.9,
+          "targetLockedAtCast": true,
+          "outsideShapeDamage": 0,
+          "executeEnemyTypes": [
+            "infantry"
+          ],
+          "executeCondition": "enemy.type===infantry && !enemy.executeImmune && intersects_locked_skill_shape",
+          "fixedCooldownSec": 0,
+          "cooldownSource": "personal_rage_role_rate_plus_recovery",
+          "instantKillNeverAppliesTo": [
+            "cavalry",
+            "armor",
+            "ranged",
+            "banner",
+            "siege",
+            "boss"
+          ]
+        },
+        "auto": {
+          "minOrdinaryTargets": 3,
+          "bossException": true,
+          "skipInvulnerable": true,
+          "deferBossOnlyCastsDuringDamageReduction": true
+        }
+      }
+    },
+    "tacticSelection": {
+      "referenceAfterWaves": [
+        2,
+        4,
+        6
+      ],
+      "choicesPerOffer": 3,
+      "allowPause": true,
+      "maxStacksPerTactic": 1,
+      "eligibility": "current_hero_or_built_camp_and_not_previously_selected",
+      "insufficientPoolRule": "Offer all remaining eligible tactics; never duplicate or offer unusable options.",
+      "rageRelatedTacticsAllowed": false,
+      "referenceSelectionCount": 3,
+      "minimumExpectedEligiblePool": 3
+    },
+    "tactics": {
+      "archer_pierce": {
+        "name": "穿云箭",
+        "camp": "archer",
+        "effects": {
+          "extraTargets": 1,
+          "extraDamageMultiplier": 0.35,
+          "pierceLength": 125,
+          "pierceHalfWidth": 25
+        }
+      },
+      "archer_volley": {
+        "name": "连珠齐射",
+        "camp": "archer",
+        "effects": {
+          "extraProjectiles": 1,
+          "extraDamageMultiplier": 0.25,
+          "extraProjectileCanPierce": false
+        }
+      },
+      "archer_hunt": {
+        "name": "破骑劲弩",
+        "camp": "archer",
+        "effects": {
+          "enemyTypes": [
+            "cavalry",
+            "armor",
+            "boss"
+          ],
+          "damageMultiplier": 1.25
+        }
+      },
+      "shield_grasp": {
+        "name": "坚壁铁阵",
+        "camp": "shield",
+        "effects": {
+          "speedFactorOverride": 0.32
+        }
+      },
+      "shield_reach": {
+        "name": "连营拒马",
+        "camp": "shield",
+        "effects": {
+          "rangeAdd": 25
+        }
+      },
+      "shield_break": {
+        "name": "破阵反击",
+        "camp": "shield",
+        "effects": {
+          "maxTargetsOverride": 5,
+          "damageMultiplier": 1
+        }
+      },
+      "catapult_blast": {
+        "name": "霹雳巨石",
+        "camp": "catapult",
+        "effects": {
+          "blastRadiusAdd": 12,
+          "damageMultiplier": 1
+        }
+      },
+      "catapult_shock": {
+        "name": "碎石封路",
+        "camp": "catapult",
+        "effects": {
+          "speedFactor": 0.65,
+          "durationSec": 2.5
+        }
+      },
+      "catapult_siege": {
+        "name": "摧城破甲",
+        "camp": "catapult",
+        "effects": {
+          "enemyTypes": [
+            "armor",
+            "boss"
+          ],
+          "damageMultiplier": 1.25
+        }
+      },
+      "guan_yu_width": {
+        "name": "青龙展刃",
+        "hero": "guan_yu",
+        "effects": {
+          "sweepWidthAdd": 24
+        }
+      },
+      "guan_yu_press": {
+        "name": "偃月破阵",
+        "hero": "guan_yu",
+        "effects": {
+          "elitePushbackAdd": 16,
+          "bossPushbackAdd": 0
+        }
+      },
+      "zhou_yu_radius": {
+        "name": "连营火势",
+        "hero": "zhou_yu",
+        "effects": {
+          "fireRadiusAdd": 16
+        }
+      },
+      "zhou_yu_duration": {
+        "name": "烈焰余势",
+        "hero": "zhou_yu",
+        "effects": {
+          "fireDurationSecAdd": 1,
+          "preserveMaxTicksPerEnemy": true
+        }
+      },
+      "crossbow_precision": {
+        "name": "贯甲强弩",
+        "camp": "crossbow",
+        "effects": {
+          "eliteAndBossDamageMultiplier": 1.25,
+          "stackWithBaseCrossbowMultiplier": true
+        }
+      },
+      "crossbow_pierce": {
+        "name": "穿阵劲矢",
+        "camp": "crossbow",
+        "effects": {
+          "extraTargets": 1,
+          "extraDamageMultiplier": 0.35
+        }
+      },
+      "crossbow_range": {
+        "name": "瞭望校射",
+        "camp": "crossbow",
+        "effects": {
+          "rangeAdd": 25
+        }
+      },
+      "fire_oil_spread": {
+        "name": "泼油成阵",
+        "camp": "fire_oil",
+        "effects": {
+          "fieldRadiusAdd": 16
+        }
+      },
+      "fire_oil_heat": {
+        "name": "烈火炙甲",
+        "camp": "fire_oil",
+        "effects": {
+          "eliteAndBossDamageMultiplier": 1.15
+        }
+      },
+      "fire_oil_slow": {
+        "name": "泥油阻路",
+        "camp": "fire_oil",
+        "effects": {
+          "speedFactor": 0.75,
+          "durationSec": 1
+        }
+      },
+      "war_drum_reach": {
+        "name": "鼓声远传",
+        "camp": "war_drum",
+        "effects": {
+          "rangeAdd": 30
+        }
+      },
+      "war_drum_vigor": {
+        "name": "振军奋勇",
+        "camp": "war_drum",
+        "effects": {
+          "attackSpeedBonusAdd": 0.05,
+          "respectGlobalCap": true
+        }
+      },
+      "war_drum_ward": {
+        "name": "整军固守",
+        "camp": "war_drum",
+        "effects": {
+          "campResilience": 0.25,
+          "respectResilienceCap": true
+        }
+      }
+    },
+    "modifierRules": {
+      "sameTacticStacks": false,
+      "damageMultipliers": "Multiply distinct applicable modifiers once per hit; extra arrows use their own coefficient and obey per-cycle secondary-hit limits.",
+      "slowFactors": "Strongest applicable factor wins, respecting class resistance and minimum speed factor; no additive freeze.",
+      "tacticScope": "Only the selected hero or matching camp type; no implicit whole-army damage boost.",
+      "fireTickDamageCapsSharedByCast": true,
+      "mustReportCombinedEffectsInSimulation": true,
+      "temporaryArmyDamageBonusCap": 0.35,
+      "temporaryArmyDamageBuffRule": "strongest applicable army buff, do not multiply same-category buffs",
+      "incomingEnemyDamageMultiplierCap": 1.25,
+      "vulnerabilityRule": "strongest debuff only",
+      "gateIncomingDamageFactorFloor": 0.7,
+      "gateDamageReductionRule": "strongest temporary factor, do not stack armor here",
+      "attackSpeedBonusCap": 0.3,
+      "mapBonusPolicy": {
+        "maxActiveBonuses": 1,
+        "bonusFraction": 0.1,
+        "applyOnce": true,
+        "noTeamSizeStacking": true,
+        "requiresExplicitCampTargetForRange": true,
+        "permittedStats": [
+          "camp_range",
+          "catapult_blast_radius",
+          "fire_oil_tick_damage"
+        ],
+        "rangeFormula": "(levelRange+tacticFlatRangeAdd)*(1+mapBonusFraction)",
+        "blastRadiusFormula": "(baseBlastRadius+tacticFlatBlastRadiusAdd)*(1+mapBonusFraction)",
+        "fireOilDamageFormula": "baseTickDamage*(1+mapBonusFraction)*otherDistinctApplicableModifiers",
+        "noBonusIfCampLockedOrNotBuilt": true
+      },
+      "campAttackHitBudgets": {
+        "archer": {
+          "maxDistinctTargetsPerCycle": 2,
+          "maxSecondaryPierceHitsPerCycle": 1,
+          "extraVolleyProjectileCanPierce": false,
+          "rule": "A cycle contains the main and volley projectiles; cap secondary pierce hits across the entire cycle."
+        },
+        "crossbow": {
+          "maxDistinctTargetsPerProjectile": 2,
+          "secondaryDamageCoefficient": 0.35
+        },
+        "catapult": {
+          "controlAndDamageChangesCannotCreateExtraExplosions": true,
+          "damageTargetCap": 6,
+          "controlTargetCap": null,
+          "tacticsNeverIncreaseDamageCap": true
+        },
+        "fire_oil": {
+          "maxFieldsPerCamp": 1,
+          "sameSourceTicksNeverDoubleStack": true
+        }
+      },
+      "slowMinimumSpeedFactor": 0.3,
+      "slowResistanceRule": "apply ordinary/elite/boss fraction and siege control fraction once; take strongest effective factor, never multiply independent slows"
+    },
+    "difficultyProfiles": {
+      "tutorial": {
+        "hpMultiplier": 1,
+        "countMultiplier": 0.8,
+        "speedMultiplier": 0.92,
+        "rewardMultiplier": 1
+      },
+      "normal": {
+        "hpMultiplier": 1,
+        "countMultiplier": 1,
+        "speedMultiplier": 1,
+        "rewardMultiplier": 1
+      },
+      "challenge": {
+        "hpMultiplier": 1.12,
+        "countMultiplier": 1.15,
+        "speedMultiplier": 1.04,
+        "rewardMultiplier": 1
+      }
+    },
+    "difficultyCurve": [
+      {
+        "phase": "opening",
+        "normalizedProgressRange": [
+          0,
+          0.15
+        ],
+        "spawnRatePerSecRange": [
+          4,
+          5.6
+        ],
+        "eliteFractionRange": [
+          0,
+          0
+        ],
+        "readyCastOrdinaryTargetsRange": [
+          15,
+          25
+        ],
+        "priorDensitySpawnRatePerSecRange": [
+          2.5,
+          3.5
+        ]
+      },
+      {
+        "phase": "growth",
+        "normalizedProgressRange": [
+          0.15,
+          0.4
+        ],
+        "spawnRatePerSecRange": [
+          4.8,
+          7.2
+        ],
+        "eliteFractionRange": [
+          0,
+          0.08
+        ],
+        "readyCastOrdinaryTargetsRange": [
+          20,
+          35
+        ],
+        "priorDensitySpawnRatePerSecRange": [
+          3,
+          4.5
+        ]
+      },
+      {
+        "phase": "pressure",
+        "normalizedProgressRange": [
+          0.4,
+          0.8
+        ],
+        "spawnRatePerSecRange": [
+          6.4,
+          8.8
+        ],
+        "eliteFractionRange": [
+          0.06,
+          0.15
+        ],
+        "readyCastOrdinaryTargetsRange": [
+          25,
+          45
+        ],
+        "priorDensitySpawnRatePerSecRange": [
+          4,
+          5.5
+        ]
+      },
+      {
+        "phase": "finale",
+        "normalizedProgressRange": [
+          0.8,
+          1
+        ],
+        "spawnRatePerSecRange": [
+          7.2,
+          9.6
+        ],
+        "eliteFractionRange": [
+          0.08,
+          0.18
+        ],
+        "readyCastOrdinaryTargetsRange": [
+          25,
+          45
+        ],
+        "priorDensitySpawnRatePerSecRange": [
+          4.5,
+          6
+        ]
+      }
+    ],
+    "metaProgression": {
+      "status": "confirmed_scope_proposed_values",
+      "heroLevel": {
+        "min": 1,
+        "max": 30,
+        "xpForNextLevelFormula": "40+10*(currentLevel-1)",
+        "coinForNextLevelFormula": "80+20*(currentLevel-1)",
+        "damageMultiplierFormula": "1+0.01*(heroLevel-1)",
+        "damageMultiplierAtMax": 1.29,
+        "damageAppliesTo": [
+          "hero_basic_attack",
+          "hero_ultimate_numeric_damage"
+        ],
+        "doesNotModify": [
+          "ordinary_execute_rule",
+          "rage",
+          "camp_damage",
+          "heal",
+          "control_duration",
+          "skill_area"
+        ],
+        "xpNextLevelCoefficients": {
+          "base": 40,
+          "perPriorLevel": 10
+        },
+        "coinNextLevelCoefficients": {
+          "base": 80,
+          "perPriorLevel": 20
+        },
+        "damagePerLevelBonus": 0.01
+      },
+      "skillLevel": {
+        "min": 1,
+        "max": 5,
+        "requiredHeroLevelBySkillLevel": [
+          1,
+          7,
+          13,
+          19,
+          25
+        ],
+        "upgradeCoinCostsByDestinationLevel": {
+          "2": 400,
+          "3": 800,
+          "4": 1400,
+          "5": 2200
+        },
+        "numericDamageMultipliers": [
+          1,
+          1.05,
+          1.1,
+          1.15,
+          1.2
+        ],
+        "doesNotModify": [
+          "rage",
+          "duration",
+          "ordinary_execute_rule",
+          "area",
+          "control"
+        ],
+        "liuBeiHealUsesSkillMultiplier": true
+      },
+      "currencies": {
+        "experience_book": {
+          "name": "经验册",
+          "xpPerBook": 50
+        },
+        "copper_coin": {
+          "name": "铜钱"
+        },
+        "refined_iron": {
+          "name": "精铁"
+        }
+      },
+      "battleFoodIsSeparate": true,
+      "firstClearRewardsOncePerLevel": true,
+      "dailyRepeatRewardedClearsLimit": 3,
+      "dailyRepeatLimitScope": "whole_account_local_prototype_design",
+      "dailyRepeatAfterLimitReward": {
+        "experience_book": 0,
+        "copper_coin": 0,
+        "refined_iron": 0
+      },
+      "allHeroesAvailableAtLevel1ForBalanceReference": false,
+      "equipment": {
+        "slots": [
+          "weapon",
+          "armor",
+          "command_token",
+          "horse"
+        ],
+        "levelMin": 0,
+        "levelMax": 10,
+        "qualityIds": [
+          "white",
+          "blue",
+          "purple",
+          "red",
+          "gold"
+        ],
+        "randomAffixes": false,
+        "duplicateDrawsRequired": false,
+        "qualityFixedBonuses": {
+          "white": {
+            "weaponDamage": 0,
+            "armorDefense": 0,
+            "commandCampDamage": 0,
+            "horseBasicRange": 0
+          },
+          "blue": {
+            "weaponDamage": 0.01,
+            "armorDefense": 0.005,
+            "commandCampDamage": 0.005,
+            "horseBasicRange": 4
+          },
+          "purple": {
+            "weaponDamage": 0.02,
+            "armorDefense": 0.01,
+            "commandCampDamage": 0.01,
+            "horseBasicRange": 8
+          },
+          "red": {
+            "weaponDamage": 0.03,
+            "armorDefense": 0.015,
+            "commandCampDamage": 0.015,
+            "horseBasicRange": 12
+          },
+          "gold": {
+            "weaponDamage": 0.06,
+            "armorDefense": 0.02,
+            "commandCampDamage": 0.02,
+            "horseBasicRange": 16
+          }
+        },
+        "perLevelBonuses": {
+          "weaponDamage": 0.005,
+          "armorDefense": 0.003,
+          "commandCampDamage": 0.003,
+          "horseBasicRange": 2
+        },
+        "upgradeCoinCostFormula": "100+50*(destinationLevel-1)",
+        "upgradeIronCostFormula": "2+(destinationLevel-1)",
+        "qualityUpgradeCosts": [
+          {
+            "from": "white",
+            "to": "blue",
+            "copper_coin": 500,
+            "refined_iron": 20,
+            "unlockTier": "S03"
+          },
+          {
+            "from": "blue",
+            "to": "purple",
+            "copper_coin": 1000,
+            "refined_iron": 40,
+            "unlockTier": "S07"
+          },
+          {
+            "from": "purple",
+            "to": "red",
+            "copper_coin": 2000,
+            "refined_iron": 80,
+            "unlockTier": "S11"
+          }
+        ],
+        "qualityUpgradePreservesEquipmentLevel": true,
+        "weaponBonusAppliesTo": [
+          "hero_basic_attack",
+          "hero_ultimate_numeric_damage"
+        ],
+        "armorOnlyAffects": "team_gate_max_hp",
+        "armorDoesNotAffectLeakDamage": true,
+        "horseOnlyAffects": "hero_basic_attack_range",
+        "commandOnlyAffects": "matching_team_all_camp_numeric_damage",
+        "teamArmorDefenseBonusCap": 0.15,
+        "teamCommandCampDamageBonusCap": 0.12,
+        "teamGateHpFormula": "round(baseGateHp*(1+min(0.15,sum(0.003*armorLevel+armorQualityBonus across selected heroes))))",
+        "teamCampDamageFormula": "baseCampDamage*(1+min(0.12,sum(0.003*commandTokenLevel+commandQualityBonus across selected heroes)))*applicableBattleModifiers",
+        "heroNumericDamageFormula": "baseDamage*(1+0.01*(heroLevel-1))*(1+0.005*weaponLevel+weaponQualityBonus)*skillDamageMultiplierForActiveSkillsOnly*roleBasicAttackMultiplierForBasicAttacksOnly",
+        "controlAndExecuteNeverScaleWithEquipment": true,
+        "upgradeCoinCoefficients": {
+          "base": 100,
+          "perPriorDestinationLevel": 50
+        },
+        "upgradeIronCoefficients": {
+          "base": 2,
+          "perPriorDestinationLevel": 1
+        },
+        "recommendedScope": "weapon_only_other_slots_optional",
+        "qualityNames": {
+          "white": "白",
+          "blue": "蓝",
+          "purple": "紫",
+          "red": "红",
+          "gold": "金"
+        },
+        "goldWeaponSource": "victory_chest_only",
+        "promotionMaxQuality": "red",
+        "inventoryMax": 4000,
+        "teamSignatureGateBonusCap": 0.05,
+        "teamSignatureCampBonusCap": 0.03,
+        "signatureBonusesRequireMatchingHero": true,
+        "equipmentTransferAllowed": true,
+        "templates": {
+          "basic_weapon": {
+            "id": "basic_weapon",
+            "name": "百炼兵刃",
+            "slot": "weapon",
+            "forgeQualities": [
+              "white",
+              "blue",
+              "purple",
+              "red"
+            ],
+            "source": "forge_or_chest"
+          },
+          "basic_armor": {
+            "id": "basic_armor",
+            "name": "精工战甲",
+            "slot": "armor",
+            "forgeQualities": [
+              "white",
+              "blue",
+              "purple",
+              "red"
+            ],
+            "source": "forge_or_chest"
+          },
+          "basic_command_token": {
+            "id": "basic_command_token",
+            "name": "军令兵符",
+            "slot": "command_token",
+            "forgeQualities": [
+              "white",
+              "blue",
+              "purple",
+              "red"
+            ],
+            "source": "forge_or_chest"
+          },
+          "basic_horse": {
+            "id": "basic_horse",
+            "name": "军府良驹",
+            "slot": "horse",
+            "forgeQualities": [
+              "white",
+              "blue",
+              "purple",
+              "red"
+            ],
+            "source": "forge_or_chest"
+          },
+          "signature_cao_cao_weapon": {
+            "id": "signature_cao_cao_weapon",
+            "name": "倚天剑",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "cao_cao",
+            "signatureBonuses": {
+              "campDamageAdd": 0.025
+            },
+            "effectDescription": "全队军营伤害额外 +2.5%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_cao_cao_horse": {
+            "id": "signature_cao_cao_horse",
+            "name": "绝影",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "cao_cao",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_xiahou_dun_weapon": {
+            "id": "signature_xiahou_dun_weapon",
+            "name": "麒麟牙",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "xiahou_dun",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.12
+            },
+            "effectDescription": "无双数值伤害 +12%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_xiahou_dun_horse": {
+            "id": "signature_xiahou_dun_horse",
+            "name": "独眼乌骓",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "xiahou_dun",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_zhang_liao_weapon": {
+            "id": "signature_zhang_liao_weapon",
+            "name": "黄龙钩镰刀",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "zhang_liao",
+            "signatureBonuses": {
+              "basicDamageAdd": 0.12
+            },
+            "effectDescription": "普攻伤害 +12%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_zhang_liao_horse": {
+            "id": "signature_zhang_liao_horse",
+            "name": "逍遥疾影",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "zhang_liao",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_xu_chu_weapon": {
+            "id": "signature_xu_chu_weapon",
+            "name": "虎痴碎岳锤",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "xu_chu",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.15
+            },
+            "effectDescription": "无双数值伤害 +15%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_xu_chu_horse": {
+            "id": "signature_xu_chu_horse",
+            "name": "镇岳铁骠",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "xu_chu",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_sima_yi_weapon": {
+            "id": "signature_sima_yi_weapon",
+            "name": "幽雷羽扇",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "sima_yi",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.08,
+              "basicRangeAdd": 16
+            },
+            "effectDescription": "无双数值伤害 +8%，普攻射程 +16",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_sima_yi_horse": {
+            "id": "signature_sima_yi_horse",
+            "name": "玄策夜行",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "sima_yi",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_liu_bei_weapon": {
+            "id": "signature_liu_bei_weapon",
+            "name": "双股剑",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "liu_bei",
+            "signatureBonuses": {
+              "teamGateHpAdd": 0.025
+            },
+            "effectDescription": "城关最大耐久额外 +2.5%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_liu_bei_horse": {
+            "id": "signature_liu_bei_horse",
+            "name": "的卢",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "liu_bei",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_guan_yu_weapon": {
+            "id": "signature_guan_yu_weapon",
+            "name": "青龙偃月刀",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "guan_yu",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.12,
+              "ultimateWidthAdd": 12
+            },
+            "effectDescription": "青龙横扫数值伤害 +12%，刀波宽度 +12",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_guan_yu_horse": {
+            "id": "signature_guan_yu_horse",
+            "name": "赤兔",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "guan_yu",
+            "signatureBonuses": {
+              "basicRangeAdd": 12
+            },
+            "effectDescription": "对应武将普攻射程额外 +12",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_zhang_fei_weapon": {
+            "id": "signature_zhang_fei_weapon",
+            "name": "丈八蛇矛",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "zhang_fei",
+            "signatureBonuses": {
+              "ultimateWidthAdd": 16
+            },
+            "effectDescription": "长坂怒吼宽度 +16",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_zhang_fei_horse": {
+            "id": "signature_zhang_fei_horse",
+            "name": "乌骓",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "zhang_fei",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_zhao_yun_weapon": {
+            "id": "signature_zhao_yun_weapon",
+            "name": "龙胆亮银枪",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "zhao_yun",
+            "signatureBonuses": {
+              "basicDamageAdd": 0.12
+            },
+            "effectDescription": "普攻伤害 +12%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_zhao_yun_horse": {
+            "id": "signature_zhao_yun_horse",
+            "name": "照夜玉狮子",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "zhao_yun",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_zhuge_liang_weapon": {
+            "id": "signature_zhuge_liang_weapon",
+            "name": "卧龙羽扇",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "zhuge_liang",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.12
+            },
+            "effectDescription": "八阵风牢数值伤害 +12%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_zhuge_liang_horse": {
+            "id": "signature_zhuge_liang_horse",
+            "name": "卧龙青骢",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "zhuge_liang",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_sun_quan_weapon": {
+            "id": "signature_sun_quan_weapon",
+            "name": "紫电剑",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "sun_quan",
+            "signatureBonuses": {
+              "teamGateHpAdd": 0.025,
+              "campDamageAdd": 0.01
+            },
+            "effectDescription": "城关最大耐久 +2.5%，全队军营伤害 +1%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_sun_quan_horse": {
+            "id": "signature_sun_quan_horse",
+            "name": "江东踏浪",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "sun_quan",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_zhou_yu_weapon": {
+            "id": "signature_zhou_yu_weapon",
+            "name": "赤霄火羽扇",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "zhou_yu",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.15
+            },
+            "effectDescription": "赤壁烈焰每跳数值伤害 +15%，不增加命中跳数",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_zhou_yu_horse": {
+            "id": "signature_zhou_yu_horse",
+            "name": "赤壁火骊",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "zhou_yu",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_lv_meng_weapon": {
+            "id": "signature_lv_meng_weapon",
+            "name": "白衣兵书",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "lv_meng",
+            "signatureBonuses": {
+              "basicRangeAdd": 16,
+              "ultimateDamageAdd": 0.1
+            },
+            "effectDescription": "普攻射程 +16，伏兵数值伤害 +10%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_lv_meng_horse": {
+            "id": "signature_lv_meng_horse",
+            "name": "白衣渡江",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "lv_meng",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_gan_ning_weapon": {
+            "id": "signature_gan_ning_weapon",
+            "name": "锦帆百翎弓",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "gan_ning",
+            "signatureBonuses": {
+              "basicDamageAdd": 0.12
+            },
+            "effectDescription": "普攻伤害 +12%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_gan_ning_horse": {
+            "id": "signature_gan_ning_horse",
+            "name": "锦帆破浪",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "gan_ning",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          },
+          "signature_taishi_ci_weapon": {
+            "id": "signature_taishi_ci_weapon",
+            "name": "神臂银弦弓",
+            "slot": "weapon",
+            "quality": "gold",
+            "exclusiveHeroId": "taishi_ci",
+            "signatureBonuses": {
+              "ultimateDamageAdd": 0.15
+            },
+            "effectDescription": "笃烈三矢数值伤害 +15%",
+            "forgeQualities": [],
+            "source": "victory_chest_only"
+          },
+          "signature_taishi_ci_horse": {
+            "id": "signature_taishi_ci_horse",
+            "name": "笃烈追风",
+            "slot": "horse",
+            "quality": "red",
+            "exclusiveHeroId": "taishi_ci",
+            "signatureBonuses": {
+              "basicRangeAdd": 8
+            },
+            "effectDescription": "对应武将普攻射程额外 +8",
+            "forgeQualities": [
+              "red"
+            ],
+            "source": "forge"
+          }
+        },
+        "signatureNamingPolicy": "Historical fiction and original wargame equipment; names are thematic, not claims of historical ownership.",
+        "forging": {
+          "ordinaryCosts": {
+            "white": {
+              "copper_coin": 120,
+              "refined_iron": 2,
+              "unlockTier": "S01"
+            },
+            "blue": {
+              "copper_coin": 500,
+              "refined_iron": 20,
+              "unlockTier": "S03"
+            },
+            "purple": {
+              "copper_coin": 1500,
+              "refined_iron": 60,
+              "unlockTier": "S07"
+            },
+            "red": {
+              "copper_coin": 3500,
+              "refined_iron": 140,
+              "unlockTier": "S11"
+            }
+          },
+          "signatureHorseCost": {
+            "copper_coin": 3900,
+            "refined_iron": 150,
+            "unlockTier": "S11"
+          },
+          "levelAtForge": 0,
+          "noGoldForging": true
+        },
+        "salvage": {
+          "byQuality": {
+            "white": {
+              "copper_coin": 24,
+              "refined_iron": 1
+            },
+            "blue": {
+              "copper_coin": 100,
+              "refined_iron": 4
+            },
+            "purple": {
+              "copper_coin": 300,
+              "refined_iron": 12
+            },
+            "red": {
+              "copper_coin": 700,
+              "refined_iron": 28
+            },
+            "gold": {
+              "copper_coin": 900,
+              "refined_iron": 36
+            }
+          },
+          "equippedItemsProtected": true,
+          "upgradeCostsNotRefunded": true
+        }
+      },
+      "normalLevelRequirement": "Each level must be clearable at the recommended minimum hero and skill levels plus the recommended minimum main weapon only, with other three slots white Lv0, without daily repeat grinding. Initial resources are explicitly zero; initial tutorial levels are hero Lv1, skill Lv1, white Lv0.",
+      "recommendedTrainingPlan": "First-clear campaign rewards fund a selected three-hero core; all fifteen heroes at maximum is optional long-term collection, not a clearance prerequisite.",
+      "futureExpansionFields": [
+        "futureLevelCap",
+        "additionalSkillSlots",
+        "additionalEquipmentSlots"
+      ],
+      "futureExpansionActive": false,
+      "initialHeroIds": [
+        "cao_cao",
+        "guan_yu"
+      ],
+      "defaultParty": {
+        "lead": "guan_yu",
+        "support": []
+      },
+      "heroUnlocks": [
+        {
+          "heroId": "cao_cao",
+          "levelId": null
+        },
+        {
+          "heroId": "guan_yu",
+          "levelId": null
+        },
+        {
+          "heroId": "xiahou_dun",
+          "levelId": "wei_003"
+        },
+        {
+          "heroId": "xu_chu",
+          "levelId": "wei_007"
+        },
+        {
+          "heroId": "zhang_liao",
+          "levelId": "wei_012"
+        },
+        {
+          "heroId": "sima_yi",
+          "levelId": "wei_017"
+        },
+        {
+          "heroId": "liu_bei",
+          "levelId": "shu_001"
+        },
+        {
+          "heroId": "zhang_fei",
+          "levelId": "shu_003"
+        },
+        {
+          "heroId": "zhao_yun",
+          "levelId": "shu_007"
+        },
+        {
+          "heroId": "zhuge_liang",
+          "levelId": "shu_012"
+        },
+        {
+          "heroId": "sun_quan",
+          "levelId": "wu_001"
+        },
+        {
+          "heroId": "taishi_ci",
+          "levelId": "wu_003"
+        },
+        {
+          "heroId": "gan_ning",
+          "levelId": "wu_007"
+        },
+        {
+          "heroId": "zhou_yu",
+          "levelId": "wu_012"
+        },
+        {
+          "heroId": "lv_meng",
+          "levelId": "wu_017"
+        }
+      ],
+      "newHeroCatchUp": {
+        "enabled": true,
+        "oncePerHeroPerAccount": true,
+        "freeHeroLevel": true,
+        "freeXpAndCoinCostForGrantedLevels": true,
+        "targetLevelFormula": "max(unlockStageTier.recommendedHeroLevelRange[0], accountHighestReachedStageTier.recommendedHeroLevelRange[0])",
+        "doesNotGrantSkillLevels": true,
+        "doesNotGrantEquipment": true,
+        "doesNotRefundExperience": true,
+        "patchAddedHeroUsesCurrentAccountTier": true
+      },
+      "suggestedSupportAfterSlotUnlock": [
+        "cao_cao"
+      ],
+      "initialResources": {
+        "experience_book": 0,
+        "copper_coin": 0,
+        "refined_iron": 0
+      },
+      "heroStarterGear": {
+        "grantTrigger": "first_hero_unlock_independent_of_level_catch_up",
+        "oncePerHero": true,
+        "ownership": "transferable_inventory",
+        "items": [
+          {
+            "slot": "weapon",
+            "quality": "white",
+            "level": 0
+          },
+          {
+            "slot": "armor",
+            "quality": "white",
+            "level": 0
+          },
+          {
+            "slot": "command_token",
+            "quality": "white",
+            "level": 0
+          },
+          {
+            "slot": "horse",
+            "quality": "white",
+            "level": 0
+          }
+        ],
+        "resourceCost": {
+          "experience_book": 0,
+          "copper_coin": 0,
+          "refined_iron": 0
+        },
+        "allStatBonusesAtGrant": 0
+      },
+      "starsReward": {
+        "minStarsOnWin": 1,
+        "maxStars": 3,
+        "baseFirstClearRewardOnce": true,
+        "bonusStars": [
+          2,
+          3
+        ],
+        "bonusFractionOfBasePerNewStar": 0.1,
+        "rounding": "floor_per_currency_per_new_star",
+        "trackHighestStarsPerLevel": true,
+        "payOnlyNewHighestStarDifference": true,
+        "repeatedHeroDoesNotResetProgress": true,
+        "firstClearAtThreeStarsPaysBasePlusBothBonuses": true,
+        "formula": "rewardDelta=(firstWin?baseReward:0)+sum(floor(baseReward*0.1) for bonus star in [2,3] where previousHighestStar<star<=newHighestStar)",
+        "extraExpForHeroSpecificClear": false
+      },
+      "dailyRepeatPolicy": {
+        "limit": 3,
+        "limitScope": "whole_account",
+        "countsOnlyPreviouslyClearedLevels": true,
+        "firstClearDoesNotConsumeRepeatAllowance": true,
+        "starImprovementCanAlsoReceiveDailyRepeatReward": true,
+        "dateSource": "device_local_calendar_day",
+        "trustedServerClock": false,
+        "offlineSoftLimit": true,
+        "antiCheatGuarantee": false,
+        "afterLimitReward": {
+          "experience_book": 0,
+          "copper_coin": 0,
+          "refined_iron": 0
+        },
+        "resetKeyFormat": "YYYY-MM-DD"
+      },
+      "minimumClearanceBudgetSlots": [
+        "weapon"
+      ],
+      "actEndFirstClearRewardMultiplier": 1.25,
+      "actEndFirstClearRewardRounding": "floor_each_currency_before_star_bonus"
+    },
+    "referencePacing": {
+      "combatDurationSecRange": [
+        200,
+        300
+      ],
+      "targetCombatDurationSec": 240,
+      "firstUltimateReadyMaxSec": 20,
+      "betweenWavesSec": 1.8,
+      "spawnDensityBudgetAliveRange": [
+        60,
+        120
+      ],
+      "stressAliveEnemyCount": 150,
+      "hitFeedbackVisualSecRange": [
+        0.08,
+        0.12
+      ],
+      "visualFeedbackDoesNotGenerateExtraRage": true,
+      "ultimateCastCountRange": [
+        6,
+        8
+      ],
+      "ultimateOrdinaryKillShareRange": [
+        0.25,
+        0.5
+      ],
+      "inputActionsPerCombatMinuteRange": [
+        3,
+        8
+      ],
+      "bossObservedTtkSecRangeWithEscorts": [
+        25,
+        40
+      ],
+      "ultimateCastCountRangeRole": "lead_hero_only",
+      "teamCastCountRangeByPartySize": {
+        "1": [
+          6,
+          8
+        ],
+        "2": [
+          9,
+          12
+        ],
+        "3": [
+          12,
+          16
+        ]
+      }
+    },
+    "party": {
+      "maxHeroes": 3,
+      "leadCount": 1,
+      "supportCountMax": 2,
+      "leadBasicDamageMultiplier": 1,
+      "supportBasicDamageMultiplier": 0.7,
+      "ultimateDamageRoleMultiplier": 1,
+      "enemyHpMultipliersByPartySize": {
+        "1": 1,
+        "2": 1.5,
+        "3": 1.9
+      },
+      "enemyHpMultiplierAppliesToClasses": [
+        "elite",
+        "boss"
+      ],
+      "ordinaryHpScaledByPartySize": false,
+      "enemyCountScaledByPartySize": false,
+      "enemySpeedScaledByPartySize": false,
+      "enemyRewardScaledByPartySize": false,
+      "heroPositions": {
+        "lead": {
+          "x": 210,
+          "y": 550
+        },
+        "supportLeft": {
+          "x": 140,
+          "y": 548
+        },
+        "supportRight": {
+          "x": 280,
+          "y": 548
+        }
+      },
+      "heroHpEnabled": false,
+      "heroMovementEnabled": false,
+      "enemiesCanKillHeroes": false,
+      "heroesRemainVisible": true,
+      "lossCondition": "gateHp<=0",
+      "partySizeLockedAtBattleStart": true
+    },
+    "skillQueue": {
+      "scope": "whole_party",
+      "maxPendingPerHero": 1,
+      "maxQueueLength": 3,
+      "order": "fifo_manual_and_auto_requests",
+      "minimumStartSpacingSec": 1,
+      "presentationLockSec": 0.9,
+      "expectedMaxWaitSec": 3,
+      "persistentFieldDoesNotHoldPresentationLock": true,
+      "battleClockFrozen": false,
+      "otherHeroesRageContinues": true,
+      "reserveRageOnEnqueue": true,
+      "spendRageAndStartRecoveryAtExecution": true,
+      "manualTargetLockedAtEnqueue": true,
+      "autoTargetValidatedAndLockedAtExecution": true,
+      "cancelAutoIfInvulnerableOrNoEligibleTargets": true,
+      "cancelRefundReservedRage": true,
+      "globalFixedCooldownSec": 0,
+      "heroFixedCooldownSec": 0,
+      "notes": "Rage is the real cooldown. Reserving prevents duplicate clicks; rejected/cancelled queued requests never consume rage or enter recovery. Boss invulnerability blocks auto casting, and presentation scheduling never grants extra combat time."
+    },
+    "autoSkills": {
+      "leadAutoAllowed": false,
+      "supportAutoConfigurableBeforeBattle": true,
+      "defaultEnabled": false,
+      "requiredOrdinaryTargetThreshold": true,
+      "bossExceptionRequiresAttackableBossInSkillArea": true,
+      "invulnerabilitySuppressesBossException": true,
+      "buffSkillsRequireBenefitingAlliedCamps": true,
+      "reevaluateAtExecution": true,
+      "disableAutoDuringChoicesPauseAndResult": true,
+      "deferBossOnlyCastDuringDamageReduction": true
+    },
+    "stageGrowthTiers": [
+      {
+        "id": "S01",
+        "globalCampaignLevelRange": [
+          1,
+          5
+        ],
+        "recommendedHeroLevelRange": [
+          1,
+          3
+        ],
+        "recommendedSkillLevelRange": [
+          1,
+          1
+        ],
+        "recommendedGearLevelRange": [
+          0,
+          1
+        ],
+        "recommendedGearQuality": "white",
+        "hpMultiplier": 1,
+        "countMultiplier": 1,
+        "speedMultiplier": 1,
+        "rewardMultiplier": 1,
+        "startingFood": 120,
+        "firstClearReward": {
+          "experience_book": 4,
+          "copper_coin": 600,
+          "refined_iron": 10
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 80,
+          "refined_iron": 1
+        },
+        "name": "初阵",
+        "chapterId": "wei",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "white",
+        "recommendedMainWeaponLevelRange": [
+          0,
+          1
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S02",
+        "globalCampaignLevelRange": [
+          6,
+          10
+        ],
+        "recommendedHeroLevelRange": [
+          3,
+          5
+        ],
+        "recommendedSkillLevelRange": [
+          1,
+          1
+        ],
+        "recommendedGearLevelRange": [
+          1,
+          2
+        ],
+        "recommendedGearQuality": "white",
+        "hpMultiplier": 1.08,
+        "countMultiplier": 1.02,
+        "speedMultiplier": 1,
+        "rewardMultiplier": 1,
+        "startingFood": 120,
+        "firstClearReward": {
+          "experience_book": 5,
+          "copper_coin": 800,
+          "refined_iron": 12
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 100,
+          "refined_iron": 1
+        },
+        "name": "双路守势",
+        "chapterId": "wei",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "white",
+        "recommendedMainWeaponLevelRange": [
+          1,
+          2
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S03",
+        "globalCampaignLevelRange": [
+          11,
+          15
+        ],
+        "recommendedHeroLevelRange": [
+          6,
+          8
+        ],
+        "recommendedSkillLevelRange": [
+          1,
+          2
+        ],
+        "recommendedGearLevelRange": [
+          2,
+          3
+        ],
+        "recommendedGearQuality": "blue",
+        "hpMultiplier": 1.16,
+        "countMultiplier": 1.04,
+        "speedMultiplier": 1.01,
+        "rewardMultiplier": 1,
+        "startingFood": 120,
+        "firstClearReward": {
+          "experience_book": 6,
+          "copper_coin": 1000,
+          "refined_iron": 14
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 120,
+          "refined_iron": 1
+        },
+        "name": "强弩破阵",
+        "chapterId": "wei",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "blue",
+        "recommendedMainWeaponLevelRange": [
+          2,
+          3
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S04",
+        "globalCampaignLevelRange": [
+          16,
+          20
+        ],
+        "recommendedHeroLevelRange": [
+          8,
+          10
+        ],
+        "recommendedSkillLevelRange": [
+          2,
+          2
+        ],
+        "recommendedGearLevelRange": [
+          2,
+          3
+        ],
+        "recommendedGearQuality": "blue",
+        "hpMultiplier": 1.26,
+        "countMultiplier": 1.06,
+        "speedMultiplier": 1.01,
+        "rewardMultiplier": 1,
+        "startingFood": 120,
+        "firstClearReward": {
+          "experience_book": 7,
+          "copper_coin": 1200,
+          "refined_iron": 16
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 140,
+          "refined_iron": 2
+        },
+        "name": "魏军合击",
+        "chapterId": "wei",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "blue",
+        "recommendedMainWeaponLevelRange": [
+          2,
+          3
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S05",
+        "globalCampaignLevelRange": [
+          21,
+          25
+        ],
+        "recommendedHeroLevelRange": [
+          11,
+          13
+        ],
+        "recommendedSkillLevelRange": [
+          2,
+          3
+        ],
+        "recommendedGearLevelRange": [
+          3,
+          4
+        ],
+        "recommendedGearQuality": "blue",
+        "hpMultiplier": 1.38,
+        "countMultiplier": 1.09,
+        "speedMultiplier": 1.02,
+        "rewardMultiplier": 1,
+        "startingFood": 150,
+        "firstClearReward": {
+          "experience_book": 8,
+          "copper_coin": 1400,
+          "refined_iron": 18
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 160,
+          "refined_iron": 2
+        },
+        "name": "援军集结",
+        "chapterId": "shu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "blue",
+        "recommendedMainWeaponLevelRange": [
+          3,
+          4
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S06",
+        "globalCampaignLevelRange": [
+          26,
+          30
+        ],
+        "recommendedHeroLevelRange": [
+          13,
+          15
+        ],
+        "recommendedSkillLevelRange": [
+          3,
+          3
+        ],
+        "recommendedGearLevelRange": [
+          3,
+          4
+        ],
+        "recommendedGearQuality": "blue",
+        "hpMultiplier": 1.5,
+        "countMultiplier": 1.12,
+        "speedMultiplier": 1.02,
+        "rewardMultiplier": 1,
+        "startingFood": 150,
+        "firstClearReward": {
+          "experience_book": 9,
+          "copper_coin": 1600,
+          "refined_iron": 20
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 180,
+          "refined_iron": 2
+        },
+        "name": "军旗争锋",
+        "chapterId": "shu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "blue",
+        "recommendedMainWeaponLevelRange": [
+          3,
+          4
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S07",
+        "globalCampaignLevelRange": [
+          31,
+          35
+        ],
+        "recommendedHeroLevelRange": [
+          16,
+          18
+        ],
+        "recommendedSkillLevelRange": [
+          3,
+          3
+        ],
+        "recommendedGearLevelRange": [
+          4,
+          5
+        ],
+        "recommendedGearQuality": "purple",
+        "hpMultiplier": 1.64,
+        "countMultiplier": 1.15,
+        "speedMultiplier": 1.04,
+        "rewardMultiplier": 1,
+        "startingFood": 150,
+        "firstClearReward": {
+          "experience_book": 10,
+          "copper_coin": 1800,
+          "refined_iron": 22
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 200,
+          "refined_iron": 3
+        },
+        "name": "鼓阵协同",
+        "chapterId": "shu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "purple",
+        "recommendedMainWeaponLevelRange": [
+          4,
+          5
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S08",
+        "globalCampaignLevelRange": [
+          36,
+          40
+        ],
+        "recommendedHeroLevelRange": [
+          18,
+          20
+        ],
+        "recommendedSkillLevelRange": [
+          3,
+          4
+        ],
+        "recommendedGearLevelRange": [
+          5,
+          6
+        ],
+        "recommendedGearQuality": "purple",
+        "hpMultiplier": 1.78,
+        "countMultiplier": 1.18,
+        "speedMultiplier": 1.04,
+        "rewardMultiplier": 1,
+        "startingFood": 150,
+        "firstClearReward": {
+          "experience_book": 11,
+          "copper_coin": 2000,
+          "refined_iron": 24
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 220,
+          "refined_iron": 3
+        },
+        "name": "蜀军成势",
+        "chapterId": "shu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "purple",
+        "recommendedMainWeaponLevelRange": [
+          5,
+          6
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S09",
+        "globalCampaignLevelRange": [
+          41,
+          45
+        ],
+        "recommendedHeroLevelRange": [
+          21,
+          23
+        ],
+        "recommendedSkillLevelRange": [
+          4,
+          4
+        ],
+        "recommendedGearLevelRange": [
+          5,
+          6
+        ],
+        "recommendedGearQuality": "purple",
+        "hpMultiplier": 1.94,
+        "countMultiplier": 1.21,
+        "speedMultiplier": 1.05,
+        "rewardMultiplier": 1,
+        "startingFood": 180,
+        "firstClearReward": {
+          "experience_book": 12,
+          "copper_coin": 2200,
+          "refined_iron": 26
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 240,
+          "refined_iron": 3
+        },
+        "name": "火油试阵",
+        "chapterId": "wu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "purple",
+        "recommendedMainWeaponLevelRange": [
+          5,
+          6
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S10",
+        "globalCampaignLevelRange": [
+          46,
+          50
+        ],
+        "recommendedHeroLevelRange": [
+          23,
+          25
+        ],
+        "recommendedSkillLevelRange": [
+          4,
+          5
+        ],
+        "recommendedGearLevelRange": [
+          6,
+          7
+        ],
+        "recommendedGearQuality": "purple",
+        "hpMultiplier": 2.1,
+        "countMultiplier": 1.24,
+        "speedMultiplier": 1.06,
+        "rewardMultiplier": 1,
+        "startingFood": 180,
+        "firstClearReward": {
+          "experience_book": 13,
+          "copper_coin": 2400,
+          "refined_iron": 28
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 260,
+          "refined_iron": 4
+        },
+        "name": "攻城车阵",
+        "chapterId": "wu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "purple",
+        "recommendedMainWeaponLevelRange": [
+          6,
+          7
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S11",
+        "globalCampaignLevelRange": [
+          51,
+          55
+        ],
+        "recommendedHeroLevelRange": [
+          26,
+          28
+        ],
+        "recommendedSkillLevelRange": [
+          5,
+          5
+        ],
+        "recommendedGearLevelRange": [
+          7,
+          8
+        ],
+        "recommendedGearQuality": "purple",
+        "hpMultiplier": 2.28,
+        "countMultiplier": 1.27,
+        "speedMultiplier": 1.07,
+        "rewardMultiplier": 1,
+        "startingFood": 180,
+        "firstClearReward": {
+          "experience_book": 14,
+          "copper_coin": 2600,
+          "refined_iron": 30
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 280,
+          "refined_iron": 4
+        },
+        "name": "三军连携",
+        "chapterId": "wu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "purple",
+        "recommendedMainWeaponLevelRange": [
+          7,
+          8
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      },
+      {
+        "id": "S12",
+        "globalCampaignLevelRange": [
+          56,
+          60
+        ],
+        "recommendedHeroLevelRange": [
+          28,
+          30
+        ],
+        "recommendedSkillLevelRange": [
+          5,
+          5
+        ],
+        "recommendedGearLevelRange": [
+          7,
+          8
+        ],
+        "recommendedGearQuality": "purple",
+        "hpMultiplier": 2.46,
+        "countMultiplier": 1.3,
+        "speedMultiplier": 1.08,
+        "rewardMultiplier": 1,
+        "startingFood": 180,
+        "firstClearReward": {
+          "experience_book": 15,
+          "copper_coin": 2800,
+          "refined_iron": 32
+        },
+        "dailyRepeatReward": {
+          "experience_book": 1,
+          "copper_coin": 300,
+          "refined_iron": 4
+        },
+        "name": "吴军终试",
+        "chapterId": "wu",
+        "automaticWaveHpGrowth": false,
+        "recommendedEquipmentSlots": [
+          "weapon"
+        ],
+        "recommendedGearScope": "main_weapon_only",
+        "recommendedMainWeaponQuality": "purple",
+        "recommendedMainWeaponLevelRange": [
+          7,
+          8
+        ],
+        "otherEquipmentMinimumRequired": {
+          "quality": "white",
+          "level": 0
+        }
+      }
+    ],
+    "stageGrowthTierAssignment": "Wei then Shu then Wu: explicit globalIndex 1..60, S01..S12 each bind five consecutive formal levels. The prototype training encounter is outside these sixty levels; replay does not reset tiers or reward flags. Never scale enemies from the actual selected hero level or equipment.",
+    "waveGrowthReference": {
+      "waveCount": 8,
+      "hpMultipliers": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "speedMultipliers": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "rewardMultipliers": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "bossUsesCurrentWaveHpMultiplier": true,
+      "levelMayOverride": true,
+      "automaticWaveIndexGrowth": false
+    },
+    "chapterOrder": [
+      "wei",
+      "shu",
+      "wu"
+    ],
+    "campaignLevelCount": 60,
+    "trainingPrototypeCountsTowardCampaign": false,
+    "chapterTowerUnlock": {
+      "initial": [
+        "shield",
+        "archer"
+      ],
+      "wei": [
+        {
+          "levelId": "wei_003",
+          "campId": "catapult"
+        },
+        {
+          "levelId": "wei_007",
+          "campId": "crossbow"
+        }
+      ],
+      "shu": [
+        {
+          "levelId": "shu_001",
+          "campId": "war_drum"
+        }
+      ],
+      "wu": [
+        {
+          "levelId": "wu_001",
+          "campId": "fire_oil"
+        }
+      ]
+    },
+    "enemyIntroductions": {
+      "infantry": "wei_001",
+      "armor": "wei_005",
+      "cavalry": "wei_003",
+      "ranged": "wei_007",
+      "banner": "shu_005",
+      "siege": "wu_005",
+      "boss": "wei_004"
+    },
+    "controlAndDisruption": {
+      "slowDefaultEffectFractionByClass": {
+        "ordinary": 1,
+        "elite": 0.7,
+        "boss": 0.4
+      },
+      "enemyOverrideWins": false,
+      "siegeControlEffectFraction": 0.35,
+      "hostileCampIntervalBonusStackRule": "strongest_bonus_only",
+      "hostileCampIntervalBonusCap": 0.15,
+      "intervalFormula": "baseIntervalSec*(1+maxApplicableHostileIntervalBonus*(1-resilience))/(1+strongestFriendlyAttackSpeedBonus)",
+      "resilienceMin": 0,
+      "resilienceMax": 0.5,
+      "baselineResilience": 0,
+      "rangedCanTargetHero": false,
+      "interferenceDoesNotAffectRage": true,
+      "attacklessAuraCampsCannotBeInterferenceTargets": true,
+      "heroControlAmountsAlreadyClassAdjusted": true,
+      "enemySpecificControlMultiplierStillApplies": true,
+      "baselineBossStunSec": 0,
+      "resilienceSources": [
+        "war_drum_ward"
+      ],
+      "enemyControlRule": "multiply class resistance and siege control fraction once; strongest independent effective slow only"
+    },
+    "bossTemplates": {
+      "rammer": {
+        "name": "破门猛将",
+        "enemyBaseId": "boss",
+        "skillId": "rammer_charge",
+        "warningSec": 2,
+        "ability": {
+          "triggerProgressFraction": 0.75,
+          "maxActivations": 1,
+          "nextEscapeDamageMultiplier": 1.25,
+          "instantGateDamage": 0,
+          "directHeroDamage": 0
+        }
+      },
+      "charger": {
+        "name": "疾行督骑",
+        "enemyBaseId": "boss",
+        "skillId": "charger_haste",
+        "warningSec": 2,
+        "ability": {
+          "intervalSec": 16,
+          "speedMultiplier": 1.4,
+          "durationSec": 4,
+          "instantGateDamage": 0,
+          "directHeroDamage": 0
+        }
+      },
+      "banner_lord": {
+        "name": "号令统领",
+        "enemyBaseId": "boss",
+        "skillId": "banner_summon",
+        "warningSec": 2,
+        "ability": {
+          "intervalSec": 15,
+          "maxActivations": 2,
+          "summonEnemyId": "infantry",
+          "summonCount": 6,
+          "summonReward": 0,
+          "summonsCountForVictory": true,
+          "instantGateDamage": 0,
+          "directHeroDamage": 0
+        }
+      },
+      "guardian": {
+        "name": "坚壁守将",
+        "enemyBaseId": "boss",
+        "skillId": "guardian_guard",
+        "warningSec": 2,
+        "ability": {
+          "intervalSec": 16,
+          "durationSec": 4,
+          "damageTakenMultiplier": 0.75,
+          "invulnerable": false,
+          "autoBossOnlyCastShouldWait": true,
+          "instantGateDamage": 0,
+          "directHeroDamage": 0
+        }
+      },
+      "siege_lord": {
+        "name": "攻城统帅",
+        "enemyBaseId": "boss",
+        "skillId": "siege_disrupt",
+        "warningSec": 2,
+        "ability": {
+          "intervalSec": 18,
+          "maxCamps": 2,
+          "campIntervalMultiplier": 1.15,
+          "durationSec": 3,
+          "targetRule": "nearest_attack_capable_camps",
+          "affectedByResilience": true,
+          "instantGateDamage": 0,
+          "directHeroDamage": 0
+        }
+      }
+    },
+    "bossActHpMultipliers": [
+      0.75,
+      0.82,
+      0.9,
+      1,
+      1.12
+    ],
+    "bossHpFormula": "ceil(enemies.boss.hp*stageTier.hpMultiplier*difficulty.hpMultiplier*partyHpMultiplier*bossVariant.hpMultiplier)",
+    "bossVariantMultiplierPolicy": "bossVariant.hpMultiplier contains the chapter act factor (0.75/0.82/0.90/1/1.12) and any explicitly documented variant adjustment. Do not apply bossActHpMultipliers again at runtime. No automatic wave-index HP growth.",
+    "battleSpeed": {
+      "allowedMultipliers": [
+        1,
+        1.5,
+        2
+      ],
+      "defaultMultiplier": 1,
+      "firstGuideMultiplier": 1,
+      "forceFirstGuideNormalSpeed": true,
+      "clockUnit": "combat_seconds",
+      "combatDtFormula": "combatDt=visibleWallDt*battleSpeed; advance through fixed small substeps without dropping accumulated combat time",
+      "fixedStepSec": 0.016666666666666666,
+      "maximumStepSec": 0.016666666666666666,
+      "dropAccumulatedCombatTime": false,
+      "hiddenStateAdvancesCombat": false,
+      "pausedStatesAdvanceCombat": false,
+      "appliesTo": [
+        "enemy_motion",
+        "spawn_schedule",
+        "camp_attack_cooldowns",
+        "hero_basic_attacks",
+        "personal_rage",
+        "rage_recovery",
+        "skill_queue",
+        "skill_damage_ticks",
+        "status_duration",
+        "combat_duration"
+      ],
+      "wallClockOnly": [
+        "audio_pitch_and_tempo",
+        "menu_animation",
+        "reward_limit_local_date",
+        "device_performance_measurement"
+      ],
+      "audioPlaybackRate": 1,
+      "speedChangeRule": "Change only future wall-to-combat conversion; preserve timers, rage, queues and pending fixed steps.",
+      "simulatedCombatEquivalentAcrossSpeeds": true
+    },
+    "enemyDensity": {
+      "densityMultiplier": 1.6,
+      "countRounding": "round_once_in_generator",
+      "countsAlreadyIncludeTier": true,
+      "countsAlreadyIncludeDensity": true,
+      "runtimeMultiplier": 1,
+      "spawnWindowMultiplier": 1,
+      "realEnemiesOnly": true,
+      "bossCountMultiplier": 1,
+      "maximumAliveEnemies": 160,
+      "overflowPolicy": "retain_scheduled_enemy_in_spawn_queue_until_capacity_available; never discard or count_as_killed",
+      "referenceUncappedGenerationRateMultiplier": 1.6,
+      "simulationStatus": "not_run_for_full_v1"
+    },
+    "alphaBalanceRevision": {
+      "version": "2026-10-11-r1",
+      "reason": "Keep low-frequency capped area camps; reduce compounded elite durability and cavalry speed so earned-food control leaves room for hero ultimates.",
+      "verifiedParty": [
+        "guan_yu",
+        "xiahou_dun",
+        "cao_cao"
+      ],
+      "verifiedPolicy": "mode6 two shields, one elite-priority crossbow, remaining archers; stage minimum training and main weapon only",
+      "scope": "60 configured seeds and legal fixed policy; not proof that every party or player timing wins"
+    },
+    "technology": {
+      "levelMax": 10,
+      "initialLevel": 0,
+      "battleSnapshot": true,
+      "requiredGlobalIndexByDestinationLevel": [
+        1,
+        6,
+        11,
+        16,
+        21,
+        26,
+        31,
+        36,
+        41,
+        46
+      ],
+      "coinCostCoefficients": {
+        "base": 120,
+        "perPriorDestinationLevel": 60
+      },
+      "ironCostCoefficients": {
+        "base": 1,
+        "perTwoPriorDestinationLevels": 1
+      },
+      "damageBonusCap": 0.25,
+      "rangeBonusCap": 15,
+      "doesNotAffect": [
+        "attack_interval",
+        "max_targets",
+        "slow_strength",
+        "slow_duration",
+        "rage",
+        "hero_damage",
+        "execute"
+      ],
+      "camps": {
+        "shield": {
+          "name": "盾营",
+          "levelMax": 10,
+          "perLevelBonuses": {
+            "damage": 0.025,
+            "range": 1.5,
+            "auraDamage": 0
+          }
+        },
+        "archer": {
+          "name": "弓营",
+          "levelMax": 10,
+          "perLevelBonuses": {
+            "damage": 0.025,
+            "range": 1.5,
+            "auraDamage": 0
+          }
+        },
+        "catapult": {
+          "name": "投石营",
+          "levelMax": 10,
+          "perLevelBonuses": {
+            "damage": 0.025,
+            "range": 1.5,
+            "auraDamage": 0
+          }
+        },
+        "crossbow": {
+          "name": "弩营",
+          "levelMax": 10,
+          "perLevelBonuses": {
+            "damage": 0.025,
+            "range": 1.5,
+            "auraDamage": 0
+          }
+        },
+        "fire_oil": {
+          "name": "火油营",
+          "levelMax": 10,
+          "perLevelBonuses": {
+            "damage": 0.025,
+            "range": 1.5,
+            "auraDamage": 0
+          }
+        },
+        "war_drum": {
+          "name": "战鼓营",
+          "levelMax": 10,
+          "perLevelBonuses": {
+            "damage": 0,
+            "range": 1.5,
+            "auraDamage": 0.002
+          }
+        }
+      }
+    },
+    "loot": {
+      "chestPerVictory": 1,
+      "repeatsGrantChest": true,
+      "defeatsGrantChest": false,
+      "unrelatedToDailyMaterialRewardLimit": true,
+      "itemsPerChest": 1,
+      "itemSlot": "weapon",
+      "weightScale": 10000,
+      "qualityWeights": {
+        "white": 4500,
+        "blue": 3000,
+        "purple": 1750,
+        "red": 500,
+        "gold": 250
+      },
+      "goldProbability": 0.025,
+      "goldTemplateIds": [
+        "signature_cao_cao_weapon",
+        "signature_xiahou_dun_weapon",
+        "signature_zhang_liao_weapon",
+        "signature_xu_chu_weapon",
+        "signature_sima_yi_weapon",
+        "signature_liu_bei_weapon",
+        "signature_guan_yu_weapon",
+        "signature_zhang_fei_weapon",
+        "signature_zhao_yun_weapon",
+        "signature_zhuge_liang_weapon",
+        "signature_sun_quan_weapon",
+        "signature_zhou_yu_weapon",
+        "signature_lv_meng_weapon",
+        "signature_gan_ning_weapon",
+        "signature_taishi_ci_weapon"
+      ],
+      "goldPoolIncludesLockedHeroes": true,
+      "goldSelection": "uniform_across_all_fifteen",
+      "ordinaryTemplateId": "basic_weapon",
+      "levelAtDrop": 0,
+      "pityEnabled": false,
+      "rollAt": "unique_winning_settlement_transaction",
+      "revealDoesNotRoll": true,
+      "fullInventoryPolicy": "salvage_newly_rolled_item_and_show_result",
+      "randomSource": "independent_from_combat_seed"
+    }
+  },
+  "analysisModels": {
+    "damagePerSecond": "damage/intervalSec (single target, no travel or lost shots)",
+    "averageTtkSec": "enemyHp/singleTargetDps (continuous approximation only)",
+    "discreteTtkFromFirstHitSec": "(ceil(enemyHp/damage)-1)*intervalSec (stationary single target, all attacks connect)",
+    "projectileTravelSec": "distance/projectileSpeed (stationary target approximation)",
+    "areaDps": "damage/intervalSec*expectedActuallyHitTargets, not total on-screen enemies",
+    "expectedAliveCount": "spawnRatePerSec*averageResidenceSec before kills or leaks (Little's law approximation)",
+    "foodAvailable": "startingFood+sum(killedEnemyCount*roundedReward)-foodSpent",
+    "campReturnTimeSec": "cost/(extraDps*effectiveDamageToFoodConversion); needs level composition and cannot be inferred from raw DPS alone",
+    "prototypeCountCompositionRule": "i%11===7 -> cavalry from wave>=3; i%15===10 -> armor from wave>=4 overrides cavalry; boss added separately in final wave",
+    "notes": "These are reproducible arithmetic models, not a V1 combat simulation.",
+    "executeRule": "Only explicitly eligible infantry may be executed. All other enemies take bounded numeric damage, even if an early-level hit happens to kill them.",
+    "supportFullCombatCycleSec": "100/2+6=56",
+    "leadFullCombatCycleSec": "100/4+6=31"
+  },
+  "acceptanceTargets": {
+    "status": "targets_not_measured_results",
+    "deterministicSeedsPerHeroPerLevel": 100,
+    "fixedStepSec": 0.016666666666666666,
+    "referenceHumanFirstUltimateMaxSec": 20,
+    "normalBasicStrategySeedWinFractionRange": [
+      0.5,
+      0.75
+    ],
+    "normalExpertStrategySeedWinFractionRange": [
+      0.85,
+      1
+    ],
+    "advancedNormalConstructionOnlySeedWinFractionRange": [
+      0.2,
+      0.5
+    ],
+    "advancedNormalUltimateOnlySeedWinFractionRange": [
+      0.2,
+      0.5
+    ],
+    "normalIdleSeedWinFractionMax": 0.05,
+    "heroClearTimeRelativeDifferenceMax": 0.2,
+    "mobileTargetFps": 30,
+    "mobileFrameTimeP95MaxMs": 33.333333333333336,
+    "mobileValidationStatus": "not_run",
+    "simulationStatus": "not_run",
+    "metrics": [
+      "win",
+      "combatTimeSec",
+      "gateHpRemaining",
+      "firstReadyTimeSec",
+      "firstCastTimeSec",
+      "casts",
+      "largestBurstKills",
+      "ordinaryKillsByUltimate",
+      "foodEarned",
+      "foodSpent",
+      "peakUnspentFood",
+      "choiceIds",
+      "enemyLeaksByType",
+      "maxAliveEnemies",
+      "castCoverageVsKills",
+      "frameTimeP95Ms",
+      "castsByHero",
+      "rageBlockedTimeByHero",
+      "queueWaitSecByHero",
+      "cancelledAutoRequests",
+      "damageByHero",
+      "damageByCamp",
+      "partySizeHpMultiplier",
+      "heroLevels",
+      "skillLevels",
+      "equipmentLevelsAndQuality",
+      "teamGateHp",
+      "firstClearResourceBudget",
+      "wallTimeSec",
+      "battleSpeedHistory",
+      "peakPendingEnemyCount"
+    ],
+    "requiredStrategies": [
+      "idle",
+      "ultimate_only",
+      "construction_only",
+      "basic_two_lane",
+      "density_timing_expert",
+      "deliberately_wrong_lane"
+    ],
+    "requiredHeroScenarios": [
+      "dense_static_group",
+      "continuous_new_arrivals",
+      "split_lane_cavalry",
+      "elite_survives_ultimate",
+      "boss_with_escorts",
+      "ranged_camp_disruption",
+      "banner_infantry_haste",
+      "siege_control_resistance",
+      "guardian_damage_reduction_phase",
+      "summons_zero_reward_and_count_for_clearance",
+      "boss_auto_cancel_during_invulnerability"
+    ],
+    "note": "Seed win fractions describe scripted strategies under randomized lane/choice conditions, not human win rates.",
+    "everyHeroMustHaveDistinctMechanic": true,
+    "partySizesToTest": [
+      1,
+      2,
+      3
+    ],
+    "trainingBandsToTest": [
+      "recommended_min",
+      "recommended_max",
+      "overtrained_max"
+    ],
+    "autoSupportModesToTest": [
+      "manual",
+      "all_support_auto",
+      "mixed"
+    ],
+    "enemyInvulnerabilityQueueRefundRequired": true,
+    "matrixPolicy": {
+      "smokeSeedsPerScenario": 10,
+      "referenceLevelsPerHero": 12,
+      "fullSeedsPerSelectedScenario": 100,
+      "allPartyCombinationsExhaustive": false,
+      "mandatoryPartyScenarios": [
+        "burst_plus_control_plus_command",
+        "three_instant_bursts",
+        "damage_over_time_plus_vulnerability_plus_gather",
+        "healing_plus_gate_protection",
+        "precision_plus_double_command_aura",
+        "same_category_buff_no_double_stack"
+      ],
+      "humanTrialsSeparateFromScriptedSeeds": true
+    },
+    "battleSpeed": {
+      "compareMultipliers": [
+        1,
+        1.5,
+        2
+      ],
+      "compareByCombatSeconds": true,
+      "requireEqualSeededBattleOutcome": true,
+      "wallClockDurationExpectedInverseMultiplier": true,
+      "audioPlaybackRate": 1,
+      "noPendingEnemyDiscard": true
+    },
+    "areaCampIdentity": {
+      "lateOnlyConstructionWinRateMax": 0.5,
+      "requiresHeroSkillToReachBasicStrategyTargets": true,
+      "minimumSpeedFactor": 0.3,
+      "simulationStatus": "not_run_for_full_v1"
+    }
+  },
+  "levelContract": {
+    "status": "draft_adapter_contract",
+    "balanceFile": "balance.json",
+    "requiredConcepts": [
+      "levelId",
+      "difficultyProfileId",
+      "heroEligibility",
+      "startingFood",
+      "freeCamps",
+      "paths",
+      "slots",
+      "waves",
+      "tacticChoicePoints",
+      "victoryRequiresAllScheduledEnemiesResolved",
+      "stageGrowthTierId",
+      "partySizeHpMultiplierPolicy",
+      "recommendedTrainingBand",
+      "firstClearReward",
+      "dailyRepeatReward",
+      "countsAlreadyIncludeTier",
+      "countsAlreadyIncludeDensity",
+      "generationFacts",
+      "combatClockSpeedPolicy"
+    ],
+    "referencePaths": {
+      "heroId": "v1Baseline.heroes.<heroId>",
+      "enemyId": "v1Baseline.enemies.<enemyId>",
+      "campId": "v1Baseline.camps.<campId>",
+      "difficultyProfileId": "v1Baseline.difficultyProfiles.<difficultyProfileId>",
+      "tacticId": "v1Baseline.tactics.<tacticId>",
+      "stageGrowthTierId": "v1Baseline.stageGrowthTiers[].id",
+      "partySize": "v1Baseline.party.enemyHpMultipliersByPartySize.<partySize>",
+      "training": "v1Baseline.metaProgression",
+      "bossTemplateId": "v1Baseline.bossTemplates.<bossTemplateId>",
+      "campUnlocks": "v1Baseline.chapterTowerUnlock",
+      "battleSpeed": "v1Baseline.battleSpeed",
+      "enemyDensity": "v1Baseline.enemyDensity"
+    },
+    "spawnGroupSuggestedFields": [
+      "enemyId",
+      "count",
+      "spawnStartSec",
+      "spawnWindowSec",
+      "laneId",
+      "hpMultiplier",
+      "speedMultiplier",
+      "rewardMultiplier"
+    ],
+    "explicitOverridesRequired": true,
+    "applyDifficultyCountRounding": "round_once_per_spawn_group_then_clamp_to_nonnegative_integer",
+    "neverImplicitlyRepeatPrototypeWaveGrowth": true,
+    "schemaExtensionRule": "Adding a hero, enemy, tactic or difficulty profile extends the named dictionaries; campaign count remains in level data.",
+    "rewardNamespaces": {
+      "food": "battle_only",
+      "experience_book": "meta_only",
+      "copper_coin": "meta_only",
+      "refined_iron": "meta_only"
+    },
+    "partySizePolicy": "Bind party size at battle start and apply the selected explicit elite/boss HP multiplier once; never double-apply at group and wave levels.",
+    "statsResolutionModes": [
+      "references_then_resolve_once",
+      "fully_resolved_stats_with_no_additional_scaling"
+    ],
+    "recommendedStatsResolutionMode": "references_then_resolve_once",
+    "neverMixResolutionModes": true,
+    "globalIndexRange": [
+      1,
+      60
+    ],
+    "levelIdPattern": "^(wei|shu|wu)_[0-9]{3}$",
+    "mapIds": [
+      "wei_gate",
+      "wei_river",
+      "wei_pass",
+      "wei_fort",
+      "shu_village",
+      "shu_valley",
+      "shu_mountain",
+      "shu_river",
+      "wu_dock",
+      "wu_reeds",
+      "wu_fire",
+      "wu_fort"
+    ],
+    "bossVariantSuggestedFields": [
+      "templateId",
+      "name",
+      "hpMultiplier",
+      "skillId",
+      "warningSec"
+    ],
+    "bossVariantHpMultiplierMeaning": "act factor times explicit variant factor, excluding stage tier and party size"
+  },
+  "derivedExamples": {
+    "technologyExamples": {
+      "oneCampTo10Copper": 3900,
+      "oneCampTo10Iron": 30,
+      "sixCampsTo10Copper": 23400,
+      "sixCampsTo10Iron": 180,
+      "maximumDamageMultiplier": 1.25,
+      "maximumRangeAdd": 15,
+      "maximumDrumDamageAura": 0.02
+    },
+    "lootExamples": {
+      "goldPercent": 2.5,
+      "meanBoxesToAnyGold": 40,
+      "chanceAtLeastOneGoldIn60": 0.7811,
+      "specificSignaturePercent": 0.1667
+    },
+    "calculationStatus": "static_arithmetic_not_combat_simulation",
+    "campDps": {
+      "shield": [
+        {
+          "level": 1,
+          "singleTargetDps": 2.2222,
+          "eliteDpsBeforeTactics": 2.2222
+        },
+        {
+          "level": 2,
+          "singleTargetDps": 2.9412,
+          "eliteDpsBeforeTactics": 2.9412
+        },
+        {
+          "level": 3,
+          "singleTargetDps": 3.75,
+          "eliteDpsBeforeTactics": 3.75
+        }
+      ],
+      "archer": [
+        {
+          "level": 1,
+          "singleTargetDps": 13.3333,
+          "eliteDpsBeforeTactics": 13.3333
+        },
+        {
+          "level": 2,
+          "singleTargetDps": 22.2222,
+          "eliteDpsBeforeTactics": 22.2222
+        },
+        {
+          "level": 3,
+          "singleTargetDps": 36.1111,
+          "eliteDpsBeforeTactics": 36.1111
+        }
+      ],
+      "catapult": [
+        {
+          "level": 1,
+          "singleTargetDps": 4.6667,
+          "eliteDpsBeforeTactics": 4.6667,
+          "maximumCappedGroupDps": 28,
+          "maximumCappedBlastDamage": 84
+        },
+        {
+          "level": 2,
+          "singleTargetDps": 6.3158,
+          "eliteDpsBeforeTactics": 6.3158,
+          "maximumCappedGroupDps": 37.8947,
+          "maximumCappedBlastDamage": 108
+        },
+        {
+          "level": 3,
+          "singleTargetDps": 8.5185,
+          "eliteDpsBeforeTactics": 8.5185,
+          "maximumCappedGroupDps": 51.1111,
+          "maximumCappedBlastDamage": 138
+        }
+      ],
+      "crossbow": [
+        {
+          "level": 1,
+          "singleTargetDps": 15.3846,
+          "eliteDpsBeforeTactics": 19.2308
+        },
+        {
+          "level": 2,
+          "singleTargetDps": 25.641,
+          "eliteDpsBeforeTactics": 32.0513
+        },
+        {
+          "level": 3,
+          "singleTargetDps": 42.3077,
+          "eliteDpsBeforeTactics": 52.8846
+        }
+      ],
+      "fire_oil": [
+        {
+          "level": 1,
+          "singleTargetDps": 3.3333,
+          "eliteDpsBeforeTactics": 3.3333
+        },
+        {
+          "level": 2,
+          "singleTargetDps": 4.7059,
+          "eliteDpsBeforeTactics": 4.7059
+        },
+        {
+          "level": 3,
+          "singleTargetDps": 6.25,
+          "eliteDpsBeforeTactics": 6.25
+        }
+      ],
+      "war_drum": [
+        {
+          "level": 1,
+          "singleTargetDps": 0,
+          "eliteDpsBeforeTactics": 0
+        },
+        {
+          "level": 2,
+          "singleTargetDps": 0,
+          "eliteDpsBeforeTactics": 0
+        },
+        {
+          "level": 3,
+          "singleTargetDps": 0,
+          "eliteDpsBeforeTactics": 0
+        }
+      ]
+    },
+    "prototypeEnemyCounts": {
+      "infantry": 880,
+      "cavalry": 70,
+      "armor": 48,
+      "boss": 1
+    },
+    "referenceEnemyCountsBeforeDensity": {
+      "infantry": 547,
+      "cavalry": 41,
+      "armor": 30,
+      "boss": 1
+    },
+    "referenceEnemyCounts": {
+      "infantry": 875,
+      "cavalry": 66,
+      "armor": 48,
+      "boss": 1
+    },
+    "referenceBattleEconomy": {
+      "enemyRewardUpperBound": 1259,
+      "startingFood": 120,
+      "totalFoodUpperBound": 1379,
+      "remainingFourBuildCost": 320,
+      "sixCampUpgradeCost": 1640,
+      "sixCampFullMaxCost": 1960,
+      "sixCampFullMaxBudgetDeficit": 581,
+      "oneEachPlusMainThreeMaxCost": 1140,
+      "remainingFoodAfterMainThreeMax": 239
+    },
+    "combatClockExamples": [
+      {
+        "multiplier": 1,
+        "leadReadyCombatSec": 19.875,
+        "leadReadyWallSec": 19.875,
+        "leadRepeatCombatSec": 31,
+        "leadRepeatWallSec": 31,
+        "reference240CombatSecWallDurationSec": 240,
+        "audioPlaybackRate": 1
+      },
+      {
+        "multiplier": 1.5,
+        "leadReadyCombatSec": 19.875,
+        "leadReadyWallSec": 13.25,
+        "leadRepeatCombatSec": 31,
+        "leadRepeatWallSec": 20.6667,
+        "reference240CombatSecWallDurationSec": 160,
+        "audioPlaybackRate": 1
+      },
+      {
+        "multiplier": 2,
+        "leadReadyCombatSec": 19.875,
+        "leadReadyWallSec": 9.9375,
+        "leadRepeatCombatSec": 31,
+        "leadRepeatWallSec": 15.5,
+        "reference240CombatSecWallDurationSec": 120,
+        "audioPlaybackRate": 1
+      }
+    ],
+    "rage": {
+      "leadEarliestFullCombatReadySec": 15,
+      "supportEarliestFullCombatReadySec": 50,
+      "leadReadyWithMaxContactSec": 19.875,
+      "supportReadyWithMaxContactSec": 54.875,
+      "leadMinimumRepeatSec": 31,
+      "supportMinimumRepeatSec": 56
+    },
+    "training": {
+      "heroXpTo30": 5220,
+      "heroBooksTo30": 105,
+      "heroLevelCoinsTo30": 10440,
+      "skillCoinsTo5": 4800,
+      "campaignFirstClearRewards": {
+        "experience_book": 600,
+        "copper_coin": 108600,
+        "refined_iron": 1338
+      },
+      "campaignAllThreeStarRewards": {
+        "experience_book": 664,
+        "copper_coin": 130320,
+        "refined_iron": 1566
+      },
+      "threeHero30Skill5PurpleMainWeapon8Cost": {
+        "experience_book": 315,
+        "copper_coin": 56820,
+        "refined_iron": 312
+      },
+      "threeHero30Skill5RedMainWeapon10Cost": {
+        "experience_book": 315,
+        "copper_coin": 65970,
+        "refined_iron": 615
+      },
+      "threeHero30Skill5PurpleGear8Cost": {
+        "experience_book": 315,
+        "copper_coin": 90120,
+        "refined_iron": 1248
+      },
+      "threeHero30Skill5RedGear10Cost": {
+        "experience_book": 315,
+        "copper_coin": 126720,
+        "refined_iron": 2460
+      },
+      "maxHeroActiveDamageMultiplier": 1.976,
+      "maxThreeHeroArmorGateHp": 114,
+      "maxThreeHeroCommandDamageMultiplier": 1.12
+    },
+    "targetExamples": {
+      "archerLevel1InfantryContinuousTtkSec": 2.1,
+      "archerLevel3ArmorContinuousTtkSec": 1.5231,
+      "armorAfterLevel1GuanUltimateSoloHp": 0,
+      "armorAfterLevel1GuanUltimateThreePartyHp": 20,
+      "bossAfterLevel1GuanUltimateSoloHp": 690,
+      "zhouInfantryStationaryClearSec": 1,
+      "zhouCavalryStationaryClearSec": 1.25,
+      "zhouFullFieldArmorDamage": 96,
+      "zhouFullFieldBossDamage": 240,
+      "finalBossHpThreePartyNormal": 5235
+    }
+  },
+  "levelReferenceSchema": {
+    "status": "draft_reference_fragment_not_complete_level_schema",
+    "type": "object",
+    "properties": {
+      "difficultyProfileId": {
+        "type": "string",
+        "enum": [
+          "tutorial",
+          "normal",
+          "challenge"
+        ]
+      },
+      "stageGrowthTierId": {
+        "type": "string",
+        "enum": [
+          "S01",
+          "S02",
+          "S03",
+          "S04",
+          "S05",
+          "S06",
+          "S07",
+          "S08",
+          "S09",
+          "S10",
+          "S11",
+          "S12"
+        ]
+      },
+      "partySize": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3
+      },
+      "enemyId": {
+        "type": "string",
+        "enum": [
+          "infantry",
+          "cavalry",
+          "armor",
+          "boss",
+          "ranged",
+          "banner",
+          "siege"
+        ]
+      },
+      "heroId": {
+        "type": "string",
+        "enum": [
+          "cao_cao",
+          "xiahou_dun",
+          "zhang_liao",
+          "xu_chu",
+          "sima_yi",
+          "liu_bei",
+          "guan_yu",
+          "zhang_fei",
+          "zhao_yun",
+          "zhuge_liang",
+          "sun_quan",
+          "zhou_yu",
+          "lv_meng",
+          "gan_ning",
+          "taishi_ci"
+        ]
+      },
+      "campId": {
+        "type": "string",
+        "enum": [
+          "shield",
+          "archer",
+          "catapult",
+          "crossbow",
+          "fire_oil",
+          "war_drum"
+        ]
+      },
+      "bossTemplateId": {
+        "type": "string",
+        "enum": [
+          "rammer",
+          "charger",
+          "banner_lord",
+          "guardian",
+          "siege_lord"
+        ]
+      },
+      "globalIndex": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "countsAlreadyIncludeTier": {
+        "type": "boolean",
+        "const": true
+      },
+      "countsAlreadyIncludeDensity": {
+        "type": "boolean",
+        "const": true
+      },
+      "generationFacts": {
+        "type": "object",
+        "properties": {
+          "densityMultiplier": {
+            "type": "number",
+            "const": 1.6
+          },
+          "spawnWindowMultiplier": {
+            "type": "number",
+            "const": 1
+          },
+          "inActCountMultiplier": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "additionalProperties": true,
+    "currentCatalogVersion": "1.0.0-draft",
+    "catalogEnumExtensionRule": "Current hero/enemy/camp/growthTier entries reflect this manifest; append dictionary and tier entries with a future manifest instead of treating the sixty-level snapshot as an eternal cap."
+  }
+}

@@ -1,0 +1,5 @@
+/* Keyboard equivalents of the canvas hero tap areas. Keep the battlefield text-free until focused. */
+.battle-hero-keys{position:absolute;inset:0;pointer-events:none;z-index:5}
+.battle-hero-name-key{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:2px solid transparent;background:none;color:transparent;opacity:0;pointer-events:none;font:700 12px/1.2 var(--f-sans)}
+.battle-hero-name-key:focus-visible{opacity:1;color:var(--gold-hi);border-color:var(--gold-hi);background:#0d1b16e8;border-radius:8px;outline:2px solid #0d1b16;pointer-events:auto}
+.v1-battle .tutorial-heading button,.v1-battle .tutorial-heading>span,.v1-battle .tutorial-footer>span,.v1-battle .tutorial-card p{font-size:12px}

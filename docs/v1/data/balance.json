@@ -814,8 +814,10 @@
         "ultimate": {
           "id": "wei_command",
           "name": "魏武号令",
-          "shape": "allied_command_with_local_shock",
-          "radius": 185,
+          "shape": "thrown_banner_circle",
+          "radius": 165,
+          "flightSec": 0.42,
+          "bannerLingerSec": 6,
           "damageByClass": {
             "ordinary": 50,
             "elite": 50,
@@ -864,9 +866,12 @@
         },
         "ultimate": {
           "id": "fierce_counter",
-          "name": "独眼破军",
-          "shape": "circle_shock",
-          "radius": 145,
+          "name": "拔矢破军",
+          "shape": "leap_strike_circle",
+          "radius": 150,
+          "leapReach": 430,
+          "landAtSec": 0.36,
+          "returnAtSec": 0.9,
           "ordinaryExecute": true,
           "damageByClass": {
             "elite": 90,
@@ -981,8 +986,8 @@
           "id": "tiger_impact",
           "name": "虎痴撼地",
           "shape": "frontal_cone",
-          "range": 280,
-          "angleDegrees": 70,
+          "range": 360,
+          "angleDegrees": 75,
           "ordinaryExecute": true,
           "damageByClass": {
             "elite": 150,
@@ -1031,9 +1036,11 @@
         },
         "ultimate": {
           "id": "shadow_thunder",
-          "name": "幽雷诡阵",
-          "shape": "delayed_locked_circle",
-          "radius": 125,
+          "name": "三才幽雷",
+          "shape": "delayed_multi_circle",
+          "radius": 90,
+          "count": 3,
+          "minGap": 140,
           "delaySec": 1,
           "ordinaryExecute": true,
           "damageByClass": {
@@ -1086,8 +1093,10 @@
         "ultimate": {
           "id": "benevolent_rally",
           "name": "仁德援军",
-          "shape": "recovery_with_circle_shock",
-          "radius": 145,
+          "shape": "gate_lane_surge",
+          "surgeLength": 320,
+          "width": 110,
+          "surgeSec": 0.6,
           "ordinaryExecute": false,
           "damageByClass": {
             "ordinary": 70,
@@ -1386,9 +1395,11 @@
         },
         "ultimate": {
           "id": "jiangdong_bulwark",
-          "name": "江东铁壁",
-          "shape": "barrier_with_circle_shock",
-          "radius": 150,
+          "name": "江东潮壁",
+          "shape": "gate_half_wave",
+          "radius": 320,
+          "arcDegrees": 180,
+          "waveSec": 0.4,
           "ordinaryExecute": false,
           "damageByClass": {
             "ordinary": 90,
@@ -1431,9 +1442,10 @@
         },
         "ultimate": {
           "id": "chibi_fire",
-          "name": "赤壁烈焰",
-          "shape": "locked_circle",
-          "radius": 98,
+          "name": "赤壁火船",
+          "shape": "lane_fire_strip",
+          "length": 320,
+          "width": 110,
           "durationSec": 4,
           "tickIntervalSec": 0.25,
           "firstTickAtSec": 0.25,
@@ -1568,9 +1580,10 @@
         },
         "ultimate": {
           "id": "jinfan_arrow_rain",
-          "name": "锦帆箭雨",
-          "shape": "volley_locked_circle",
-          "radius": 135,
+          "name": "锦帆夜袭",
+          "shape": "lane_volley_strip",
+          "length": 300,
+          "width": 150,
           "durationSec": 2,
           "tickIntervalSec": 0.25,
           "firstTickAtSec": 0.25,
@@ -1778,7 +1791,7 @@
         "name": "连营火势",
         "hero": "zhou_yu",
         "effects": {
-          "fireRadiusAdd": 16
+          "fireWidthAdd": 24
         }
       },
       "zhou_yu_duration": {
@@ -2600,7 +2613,7 @@
             "signatureBonuses": {
               "ultimateDamageAdd": 0.15
             },
-            "effectDescription": "赤壁烈焰每跳数值伤害 +15%，不增加命中跳数",
+            "effectDescription": "赤壁火船每跳数值伤害 +15%，不增加命中跳数",
             "forgeQualities": [],
             "source": "victory_chest_only"
           },

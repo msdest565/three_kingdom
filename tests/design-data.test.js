@@ -144,6 +144,21 @@ test('art production references use the actual named content and local linked ar
   assert.match(art, /H=15/); assert.match(art, /E=6/); assert.match(art, /B=5/); assert.match(art, /M=60/);
 });
 
+test('redesigned skill documentation names the live geometry and fire-strip width tactic',async()=>{
+  const balance=await readFile(path.join(root,'docs/v1/balance-design.md'),'utf8');
+  const art=await readFile(path.join(root,'docs/v1/art-design.md'),'utf8');
+  for(const id of ['xiahou_dun','cao_cao','liu_bei','sun_quan','zhou_yu','sima_yi','xu_chu','gan_ning']){
+    const hero=baseline.balance.v1Baseline.heroes[id];
+    assert.ok(balance.includes(hero.ultimate.name),`${id} balance name`);
+    assert.ok(art.includes(hero.ultimate.name),`${id} visual matrix name`);
+    const line=balance.split('\n').find(line=>line.startsWith(`- ${hero.name}：`));
+    assert.ok(line?.includes('`'+hero.ultimate.shape+'`'),`${id} geometry description`);
+  }
+  const effect=baseline.balance.v1Baseline.tactics.zhou_yu_radius.effects;
+  assert.ok(balance.includes(JSON.stringify(effect)));assert.ok(!balance.includes('fireRadiusAdd'));
+  assert.match(art,/`PORTRAIT`.*唯一造型来源/);
+});
+
 
 test('loot conserves one weapon per victory with fixed 2.5% gold and no forge shortcut', () => {
   rejects(({balance}) => { balance.v1Baseline.loot.qualityWeights.gold = 251; }, 'loot: quality weights must conserve');

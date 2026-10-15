@@ -1,5 +1,5 @@
 import { BALANCE as B, CONTENT } from './runtime-data.js';
-import { maximumCircleCoverage, maximumDirectionalCoverage } from './skill-targeting.js';
+import { maximumCircleCoverage, maximumDirectionalCoverage, maximumSeparatedCircleCoverage } from './skill-targeting.js';
 
 // All rules below use combat seconds. Rendering and audio never decide a hit.
 const EPS = 1e-8;
@@ -194,7 +194,7 @@ export class V1Game {
     const text = { archer_pierce: '主箭贯穿一名敌军，造成35%伤害', archer_volley: '追加一箭，造成25%伤害', archer_hunt: '对骑兵、重甲与首领伤害增加25%',
       shield_grasp: '盾营减速强化，仍受抗性影响', shield_reach: '盾营控制范围增加25', shield_break: '盾营每击最多命中5人',
       catapult_blast: '爆炸半径增加12，伤害仍最多6人', catapult_shock: '碎石减速35%，持续2.5秒', catapult_siege: '对重甲与首领伤害增加25%',
-      guan_yu_width: '青龙横扫宽度增加24', guan_yu_press: '精锐后退距离增加16', zhou_yu_radius: '赤壁烈焰半径增加16', zhou_yu_duration: '火场持续增加1秒，命中次数上限保持',
+      guan_yu_width: '青龙横扫宽度增加24', guan_yu_press: '精锐后退距离增加16', zhou_yu_radius: '赤壁火船火带宽度增加24', zhou_yu_duration: '火场持续增加1秒，命中次数上限保持',
       crossbow_precision: '对精锐与首领额外增伤25%', crossbow_pierce: '贯穿一名敌军，造成35%伤害', crossbow_range: '弩营射程增加25',
       fire_oil_spread: '火油范围增加16', fire_oil_heat: '对精锐与首领灼烧伤害增加15%', fire_oil_slow: '火油命中附加25%减速1秒',
       war_drum_reach: '鼓声范围增加30', war_drum_vigor: '鼓声攻速增益增加5%', war_drum_ward: '鼓声范围军营获得25%扰阵抗性' };
@@ -505,6 +505,8 @@ export class V1Game {
   _attackHeroes(dt) {
     for (const h of this.heroes) {
       h.attackCooldown = Math.max(0, h.attackCooldown - dt); if (h.attackCooldown > EPS) continue;
+      // Leap is visual only, but this hero cannot attack from the wall until back.
+      if (h.id === 'xiahou_dun' && h.castingRemaining > EPS) continue;
       const targets = this.enemies.filter(e => alive(e) && !e.invulnerable && dist(h, e) <= this.heroBasicRange(h) + e.radius).sort(priority);
       if (!targets.length) continue; h.attackCooldown = h.definition.attack.intervalSec / (1 + this._friendlySpeed(h));
       h.attackFlash = .12;
@@ -540,14 +542,56 @@ export class V1Game {
   }
 
   _score(e) { return (classOf(e) === 'boss' ? 2.5 : classOf(e) === 'elite' ? 1.25 : 1) * (1 + 0.15 * e.progress / e.pathLength); }
+  _gateCenter() {
+    return this.paths.reduce((point,path) => ({x:point.x+path.points.at(-1).x/this.paths.length,y:point.y+path.points.at(-1).y/this.paths.length}),{x:0,y:0});
+  }
+  _bestLaneStrip(path, enemies, width, length) {
+    const projected=enemies.map(enemy => ({enemy,...this._pathProjection(path.id,enemy)}))
+      .filter(entry => entry.distance <= width/2+entry.enemy.radius+EPS);
+    const maxStart=Math.max(0,path.length-length), center=projected.length ? projected.reduce((sum,entry)=>sum+entry.progress/projected.length,0) : path.length/2;
+    // In one dimension membership changes only at an expanded unit's two edges.
+    // Include the natural cluster center so equal-coverage casts are not grazes.
+    const starts=[0,maxStart,clamp(center-length/2,0,maxStart)];
+    for (const entry of projected) starts.push(clamp(entry.progress-entry.enemy.radius-length,0,maxStart),clamp(entry.progress+entry.enemy.radius,0,maxStart));
+    let best=null;
+    for (const s0 of starts) {
+      const s1=Math.min(path.length,s0+length);
+      const hits=projected.filter(entry=>entry.progress>=s0-entry.enemy.radius-EPS && entry.progress<=s1+entry.enemy.radius+EPS);
+      const count=hits.length, score=hits.reduce((sum,entry)=>sum+this._score(entry.enemy),0), distance=Math.abs((s0+s1)/2-center);
+      if (!best || count>best.count || count===best.count && (score>best.score+EPS || Math.abs(score-best.score)<=EPS && distance<best.distance-EPS)) best={laneId:path.id,s0,s1,count,score,distance};
+    }
+    return best;
+  }
   _target(h) {
     const u = h.definition.ultimate; const enemies = this.enemies.filter(e => alive(e) && !e.invulnerable);
-    const base = { shape: u.shape, x: h.x, y: h.y, angle: -Math.PI / 2, width: u.width || 0, length: u.length || u.range || 0,
+    const base = { shape: u.shape, x: h.x, y: h.y, originX:h.x, originY:h.y, angle: -Math.PI / 2, width: u.width || 0, length: u.length || u.surgeLength || u.range || 0,
       radius: u.radius || 0, laneId: null, count: 0, ordinaryCount: 0, infantryCount: 0, bossCount: 0, targetIds: [] };
     if (h.id === 'guan_yu' && this.tactics.has('guan_yu_width')) base.width += 24;
     if (['guan_yu', 'zhang_fei'].includes(h.id)) base.width += h.signatureBonuses.ultimateWidthAdd;
-    if (h.id === 'zhou_yu' && this.tactics.has('zhou_yu_radius')) base.radius += 16;
-    if (u.shape === 'lane_mines') {
+    if (h.id === 'zhou_yu' && this.tactics.has('zhou_yu_radius')) base.width += B.tactics.zhou_yu_radius.effects.fireWidthAdd;
+    if (u.shape === 'gate_lane_surge') {
+      Object.assign(base,this._gateCenter()); base.laneIds=this.paths.map(path=>path.id);
+      base.targetIds=enemies.filter(e=>this._inShape(e,base,u)).map(e=>e.id);
+    } else if (u.shape === 'gate_half_wave') {
+      Object.assign(base,this._gateCenter()); base.arcDegrees=u.arcDegrees;
+      base.targetIds=enemies.filter(e=>this._inShape(e,base,u)).map(e=>e.id);
+    } else if (['lane_fire_strip','lane_volley_strip'].includes(u.shape)) {
+      let paths=this.paths;
+      if (u.shape === 'lane_fire_strip') paths=[...paths].sort((a,b)=>
+        enemies.filter(e=>e.laneId===b.id).reduce((sum,e)=>sum+this._score(e),0)-enemies.filter(e=>e.laneId===a.id).reduce((sum,e)=>sum+this._score(e),0) || a.id.localeCompare(b.id)).slice(0,1);
+      const strip=paths.map(path=>this._bestLaneStrip(path,enemies,base.width,base.length))
+        .sort((a,b)=>b.count-a.count || b.score-a.score || a.distance-b.distance || a.laneId.localeCompare(b.laneId))[0];
+      Object.assign(base,{laneId:strip.laneId,s0:strip.s0,s1:strip.s1},this.pathPoint(strip.laneId,(strip.s0+strip.s1)/2));
+      base.targetIds=enemies.filter(e=>this._inShape(e,base,u)).map(e=>e.id);
+    } else if (u.shape === 'delayed_multi_circle') {
+      base.circles=maximumSeparatedCircleCoverage(enemies,base.radius,u.count,u.minGap,{x:h.x,y:Math.max(100,h.y-145)},e=>this._score(e));
+      base.x=base.circles[0].x; base.y=base.circles[0].y;
+      base.targetIds=enemies.filter(e=>this._inShape(e,base,u)).map(e=>e.id);
+    } else if (u.shape === 'leap_strike_circle') {
+      const point=maximumCircleCoverage(enemies,base.radius,{x:h.x,y:Math.max(100,h.y-145)},e=>this._score(e),{origin:h,maxDistance:u.leapReach});
+      base.x=base.landX=point.x; base.y=base.landY=point.y;
+      base.targetIds=enemies.filter(e=>this._inShape(e,base,u)).map(e=>e.id);
+    } else if (u.shape === 'lane_mines') {
       const routes = this.paths.map(p => { const hit = enemies.filter(e => e.laneId === p.id); return { id: p.id, count: hit.length, score: hit.reduce((n, e) => n + this._score(e), 0), offset: Math.abs(this.pathPoint(p.id, p.length * .55).x - h.x) }; })
         .sort((a, b) => b.count - a.count || b.score - a.score || a.offset - b.offset || a.id.localeCompare(b.id));
       base.laneIds = routes.slice(0, 2).map(p => p.id); base.targetIds = enemies.filter(e => base.laneIds.includes(e.laneId)).map(e => e.id);
@@ -586,6 +630,16 @@ export class V1Game {
   _refreshTargets() { for (const h of this.heroes) h.target = this._target(h); }
   _inShape(e, target, u) {
     if (target.shape === 'three_distinct_target_snipes') return target.targetIds.includes(e.id);
+    if (target.shape === 'delayed_multi_circle') return target.circles.some(circle=>dist(e,circle)<=circle.radius+e.radius+EPS);
+    if (target.shape === 'gate_half_wave') return e.y<=target.y+e.radius+EPS && dist(e,target)<=target.radius+e.radius+EPS;
+    if (['lane_fire_strip','lane_volley_strip'].includes(target.shape)) {
+      const projection=this._pathProjection(target.laneId,e);
+      return projection.distance<=target.width/2+e.radius+EPS && projection.progress>=target.s0-e.radius-EPS && projection.progress<=target.s1+e.radius+EPS;
+    }
+    if (target.shape === 'gate_lane_surge') return target.laneIds.some(laneId=>{
+      const projection=this._pathProjection(laneId,e), path=this.paths.find(p=>p.id===laneId);
+      return projection.distance<=target.width/2+e.radius+EPS && projection.progress>=Math.max(0,path.length-target.length)-e.radius-EPS;
+    });
     if (target.shape === 'lane_following_charge') {
       const projection = this._pathProjection(target.laneId, e); const path = this.paths.find(p => p.id === target.laneId);
       return projection.distance <= target.width / 2 + e.radius && projection.progress >= Math.max(0, path.length - target.length) - e.radius;
@@ -632,9 +686,9 @@ export class V1Game {
       hits: new Map(), finished: false, nextTick: u.firstTickAtSec || 0, life: u.durationSec || 0.9, kind: 'instant', tickCount: 0 };
     this.stats.ultimateCasts++; const heroStats = this.stats.perHero[h.id] ||= { casts: 0, kills: 0 }; heroStats.casts++;
     this._casts.push(cast);
-    const visualLife = u.delaySec ? u.delaySec + 0.35 : Math.max(0.9, u.durationSec || 0);
+    const visualLife = u.delaySec ? u.delaySec + 0.35 : Math.max(0.9, u.durationSec || 0, u.bannerLingerSec || 0, u.shape==='gate_half_wave' ? u.buffDurationSec : 0);
     this.effects.push({ type: 'ultimate', heroId: h.id, ...target, targets: this.enemies.filter(e => target.targetIds.includes(e.id)).map(e => ({ id: e.id, x: e.x, y: e.y })),
-      x: target.x, y: target.y, age: 0, time: 0, life: visualLife });
+      x: target.x, y: target.y, age: 0, time: 0, started:this.time, life: visualLife });
     this._emit('ultimate', { heroId: h.id, name: h.name, skillName: u.name, burstId: cast.id, ...target, kills: 0 });
     if (u.allyAttackSpeedBonus) this._buffs.push({ kind: 'speed', bonus: u.allyAttackSpeedBonus, remaining: u.buffDurationSec });
     if (u.allyCampDamageBonus) this._buffs.push({ kind: 'campDamage', bonus: u.allyCampDamageBonus, remaining: u.buffDurationSec });
@@ -643,7 +697,11 @@ export class V1Game {
       const heal = Math.min(this.maxHp - this.hp, this.maxHp * fraction); this.hp += heal; this._emit('heal', { heroId: h.id, heal });
     }
     if (u.gateIncomingDamageFactor) this._buffs.push({ kind: 'gate', factor: u.gateIncomingDamageFactor, remaining: u.buffDurationSec });
-    if (u.shape === 'delayed_locked_circle') { cast.kind = 'delayed'; cast.life = u.delaySec + 0.1; }
+    if (['delayed_locked_circle','delayed_multi_circle','leap_strike_circle','thrown_banner_circle'].includes(u.shape)) {
+      cast.kind = 'delayed'; cast.hitAt=u.landAtSec ?? u.flightSec ?? u.delaySec; cast.life=Math.max(u.presentationLockSec,cast.hitAt+0.1);
+    }
+    else if (u.shape === 'gate_lane_surge') { cast.kind='surge'; cast.life=u.surgeSec; }
+    else if (u.shape === 'gate_half_wave') { cast.kind='wave'; cast.life=u.waveSec; }
     else if (u.tickIntervalSec) { cast.kind = 'field'; if (h.id === 'zhou_yu' && this.tactics.has('zhou_yu_duration')) cast.life += 1; this.effects.push({ type: 'field', heroId: h.id, ...target, life: cast.life, age: 0, time: 0 }); }
     else if (u.passAtSec) { cast.kind = 'passes'; cast.pass = 0; this._hitCast(cast); cast.pass++; }
     else if (u.shape === 'lane_mines') {
@@ -680,7 +738,9 @@ export class V1Game {
         if (u.shape === 'lane_following_charge') {
           this._hitCast(cast, target);
         } else this._hitCast(cast, target);
-      } else if (cast.kind === 'delayed' && before < u.delaySec && cast.age + EPS >= u.delaySec) this._hitCast(cast);
+      } else if (cast.kind === 'surge') this._hitCast(cast,{...cast.target,length:cast.target.length*Math.min(1,cast.age/u.surgeSec)});
+      else if (cast.kind === 'wave') this._hitCast(cast,{...cast.target,radius:cast.target.radius*Math.min(1,cast.age/u.waveSec)});
+      else if (cast.kind === 'delayed' && before < cast.hitAt && cast.age + EPS >= cast.hitAt) this._hitCast(cast);
       else if (cast.kind === 'passes') {
         while (cast.pass < u.passAtSec.length && cast.age + EPS >= u.passAtSec[cast.pass]) { this._hitCast(cast); cast.pass++; }
       } else if (cast.kind === 'field') {

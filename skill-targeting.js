@@ -5,12 +5,19 @@ const TAU = Math.PI * 2;
 const EPS = 1e-8;
 const normalize = angle => (angle % TAU + TAU) % TAU;
 
-export function maximumCircleCoverage(units, radius, fallback, scoreFor) {
-  if (!units.length) return { ...fallback, count: 0 };
+// Optional center constraints: a reachable disk and excluded disks around earlier
+// casts. Their boundaries participate in the same exact sweep; filtering enemy
+// centers alone would miss optima on a reach/spacing boundary.
+export function maximumCircleCoverage(units, radius, fallback, scoreFor, constraints = {}) {
+  const boundaries = [];
+  if (constraints.origin && Number.isFinite(constraints.maxDistance)) boundaries.push({ ...constraints.origin, radius: constraints.maxDistance, inside: true });
+  for (const point of constraints.avoid || []) boundaries.push({ ...point, radius: constraints.minGap, inside: false });
+  if (!units.length && !boundaries.length) return { ...fallback, count: 0 };
   const entries = units.map(unit => ({ x: unit.x, y: unit.y, radius: radius + (unit.radius || 0), score: scoreFor(unit) }));
-  const center = entries.reduce((sum, e) => ({ x: sum.x + e.x / entries.length, y: sum.y + e.y / entries.length }), { x: 0, y: 0 });
+  const center = entries.length ? entries.reduce((sum, e) => ({ x: sum.x + e.x / entries.length, y: sum.y + e.y / entries.length }), { x: 0, y: 0 }) : fallback;
   let best = { ...fallback, count: -1, score: -Infinity, distance: Infinity };
   const consider = (x, y, count, score) => {
+    if (boundaries.some(boundary => boundary.inside ? Math.hypot(x-boundary.x,y-boundary.y) > boundary.radius+EPS : Math.hypot(x-boundary.x,y-boundary.y) < boundary.radius-EPS)) return;
     const distance = (x - center.x) ** 2 + (y - center.y) ** 2;
     if (count > best.count || count === best.count && (score > best.score + EPS || Math.abs(score - best.score) <= EPS && distance < best.distance - EPS)) {
       best = { x, y, count, score, distance };
@@ -24,8 +31,8 @@ export function maximumCircleCoverage(units, radius, fallback, scoreFor) {
   // Natural interior centers keep sparse/full-cover casts visually on the army.
   evaluate(center); evaluate(fallback);
   for (const e of entries) evaluate(e);
-  for (const anchor of entries) {
-    let count = 1, score = anchor.score;
+  for (const anchor of [...entries, ...boundaries]) {
+    let count = entries.includes(anchor) ? 1 : 0, score = anchor.score || 0;
     const events = [];
     for (const other of entries) {
       if (other === anchor) continue;
@@ -37,6 +44,16 @@ export function maximumCircleCoverage(units, radius, fallback, scoreFor) {
       const start = normalize(direction - half), end = normalize(direction + half);
       if (start > end) { count++; score += other.score; }
       events.push({ angle: start, delta: 1, score: other.score }, { angle: end, delta: -1, score: other.score });
+    }
+    // A legal interval may start/end at a constraint even when target membership
+    // does not change. Evaluate all these intersections without changing scores.
+    for (const boundary of boundaries) {
+      if (boundary === anchor) continue;
+      const dx=boundary.x-anchor.x, dy=boundary.y-anchor.y, distance=Math.hypot(dx,dy);
+      if (distance < EPS || distance > anchor.radius+boundary.radius+EPS || distance < Math.abs(anchor.radius-boundary.radius)-EPS) continue;
+      const half=Math.acos(Math.max(-1,Math.min(1,(distance**2+anchor.radius**2-boundary.radius**2)/(2*distance*anchor.radius))));
+      const direction=Math.atan2(dy,dx);
+      events.push({angle:normalize(direction-half),delta:0,score:0},{angle:normalize(direction+half),delta:0,score:0});
     }
     const pointAt = angle => ({ x: anchor.x + anchor.radius * Math.cos(angle), y: anchor.y + anchor.radius * Math.sin(angle) });
     const initial = pointAt(0); consider(initial.x, initial.y, count, score);
@@ -52,6 +69,18 @@ export function maximumCircleCoverage(units, radius, fallback, scoreFor) {
     }
   }
   return { x: best.x, y: best.y, count: best.count };
+}
+
+// Greedy maximum new coverage; earlier hits are removed from scoring, while
+// circle spacing is a true geometric constraint, not a post-selection nudge.
+export function maximumSeparatedCircleCoverage(units, radius, count, minGap, fallback, scoreFor) {
+  const circles = []; let remaining = [...units];
+  for (let i=0;i<count;i++) {
+    const point = maximumCircleCoverage(remaining,radius,fallback,scoreFor,{avoid:circles,minGap});
+    circles.push({x:point.x,y:point.y,radius});
+    remaining=remaining.filter(unit => Math.hypot(unit.x-point.x,unit.y-point.y) > radius+(unit.radius||0)+EPS);
+  }
+  return circles;
 }
 
 // Every change in rectangle/cone membership occurs at a geometric boundary.

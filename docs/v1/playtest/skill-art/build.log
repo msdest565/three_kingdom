@@ -1,0 +1,7 @@
+
+> wushuang-guard-prototype@1.1.0-alpha.1 build
+> node scripts/build.mjs
+
+Runtime content: 15 heroes, 60 levels, 12 maps.
+Static V1 campaign and preserved prototype ready: D:\AI\塔防\dist
+Both HTML pages run offline without a server or remote assets.

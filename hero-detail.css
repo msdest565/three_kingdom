@@ -72,7 +72,7 @@ body.has-hero-page #lobby-scroll>section{display:none!important}
 .hero-gear-slot.is-upgraded{animation:hero-gear-bounce .5s var(--ease-spring)}
 .hero-skill-preview.is-playing .preview-effect{transform-origin:55px 48px;animation:hero-skill-impact .8s var(--ease-out) both}
 .hero-skill-preview.is-playing .preview-strike{animation:hero-skill-strike .8s var(--strike-delay,.18s) var(--ease-out) both}
-.hero-skill-preview.is-playing .preview-enemy{animation:hero-preview-hit .9s .3s both}
+/* Diagrams show coverage only; static enemy dots never imply hits outside it. */
 .hero-skill-preview.is-playing .preview-mine{transform-box:fill-box;transform-origin:center;animation:hero-skill-impact .9s .35s both}
 @keyframes hero-gold-ring{to{transform:rotate(1turn)}}
 @keyframes hero-gear-bounce{40%{transform:scale(1.12);filter:brightness(1.35)}}

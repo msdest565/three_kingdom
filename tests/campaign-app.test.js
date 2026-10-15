@@ -19,7 +19,7 @@ function compileCurrentBuild() {
   sourceHtml = readFileSync(path.join(root, 'index.html'), 'utf8');
   const script = [...portable.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
   assert.ok(script?.includes('class CampaignStore') && script.includes('class V1Game'), 'default portable entry contains the real V1 campaign');
-  const observed = script.replace(/\n\}\)\(\);\s*$/, '\nglobalThis.__integration = { store, tutorial, sound, renderer, combatClock, get game() { return game; }, get mode() { return mode; }, get selectedLevelId() { return selectedLevelId; } };\n})();');
+  const observed = script.replace(/\n\}\)\(\);\s*$/, '\nglobalThis.__integration = { store, tutorial, sound, renderer, combatClock, heroNameCards, get game() { return game; }, get mode() { return mode; }, get selectedLevelId() { return selectedLevelId; } };\n})();');
   assert.notEqual(observed, script, 'observation is injected only into the test closure');
   compiled = new vm.Script(observed, { filename: 'portable-campaign.integration.js' });
 }
@@ -486,6 +486,25 @@ test('two-hero battle keeps Cao Cao in the corner avatar group and queued clicks
 function startUnguided(env) {
   env.click('campaign-start'); env.click('story-skip'); if (env.api.tutorial.active) env.click('tutorial-skip');
 }
+
+test('battle names appear on first sight, canvas tap and keyboard focus without casting or changing saves',()=>{
+  const env=boot();startUnguided(env);env.advance(.1);
+  const {game,heroNameCards}=env.api,hero=game.heroes[0];
+  assert.equal(heroNameCards.visible().get(hero.id),1);
+  const key=env.document.querySelector('.battle-hero-name-key');
+  assert.equal(key.getAttribute('aria-label'),`查看${hero.name}姓名`);
+  env.advance(3.4);assert.equal(heroNameCards.visible().size,0);
+  const before=env.api.store.exportSave(),rage=hero.rage;
+  key.dispatch('focus');assert.equal(heroNameCards.visible().get(hero.id),1);
+  assert.equal(hero.rage,rage);assert.equal(env.api.store.exportSave(),before);
+  heroNameCards.clear();
+  const rect=env.get('battle-canvas').getBoundingClientRect();
+  env.get('battle-canvas').dispatch('pointerup',{clientX:rect.left+hero.x*rect.width/420,clientY:rect.top+hero.y*rect.height/600});
+  assert.equal(heroNameCards.visible().get(hero.id),1);
+  assert.equal(env.get('battle-announcer').textContent,hero.name);
+  assert.equal(hero.rage,rage);assert.equal(env.api.store.exportSave(),before);
+  env.destroy();
+});
 
 function finishChoiceWave(env) {
   const game = env.api.game;

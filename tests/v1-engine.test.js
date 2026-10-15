@@ -154,11 +154,17 @@ test('delayed lock, three passes and late arrivals obey combat clock and per-ene
   assert.ok(first.hp < arriving.hp && arriving.hp < 10000); assert.equal(fire._casts.length, 0);
 });
 
-test('rescue and command circles stay on their heroes while ranged circles lock world positions', () => {
-  for (const id of ['cao_cao', 'xiahou_dun', 'liu_bei', 'sun_quan']) {
+test('leap/banner target remote enemies while rescue/wave originate at the gate and thunder locks world positions', () => {
+  for (const id of ['cao_cao', 'xiahou_dun']) {
     const g = fixture([id]); enemy(g, 'infantry', 100);
-    const target = g._target(g.heroes[0]); assert.equal(target.x, g.heroes[0].x); assert.equal(target.y, g.heroes[0].y);
-    assert.equal(target.count, 0, id + ' cannot remotely shock the entry');
+    const target = g._target(g.heroes[0]); assert.notEqual(target.y,g.heroes[0].y); assert.equal(target.count,1);
+    if (id==='xiahou_dun') assert.ok(Math.hypot(target.x-g.heroes[0].x,target.y-g.heroes[0].y)<=430+1e-7);
+  }
+  for (const id of ['liu_bei','sun_quan']) {
+    const g=fixture([id]); enemy(g,'infantry',100); const target=g._target(g.heroes[0]);
+    const ends=g.paths.map(path=>path.points.at(-1));
+    assert.equal(target.x,ends.reduce((sum,p)=>sum+p.x/ends.length,0)); assert.equal(target.y,ends.reduce((sum,p)=>sum+p.y/ends.length,0));
+    assert.equal(target.count,0,id+' does not reach the far entrance');
   }
   const ranged = fixture(['sima_yi']); const e = enemy(ranged, 'armor', 150);
   const target = ranged._target(ranged.heroes[0]); assert.equal(target.x, e.x); assert.equal(target.y, e.y);
@@ -256,7 +262,9 @@ test('fire-oil fields are one per camp, refresh without resetting ticks; drum ov
 test('map modifiers apply to one explicit camp and never to hero spells', () => {
   const g = fixture(['zhou_yu'], 'wei_006'); g.food = 1000; g._addCamp(6, 'archer', 1); g._addCamp(5, 'archer', 1);
   assert.equal(g.camps[0].range, B.camps.archer.levels[0].range * 1.1); assert.equal(g.camps[1].range, B.camps.archer.levels[0].range);
-  const fire = fixture(['zhou_yu'], 'wu_011'); assert.equal(fire._target(fire.heroes[0]).radius, B.heroes.zhou_yu.ultimate.radius);
+  const fire = fixture(['zhou_yu'], 'wu_011');
+  assert.equal(fire._target(fire.heroes[0]).width, B.heroes.zhou_yu.ultimate.width);
+  assert.equal(fire._target(fire.heroes[0]).length, B.heroes.zhou_yu.ultimate.length);
 });
 
 test('whole-army engagement grants one role rate per hero regardless of camp count', () => {

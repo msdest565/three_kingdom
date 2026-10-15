@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { V1Renderer } from '../v1-renderer.js';
 import { HERO_ART, heroPortrait } from '../hero-portraits.js';
+import { HERO_MOTION } from '../battle-sprites.js';
 
 const content = JSON.parse(readFileSync(new URL('../docs/v1/data/levels.json', import.meta.url), 'utf8'));
 const balance = JSON.parse(readFileSync(new URL('../docs/v1/data/balance.json', import.meta.url), 'utf8')).v1Baseline;
@@ -127,7 +128,10 @@ test('damage labels use actual event amounts, merge only tower hits in a short w
   renderer.handleEvent({ ...first, enemyId: 9, enemyType: 'armor', enemyClass: 'elite', heroId: 'guan_yu', source: 'ultimate_guan_yu', castId: 2, amount: 40, hpAfter: 15, maxHp: 55 });
   assert.equal(renderer.damageLabels.length, 3);
   assert.ok(renderer.damageLabels.slice(1).every(label => label.prominent));
-  renderer.drawDamageLabels(canvas.context, clock / 1000);
+  // Verify exact text independently; simultaneous crowded labels are now filtered only at paint time.
+  const queued = renderer.damageLabels;
+  for (const label of queued) { renderer.damageLabels = [label]; renderer.drawDamageLabels(canvas.context, clock / 1000); }
+  renderer.damageLabels = queued;
   const labels = canvas.context.operations.filter(op => op[0] === 'fillText').map(op => op[1]);
   assert.deepEqual(labels, ['10.5 ·2击', '17', '40 · 余27%']);
   clock += 60; renderer.handleEvent({ ...first, amount: 8 });
@@ -138,6 +142,29 @@ test('damage labels use actual event amounts, merge only tower hits in a short w
   assert.equal(renderer.damageLabels.length, 48);
   assert.equal(renderer.damageLabels.at(-1).amount, 80);
   assert.equal(renderer.damageLabels.at(-1).hits, 1);
+});
+
+test('dense skill labels never overlap, show the latest tick and retain every damage event', t => {
+  let clock = 1000; t.mock.method(globalThis.performance, 'now', () => clock);
+  const { renderer, canvas } = makeRenderer();
+  const hit = { type: 'damage', heroId: 'gan_ning', source: 'ultimate_gan_ning', castId: 7, enemyType: 'armor', enemyClass: 'elite', amount: 9.6, maxHp: 64 };
+  for (let i = 0; i < 10; i++) renderer.handleEvent({ ...hit, enemyId: i, x: 160 + i * 9, y: 260 + i * 24, hpAfter: 48 });
+  clock += 250;
+  for (let i = 0; i < 10; i++) renderer.handleEvent({ ...hit, enemyId: i, x: 160 + i * 9, y: 260 + i * 24, hpAfter: 38.4 });
+  const before = structuredClone(renderer.damageLabels), layout = renderer.damageLabelLayout(canvas.context, clock / 1000);
+  assert.equal(before.length, 20); assert.ok(layout.length > 0 && layout.length <= 3);
+  assert.ok(layout.every(item => item.value === '9.6 · 余60%'), 'old health percentages are not painted over the current tick');
+  for (let i = 0; i < layout.length; i++) for (let j = i + 1; j < layout.length; j++) {
+    const a = layout[i].bounds, b = layout[j].bounds;
+    assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+  }
+  renderer.drawDamageLabels(canvas.context, clock / 1000); assert.deepEqual(renderer.damageLabels, before);
+  assert.equal(renderer.hitFlashes.size, 10, 'every actual enemy still receives hit feedback');
+  renderer.resetFeedback(); canvas.context.operations.length = 0;
+  for (const enemyId of [1, 2]) renderer.handleEvent({ type: 'damage', source: 'camp_archer', enemyId, x: 200 + enemyId * 3, y: 300, amount: 6 });
+  renderer.drawDamageLabels(canvas.context, clock / 1000);
+  assert.equal(canvas.context.operations.filter(op => op[0] === 'fillText').length, 1, 'adjacent sixes cannot visually combine into 66');
+  assert.equal(renderer.damageLabels.length, 2);
 });
 
 test('death snapshots draw separately from living units and never affect engine counts or stats', t => {
@@ -368,12 +395,115 @@ test('five boss archetypes draw distinct gear and the canvas no longer draws the
   const prints = ['rammer', 'charger', 'banner_lord', 'guardian', 'siege_lord'].map(bossTemplateId => {
     canvas.context.operations.length = 0;
     renderer.drawV1Enemy(canvas.context, { id: 1, type: 'boss', class: 'boss', bossTemplateId, x: 0, y: 0, hp: 50, maxHp: 100 }, 0);
-    return JSON.stringify(canvas.context.operations);
+    const blit = canvas.context.operations.find(op => op[0] === 'drawImage');
+    assert.ok(blit, 'boss art uses the shared sprite cache');
+    return JSON.stringify(blit[1].context.operations);
   });
   assert.equal(new Set(prints).size, 5);
   canvas.context.operations.length = 0;
   renderer.draw({ map: content.maps[0], heroes: [], enemies: [], camps: [], hp: 100 });
   assert.ok(!canvas.context.operations.some(op => op[0] === 'fillText' && op[1] === content.maps[0].name));
+});
+
+test('enemy columns follow the local road normal, remain deterministic and preserve heavy center lanes', () => {
+  const { renderer } = makeRenderer();
+  renderer.setMap({ id: 'test', paths: [[{ x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 500 }]], campSlots: [] });
+  const base = { type: 'infantry', laneId: 'route_0', progress: 80, x: 80, y: 100, hp: 10, maxHp: 10 };
+  const lone = [{ ...base, id: 2 }], before = structuredClone(lone);
+  const first = renderer.enemyDrawPositions(lone)[0];
+  assert.equal(first.x, 80); assert.equal(first.y, 112, 'horizontal road uses y normal, not fixed x');
+  assert.deepEqual(renderer.enemyDrawPositions(lone)[0], first); assert.deepEqual(lone, before);
+  const dense = Array.from({ length: 8 }, (_, i) => ({ ...base, id: i + 1, progress: 80 + i }));
+  const positions = renderer.enemyDrawPositions(dense);
+  assert.equal(positions.find(e => e.id === 2).y, 116.8);
+  assert.equal(positions.find(e => e.id === 3).x, 84, 'odd column staggers along tangent by four');
+  const bend = renderer.enemyDrawPositions([{ ...base, id: 2, progress: 250, x: 200, y: 150 }])[0];
+  assert.equal(bend.x, 188); assert.equal(bend.y, 150);
+  for (const type of ['armor', 'siege', 'boss']) {
+    const heavy = renderer.enemyDrawPositions([{ ...base, id: 2, type }])[0];
+    assert.equal(heavy.x, base.x); assert.equal(heavy.y, base.y);
+  }
+});
+
+test('enemy rendering positions also anchor hit numbers and death snapshots without editing events', () => {
+  const { renderer, canvas } = makeRenderer();
+  renderer.setMap({ id: 'test', paths: [[{ x: 0, y: 100 }, { x: 200, y: 100 }]], campSlots: [] });
+  const enemy = { id: 2, type: 'infantry', laneId: 'route_0', progress: 80, x: 80, y: 100, hp: 10 };
+  renderer.enemyDrawPositions([enemy]);
+  const event = { type: 'damage', enemyId: 2, x: 80, y: 100, amount: 3 }, copy = structuredClone(event);
+  renderer.handleEvent(event); renderer.handleEvent({ ...event, type: 'kill', enemyType: 'infantry' });
+  assert.deepEqual(event, copy);
+  assert.equal(renderer.damageLabels[0].y, 112); assert.equal(renderer.deathSnapshots[0].y, 112);
+  renderer.reducedMotion = true;
+  renderer.drawDamageLabels(canvas.context, renderer.damageLabels[0].started);
+  assert.ok(canvas.context.operations.some(op => op[0] === 'translate' && op[1] === 80 && op[2] === 74));
+});
+
+test('cached heroes and camps show names only on request and hero hit areas remain 44 CSS pixels', () => {
+  const { renderer, canvas } = makeRenderer({ left: 0, top: 0, width: 320, height: 260 });
+  const hero = { id: 'xiahou_dun', x: 210, y: 550, rage: 10 };
+  renderer.drawV1Hero(canvas.context, hero, 0); renderer.drawV1Camp(canvas.context, { type: 'shield', level: 2 }, false, 0);
+  assert.equal(canvas.context.operations.filter(op => op[0] === 'drawImage').length, 2);
+  assert.ok(!canvas.context.operations.some(op => op[0] === 'fillText'));
+  renderer.heroNameIds = new Set(['xiahou_dun']); renderer.heroNameAlpha = new Map([['xiahou_dun', 0.5]]);
+  renderer.drawV1Hero(canvas.context, hero, 0); renderer.drawV1Camp(canvas.context, { type: 'shield', level: 2 }, true, 0);
+  assert.ok(canvas.context.operations.some(op => op[0] === 'fillText' && op[1] === '夏侯惇'));
+  assert.ok(canvas.context.operations.some(op => op[0] === 'fillText' && op[1] === '盾营 Ⅱ'));
+  const cx = 210 * 320 / 420, cy = 550 * 260 / 600 - 16 * 260 / 600;
+  assert.equal(renderer.hitTestHero(cx + 21, cy, { heroes: [hero] }), 'xiahou_dun');
+  assert.equal(renderer.hitTestHero(-1, -1, { heroes: [hero] }), null);
+});
+
+test('hero release frames and leap positions read engine timing, including reduced motion', () => {
+  const { renderer } = makeRenderer();
+  const hero = { id: 'xiahou_dun', x: 210, y: 550, attackFlash: 0.12, attackCooldown: 1.2, rage: 0 };
+  renderer.battleTime = 10;
+  assert.deepEqual(renderer.actorFrame(hero, 10), { state: 'attack', frame: 0 });
+  const casting = { ...hero, casting: true, castingRemaining: 0.54 };
+  const game = { effects: [{ type: 'ultimate', heroId: hero.id, x: 100, y: 300, landX: 100, landY: 300 }] };
+  const before = structuredClone({ casting, game });
+  assert.deepEqual(renderer.heroVisualPosition(casting, game), { x: 100, y: 300 });
+  const motion = HERO_MOTION.xiahou_dun.ultimate;
+  assert.equal(renderer.actorFrame(casting, 10).frame, motion.times.findLastIndex(t => t <= 0.36 + 1e-8));
+  renderer.reducedMotion = true;
+  assert.deepEqual(renderer.heroVisualPosition(casting, game), { x: 210, y: 550 });
+  assert.deepEqual({ casting, game }, before);
+});
+
+test('redesigned skills draw real road sections, delayed lightning and finite static reduced-motion ranges', () => {
+  const { renderer, canvas } = makeRenderer();
+  renderer.setMap({ id: 'test', paths: [[{ x: 100, y: 0 }, { x: 100, y: 300 }, { x: 300, y: 300 }], [{ x: 350, y: 0 }, { x: 300, y: 300 }]], campSlots: [] });
+  const shapes = ['leap_strike_circle', 'thrown_banner_circle', 'gate_lane_surge', 'gate_half_wave', 'lane_fire_strip', 'delayed_multi_circle', 'lane_volley_strip', 'frontal_cone'];
+  for (const shape of shapes) for (const reduced of [false, true]) {
+    renderer.reducedMotion = reduced;
+    const effect = { shape, heroId: shape === 'frontal_cone' ? 'xu_chu' : 'test', x: 200, y: 300, originX: 210, originY: 550,
+      radius: 90, range: 360, angleDegrees: 75, width: 110, length: 200, laneId: 'route_0', s0: 250, s1: 450,
+      laneIds: ['route_0', 'route_1'], circles: [{ x: 100, y: 100, radius: 90 }, { x: 300, y: 100, radius: 90 }], life: 6, age: 0.3 };
+    const before = structuredClone(effect);
+    for (const options of [{ preview: true }, { ground: true }, {}]) renderer.drawSkillShape(canvas.context, effect, options);
+    assert.deepEqual(effect, before);
+  }
+  renderer.reducedMotion = false; canvas.context.operations.length = 0;
+  renderer.drawSkillShape(canvas.context, { shape: 'lane_fire_strip', laneId: 'route_0', s0: 250, s1: 450, width: 110, age: 0.3 }, { ground: true });
+  assert.ok(canvas.context.operations.some(op => op[0] === 'moveTo' && op[1] === 100 && op[2] === 250));
+  assert.ok(canvas.context.operations.some(op => op[0] === 'lineTo' && op[1] === 250 && op[2] === 300));
+  const thunder = { shape: 'delayed_multi_circle', circles: [{ x: 100, y: 100, radius: 90 }], age: 0.99 };
+  canvas.context.operations.length = 0; renderer.drawSkillShape(canvas.context, thunder);
+  assert.ok(!canvas.context.operations.some(op => op[0] === 'lineTo'), 'no bolt before the real delayed hit');
+  canvas.context.operations.length = 0; renderer.drawSkillShape(canvas.context, { ...thunder, age: 1 });
+  assert.ok(canvas.context.operations.some(op => op[0] === 'lineTo'));
+  canvas.context.operations.length = 0;
+  renderer.drawSkillShape(canvas.context, { shape: 'gate_half_wave', x: 210, y: 530, radius: 320, age: 2, life: 6 }, { ground: true });
+  assert.ok(!canvas.context.operations.some(op => op[0] === 'arc'), 'the six-second gate buff does not keep a damage range on the ground');
+  canvas.context.operations.length = 0;
+  renderer.drawSkillShape(canvas.context, { shape: 'thrown_banner_circle', x: 100, y: 200, radius: 165, age: 2, life: 6 }, { ground: true });
+  const rings = canvas.context.operations.filter(op => op[0] === 'arc');
+  assert.equal(rings.length, 1); assert.equal(rings[0][3], 25, 'only the flag countdown persists after the impact');
+  canvas.context.operations.length = 0;
+  renderer.drawSkillShape(canvas.context, { shape: 'frontal_cone', heroId: 'xu_chu', x: 210, y: 550, length: 360, age: 0 },
+    { preview: true, game: { heroes: [{ id: 'xu_chu', definition: { ultimate: balance.heroes.xu_chu.ultimate } }] } });
+  const cone = canvas.context.operations.find(op => op[0] === 'arc');
+  assert.equal(cone[3], 360); assert.equal(cone[5] - cone[4], 75 * Math.PI / 180, 'target omits angleDegrees, so preview and clip read the updated definition');
 });
 
 test('rendering a live V1 battle every frame never changes simulation results', async t => {

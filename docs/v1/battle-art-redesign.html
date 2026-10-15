@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>战场美术重做稿</title>
+<link rel="stylesheet" href="../../brush-font.css">
+<script src="./battle-art-redesign-art.js"></script>
+<style>
+/* 战场美术重做稿：造型统一、动作、军营、敌兵。沿用 ui-redesign-v2 / hero-skill-redesign 的色板 */
+:root{color-scheme:dark;
+--ink:#0d1b16;--ink-2:#13261f;--jade:#1d3d30;--jade-2:#2a5544;--line:#f2c46b2e;--line-2:#f2c46b66;
+--gold:#f2c46b;--gold-hi:#ffe7a6;--gold-deep:#a8702a;--paper:#f1e4c3;--paper-ink:#3b2b18;
+--cinnabar:#e2493b;--spirit:#7ff0c4;--text:#efe6cf;--text-2:#b8b296;--text-3:#7b7f6b;
+--f-brush:"WSBrush","Ma Shan Zheng","STXingkai","KaiTi",cursive;
+--f-serif:"Noto Serif SC","Songti SC",SimSun,serif;
+--f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--f-sans);font-size:15px;line-height:1.65;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+img{max-width:100%;display:block}
+.page{max-width:1200px;margin:0 auto;padding:28px 16px 96px}
+.masthead{display:grid;gap:14px;padding:24px 0 30px}
+.masthead h1{margin:0;font-family:var(--f-brush);font-weight:400;font-size:clamp(44px,8vw,84px);line-height:1;color:var(--gold-hi)}
+.masthead p{margin:0;max-width:68ch;color:var(--text-2)}
+.masthead a{color:var(--spirit)}
+.eyebrow{font-size:12px;letter-spacing:.2em;color:var(--gold)}
+.brief{display:flex;flex-wrap:wrap;gap:8px}.brief span{padding:5px 12px;border:1px solid var(--line-2);border-radius:999px;font-size:13px;color:var(--gold-hi);background:#f2c46b10}
+.toc{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 16px;margin:0 -16px;background:linear-gradient(var(--ink) 70%,transparent);scrollbar-width:none}
+.toc a{flex:none;padding:6px 14px;border-radius:999px;color:var(--text-2);text-decoration:none;font-size:14px;border:1px solid var(--line)}
+.toc a:hover{color:var(--gold-hi);border-color:var(--line-2)}
+.sec{padding:52px 0;border-top:1px solid var(--line);scroll-margin-top:56px;display:grid;gap:22px}
+.sec>h2{margin:0;font-family:var(--f-brush);font-weight:400;font-size:clamp(36px,4.6vw,54px);line-height:1.05;color:var(--gold-hi)}
+.sec h3{margin:0 0 8px;font-family:var(--f-serif);font-size:18px}
+.lede{margin:0;color:var(--text-2);max-width:72ch}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:880px){.split{grid-template-columns:minmax(0,1fr)}}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{padding:14px 16px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line)}
+.card b{display:block;margin-bottom:4px;font-family:var(--f-serif)}.card p{margin:0;font-size:13px;color:var(--text-2)}
+.card.bad{border-color:#e2493b55;background:#e2493b0d}.card.bad b{color:#ffb3a8}
+.card.good{border-color:#7ff0c444}.card.good b{color:var(--spirit)}
+code{font-size:12px;color:var(--spirit);word-break:break-all}
+.shot{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000;position:relative}
+.shot figcaption{position:absolute;left:8px;top:8px;padding:2px 10px;border-radius:999px;background:#000b;font-size:12px;color:var(--gold-hi)}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.shots{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.shot img{width:100%;height:340px;object-fit:cover;object-position:top}
+canvas{display:block;width:100%;border-radius:14px;background:#10221b;box-shadow:0 0 0 1px var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bar button{min-height:36px;padding:0 12px;border-radius:999px;font-size:13px;background:var(--jade);border:1px solid var(--line);color:var(--text-2)}
+.bar button[aria-pressed=true]{background:var(--gold);color:var(--paper-ink);border-color:var(--gold);font-weight:700}
+.bar .lbl{font-size:12px;color:var(--text-3);margin-right:4px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--gold);font-weight:500;background:#0004;position:sticky;top:0}
+tr:last-child td{border-bottom:0}td:first-child{font-family:var(--f-serif);font-weight:700;white-space:nowrap}
+td small{display:block;color:var(--text-3)}
+td.x{color:#ffb3a8}td.ok{color:var(--spirit)}
+tr.sel td{background:#f2c46b12}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.rules{display:grid;gap:8px;margin:0;padding:0;list-style:none;counter-reset:r}
+.rules li{counter-increment:r;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;font-size:14px}
+.rules li::before{content:counter(r);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--jade-2);color:var(--gold-hi);font-weight:900;font-size:12px}
+.rules li small{display:block;color:var(--text-2);font-size:13px}
+.review{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:q}
+.review li{counter-increment:q;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:12px 14px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line);font-size:14px}
+.review li::before{content:counter(q);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--paper-ink);font-weight:900;font-size:13px}
+.review p{margin:2px 0 0;color:var(--text-2);font-size:13px}
+.lineup{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.lineup{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hero-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px;padding:8px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line);text-align:center;font-size:12px;color:var(--text-2)}
+.hero-pair img,.hero-pair canvas{width:100%;aspect-ratio:1;border-radius:8px;box-shadow:none}
+.hero-pair b{grid-column:1/-1;font-family:var(--f-serif);color:var(--text);font-size:14px}
+.hero-pair .fix{grid-column:1/-1;font-size:11px;color:#ffb3a8;min-height:16px}
+.frames{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.frames canvas{aspect-ratio:1;border-radius:8px}
+.frames div{display:grid;gap:2px;text-align:center;font-size:11px;color:var(--text-3)}
+.frames div.hit{color:var(--cinnabar);font-weight:900}
+.foot{margin-top:40px;font-size:12px;color:var(--text-3)}
+</style>
+<div class="page">
+<header class="masthead">
+  <span class="eyebrow">无双守关 · 战场美术重做稿 · 2026-10-15</span>
+  <h1>一眼认人</h1>
+  <p>大厅头像已经有了描墨、大头和鲜明的兵器，战场还停在几何色块阶段：武将靠头顶的字认，军营靠下方的名牌认，敌兵挤成一串、看不清兵种。这一稿统一造型标准，补全十五将的动作，重画六类军营，并把敌兵从“串”改成“阵”。技能形状与数值见 <a href="hero-skill-redesign.html">技能重做稿</a>，本稿的无双动作按那份时间轴对齐。</p>
+  <div class="brief"><span>一张造型卡</span><span>15 将动作表</span><span>6 营新剪影</span><span>敌兵列位</span><span>战场去文字</span><span>只出设计，不改代码</span></div>
+</header>
+<nav class="toc" aria-label="目录"><a href="#diagnose">问题</a><a href="#style">造型统一</a><a href="#motion">动作设计</a><a href="#camps">军营</a><a href="#enemies">敌兵</a><a href="#delivery">交付规格</a><a href="#review">待确认</a></nav>
+
+<section class="sec" id="diagnose">
+  <span class="eyebrow">现状</span>
+  <h2>四个问题</h2>
+  <p class="lede">截图来自当前版本的真实浏览器回归（docs/v1/playtest/v2-impl），左上角标出对应的问题编号。</p>
+  <div class="shots">
+    <figure class="shot" style="margin:0"><img src="playtest/v2-impl/05-ultimate-ready.png" alt="第一关战斗中，敌兵沿道路排成长串，军营靠名牌区分" style="object-position:50% 48%"><figcaption>④ 敌兵成串 · ② 营靠名牌</figcaption></figure>
+    <figure class="shot" style="margin:0"><img src="playtest/v2-impl/09-regular-combat.png" alt="关羽站在城门上，头顶有关字，脚下有关羽名牌" style="object-position:50% 88%"><figcaption>③ 几何小人 + 双层字</figcaption></figure>
+    <figure class="shot" style="margin:0"><img src="playtest/v2-impl/21-heroes.png" alt="武将列表中的描墨大头胸像" style="object-position:50% 18%"><figcaption>① 大厅是另一套画风</figcaption></figure>
+  </div>
+  <div class="grid2">
+    <div class="card bad"><b>① 造型不一致</b><p>头像是描墨大头胸像，战场是无描边的梯形小人。三位武将两处拿的兵器不同（许褚 锤 / 斧，甘宁 弓 / 双戟，吕蒙 书卷 / 双刀），孙权战场多拿一块令牌。夏侯惇头像戴盔插红缨，战场只有一条头带；除关羽外十四人战场肤色相同，张飞的黑脸只在头像里有。原因：<code>HERO_ART</code> 和 <code>PORTRAIT</code> 是两张互不引用的表。</p></div>
+    <div class="card bad"><b>② 军营靠文字确认</b><p>六类军营共用一个绿色椭圆底座，区别只在里面 8px 高的小人手里那根线。实机尺寸下，盾营和弓营要读下方“盾营 Ⅰ / 弓营 Ⅰ”名牌才分得清。</p></div>
+    <div class="card bad"><b>③ 武将仍是几何图形</b><p>身体是一个梯形色块，头只有 12px，没有描线。认人靠头顶的“关”字和脚下的“关羽”名牌，两层文字说的是同一件事。</p></div>
+    <div class="card bad"><b>④ 敌兵重叠成串</b><p>敌兵沿道路中线行走，V1 战场直接按引擎坐标绘制、没有任何横向错开，路宽 36。盾营把速度降到 0.46 后前后间距被压缩，一路敌人叠成一条红线。马、盾、弓、旗这些兵种特征都在身体中段，被下一个人挡住。</p></div>
+  </div>
+</section>
+<section class="sec" id="style">
+  <span class="eyebrow">修复 ① ③</span>
+  <h2>一张造型卡</h2>
+  <p class="lede">战场小人不再单独设计，直接从头像参数（<code>PORTRAIT</code>）生成：同一个肤色、同一顶冠盔、同一把兵器、同一种描墨。头像是“近景”，战场是“远景”，读到的是同一个人。</p>
+  <div class="split">
+    <div class="grid2" style="grid-template-columns:minmax(0,1fr)">
+      <div class="card good"><b>比例 · 大头 Q 版 1 : 1.7</b><p>头高占全身 37%（现版 18%）。战场武将总高 46 世界单位，头宽 18，大约是现在的 1.5 倍。手机上脸部仍有 20 CSS px，眼罩、胡须、冠盔都看得见。</p></div>
+      <div class="card good"><b>描墨 · 统一 2px 墨线</b><p>和头像一样用 <code>#100c09</code> 外描，内部只用 1px 半透明墨线分区。所有武将、军营兵、敌兵共用这一条规则，三者站在一起不会像三套画风。</p></div>
+      <div class="card good"><b>兵器 · 放大到 1.3 倍身高</b><p>兵器是第一识别点，必须超出身体轮廓。关羽刀、张飞矛、赵云枪往上伸，许褚锤、夏侯惇刀往侧面伸，诸葛亮、周瑜、司马懿的扇子举在脸旁。不一致的武将统一用头像里的兵器。</p></div>
+      <div class="card good"><b>归属 · 脚下玉环，不用文字</b><p>去掉头顶单字和脚下名牌。己方统一用青玉色脚环（怒气弧沿环填充，现有做法保留），领衔环大一圈。点按或长按武将才弹出姓名卡。</p></div>
+      <div class="card good"><b>灰度验收</b><p>每个武将必须在灰度、46px 下和另外 14 人分得开。下方十五将对照可切换灰度与实机尺寸检查。</p></div>
+    </div>
+    <div style="display:grid;gap:10px">
+      <canvas id="anatomy" width="760" height="760" role="img" aria-label="战场武将造型标注图：关羽，标出头身比、描线、兵器与脚环"></canvas>
+    </div>
+  </div>
+  <div class="bar" role="group" aria-label="对照选项"><span class="lbl">对照</span><button type="button" data-lineup="color" aria-pressed="true">彩色</button><button type="button" data-lineup="gray" aria-pressed="false">灰度</button><button type="button" data-lineup="small" aria-pressed="false">实机尺寸</button></div>
+  <div class="lineup" id="lineup"></div>
+  <p class="lede" style="font-size:13px">左为现有大厅头像，右为按本稿规则生成的战场造型（示意）。红字标出现版两处不一致的地方。</p>
+</section>
+<section class="sec" id="motion">
+  <span class="eyebrow">补充 · 动作设计</span>
+  <h2>十五将动作表</h2>
+  <p class="lede">每人四个状态：待机、怒满、普攻、无双。普攻动作长度必须短于该武将的攻击间隔，出手帧对齐引擎出弹时刻；无双在 0.9 秒演出锁内完成，命中帧对齐技能稿的命中时刻。武将没有生命值，不做受击、倒地、行走；只有夏侯惇、许褚、张辽三人因技能需要新增跳跃或冲锋帧。</p>
+  <div class="bar" role="group" aria-label="选择武将" id="hero-pick"></div>
+  <div class="bar" role="group" aria-label="选择动作" id="state-pick"></div>
+  <div class="split">
+    <div style="display:grid;gap:10px">
+      <canvas id="motion-stage" width="760" height="620" role="img" aria-label="武将动作演示"></canvas>
+      <div class="frames" id="frames" aria-label="关键帧"></div>
+    </div>
+    <div id="motion-notes" style="display:grid;gap:14px;align-content:start"></div>
+  </div>
+  <div class="tbl"><table id="motion-table"><thead><tr><th>武将</th><th>待机 · 6 帧循环</th><th>普攻（出手帧）</th><th>无双关键姿势（命中帧）</th><th>帧数</th></tr></thead><tbody></tbody></table></div>
+  <ol class="rules">
+    <li><div>出手帧 = 引擎出弹时刻<small>普攻特效（剑气、风刃、箭）从出手帧开始飞，伤害仍由引擎判定。动画慢于攻速时按攻速缩放播放，不跳过出手帧。</small></div></li>
+    <li><div>怒满不是新动画<small>待机循环加快 1.3 倍 + 兵器描金 + 脚环亮起。避免为 15 人再画一套循环。</small></div></li>
+    <li><div>无双可被队列打断<small>同队另一将的无双排队时，当前演出播完收势帧再切换；收势帧可以截短到 2 帧。</small></div></li>
+    <li><div>朝向只有一个<small>武将始终正面朝上（朝敌）。转向用兵器角度表达，不画侧身、背身。</small></div></li>
+    <li><div>减弱动态<small>跳跃、前扑、冲锋改为原地闪现到落点再闪回；保留起手和收势两帧，删去位移和拖影。</small></div></li>
+  </ol>
+</section>
+<section class="sec" id="camps">
+  <span class="eyebrow">修复 ②</span>
+  <h2>不读字也认得出的军营</h2>
+  <p class="lede">一个营就是一个小阵地。底座、外轮廓、颜色、兵和动作五层都要不同，任意遮掉两层仍能认出。名牌改为只在选中时显示，平时只留等级标记（Ⅰ Ⅱ Ⅲ 用旗数表示）。</p>
+  <div class="bar" role="group" aria-label="军营显示"><span class="lbl">显示</span><button type="button" data-camp="new" aria-pressed="true">重做稿</button><button type="button" data-camp="old" aria-pressed="false">现版（示意）</button><button type="button" data-camp="gray" aria-pressed="false">灰度 + 实机尺寸</button><span class="lbl" style="margin-left:12px">等级</span><button type="button" data-level="1" aria-pressed="false">Ⅰ</button><button type="button" data-level="2" aria-pressed="false">Ⅱ</button><button type="button" data-level="3" aria-pressed="true">Ⅲ</button></div>
+  <canvas id="camp-board" width="1200" height="760" role="img" aria-label="六类军营对照：盾、弓、弩、投石、火油、战鼓"></canvas>
+  <div class="tbl"><table id="camp-table"><thead><tr><th>军营</th><th>底座与轮廓</th><th>主色</th><th>兵与动作</th><th>攻击时的提示</th><th>等级变化</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="sec" id="enemies">
+  <span class="eyebrow">修复 ④</span>
+  <h2>从“串”到“阵”</h2>
+  <p class="lede">敌兵不再全部压在道路中线。每个敌人出生时分到一条“列位”，在路宽内左右错开；被减速挤压时，列位间距自动拉开。这只改绘制位置，不改碰撞、命中和路径进度。同时把兵种特征移到头顶和外轮廓上，被前一个人挡住身体也能认出来。</p>
+  <div class="bar" role="group" aria-label="敌兵显示"><span class="lbl">显示</span><button type="button" data-crowd="new" aria-pressed="true">重做稿</button><button type="button" data-crowd="old" aria-pressed="false">现版（示意）</button><span class="lbl" style="margin-left:12px">密度</span><button type="button" data-density="normal" aria-pressed="false">常规</button><button type="button" data-density="dense" aria-pressed="true">盾营减速后</button><button type="button" data-density="max" aria-pressed="false">压力 160 人</button></div>
+  <div class="split">
+    <canvas id="crowd" width="760" height="900" role="img" aria-label="敌潮密集时的显示对比"></canvas>
+    <div style="display:grid;gap:14px;align-content:start">
+      <div><h3>列位规则</h3><ol class="rules">
+        <li><div>五条列位<small>道路有效宽 36，列位横向偏移 −12 / −6 / 0 / +6 / +12。<code>lane = hash(enemyId) % 5</code>，同一个敌人始终在同一列，不会左右乱跳。</small></div></li>
+        <li><div>纵向错半格<small>相邻列位前后错开 4 单位，相邻两人头部不在同一水平线上，避免“糖葫芦”。</small></div></li>
+        <li><div>拥挤时拉开<small>同一路段 40 单位内超过 6 人，偏移乘 1.4（最多到路肩 ±17）。重甲、攻城车、首领固定走中列，普通兵自动让开。</small></div></li>
+        <li><div>绘制顺序<small>按 y 从上到下画，首领、精锐最后画在同一 y 段之上；被遮挡超过 60% 的普通兵只画头盔和兵器（省性能）。</small></div></li>
+      </ol></div>
+      <div><h3>兵种识别 · 剪影优先</h3><div class="tbl"><table id="enemy-table" style="min-width:0"><thead><tr><th>兵种</th><th>头顶 / 轮廓特征</th><th>体型</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+  </div>
+</section>
+<section class="sec" id="delivery">
+  <span class="eyebrow">交接</span>
+  <h2>交付规格</h2>
+  <div class="grid2">
+    <div class="card"><b>一张表驱动两处</b><p><code>hero-portraits.js</code> 的 <code>PORTRAIT</code> 成为唯一来源，删掉 <code>HERO_ART.gear / silhouette</code>。战场绘制读 <code>skin / head / beard / weapon / cloth / trim</code>，和头像同参数。</p></div>
+    <div class="card"><b>预渲染精灵</b><p>武将、军营兵、敌兵按“状态 × 帧”预渲染到离屏画布（1× / 2×），战斗中只做 <code>drawImage</code>。160 人同屏时绘制开销低于现在逐个画路径。</p></div>
+    <div class="card"><b>帧数预算</b><p>武将：待机 6 + 普攻 4–6 + 无双 8–12，约 20 帧 × 15 人。军营兵：每类待机 2 + 攻击 3。敌兵：行走 4 帧 × 7 类，首领母型另加 2 帧挥击。</p></div>
+    <div class="card"><b>名字去哪了</b><p>战场不再常驻武将名牌、营名牌。点按出现姓名卡（2 秒消失），布阵面板、技能按钮和教程里照常显示文字。读屏与键盘焦点仍朗读名称。</p></div>
+    <div class="card"><b>不改的东西</b><p>碰撞半径、命中判定、路径进度、营位坐标、技能数值。列位偏移和放大的兵器都只影响画面，<code>v1-engine.js</code> 不需要动。</p></div>
+    <div class="card"><b>验收</b><p>① 灰度 + 实机尺寸下 15 将两两可辨；② 遮住名牌后 6 营 5 秒内认全；③ 第 1 关“盾营减速后”截图中，能数出每个普通兵和精锐；④ 160 人压测 60 FPS 设备不掉帧。</p></div>
+  </div>
+</section>
+
+<section class="sec" id="review">
+  <span class="eyebrow">动手前</span>
+  <h2>请确认这几处</h2>
+  <ol class="review">
+    <li><div><b>兵器以哪边为准</b><p>本稿默认以头像为准：许褚 锤、甘宁 弓、吕蒙 书卷、孙权只拿剑。代价：甘宁的普攻从近战改成射箭的样子（数值不变，射程 200 本来就偏远）。如果希望战场版为准，就要改头像。</p></div></li>
+    <li><div><b>武将名牌是否完全去掉</b><p>新玩家第一次见到某位武将时，可以保留 3 秒名牌再淡出，之后只靠造型。本稿默认如此。</p></div></li>
+    <li><div><b>敌兵列位会让路看起来更挤</b><p>同样人数铺开后，路面被占满的面积变大，体感压力会上升。这是有意的（敌潮更有分量），但要配合技能稿一起回归。</p></div></li>
+    <li><div><b>美术工作量</b><p>按本稿全部落地：武将约 300 帧、军营 6 套底座 + 30 帧兵、敌兵约 30 帧。可以分三批：先敌兵列位（纯代码，立即见效）→ 军营 → 武将。</p></div></li>
+  </ol>
+  <p class="foot">本页所有战场画面都是浏览器里用 Canvas 现场绘制的示意稿，表达比例、轮廓与动作节奏，不是最终位图。头像来自现有 <code>heroPortrait()</code> 的离线导出（battle-art-redesign-art.js）。</p>
+</section>
+</div>
+<script>
+// 参数抄自 hero-portraits.js 的 PORTRAIT（唯一来源），战场造型只读这些字段。
+const P = {
+  cao_cao:{n:'曹操',f:'wei',skin:'#e8bc92',head:'guan',hair:'#191410',beard:'goatee',body:'armor',cloth:'#2b4269',trim:'#f2c46b',cape:'#8a1f22',weapon:'sword',metal:'#dbe8ff'},
+  xiahou_dun:{n:'夏侯惇',f:'wei',skin:'#d9a77d',eyes:'patch',head:'helmet',helm:'#6f7a86',plume:'#c8322a',beard:'stubble',body:'armor',cloth:'#454e5c',trim:'#c9a35a',weapon:'saber',metal:'#e4ecf2'},
+  zhang_liao:{n:'张辽',f:'wei',skin:'#e0b088',head:'winged',helm:'#5c7896',plume:'#f2c46b',beard:'mustache',body:'armor',cloth:'#30506f',trim:'#e2c27a',weapon:'hook',metal:'#ffd36a'},
+  xu_chu:{n:'许褚',f:'wei',skin:'#c98a5e',eyes:'round',head:'bald',beard:'wide',hair:'#1b130e',body:'broad',cloth:'#7b5a2c',trim:'#d7a54e',weapon:'hammer',metal:'#a9b0b8'},
+  sima_yi:{n:'司马懿',f:'wei',skin:'#e2c09c',eyes:'narrow',head:'scholar',hair:'#141016',beard:'thin',body:'robe',cloth:'#3d2a58',trim:'#b98cff',weapon:'fan',metal:'#9c7ad6'},
+  liu_bei:{n:'刘备',f:'shu',skin:'#ecc59d',head:'guan',hair:'#1c1611',beard:'short',body:'robe',cloth:'#3f6b33',trim:'#f2c46b',weapon:'twin',metal:'#e8f0e0'},
+  guan_yu:{n:'关羽',f:'shu',skin:'#b9402c',eyes:'phoenix',head:'hood',hood:'#1e6e4c',beard:'long',body:'armor',cloth:'#1c573f',trim:'#f2c46b',weapon:'glaive',metal:'#c8f5df'},
+  zhang_fei:{n:'张飞',f:'shu',skin:'#8d5a3a',eyes:'round',head:'wild',hair:'#0f0c0a',band:'#c8322a',beard:'wild',body:'broad',cloth:'#2c3430',trim:'#b88c4a',weapon:'serpent',metal:'#d9e2e6'},
+  zhao_yun:{n:'赵云',f:'shu',skin:'#f0cfa8',head:'silver',helm:'#e3ecf0',plume:'#ffffff',beard:'none',body:'armor',cloth:'#b9c9d2',trim:'#7fb6ff',weapon:'spear',metal:'#f4fbff'},
+  zhuge_liang:{n:'诸葛亮',f:'shu',skin:'#eccaa4',head:'lunjin',hood:'#26475a',hair:'#15110d',beard:'thin',body:'crane',cloth:'#ece6d6',trim:'#2a5544',weapon:'feather',metal:'#ffffff'},
+  sun_quan:{n:'孙权',f:'wu',skin:'#e6bb8f',eyes:'jade',head:'crown',hair:'#2a1530',beard:'purple',body:'armor',cloth:'#5a2f4f',trim:'#ffc940',weapon:'sword',metal:'#d8b8ff'},
+  zhou_yu:{n:'周瑜',f:'wu',skin:'#f2d2ae',head:'young',hair:'#120e0c',beard:'none',body:'robe',cloth:'#a33a24',trim:'#ffc27a',weapon:'firefan',metal:'#ff8a4c'},
+  lv_meng:{n:'吕蒙',f:'wu',skin:'#ddb088',head:'whitehood',hood:'#ece8dc',beard:'mustache',body:'robe',cloth:'#dcd6c6',trim:'#5f8a86',weapon:'book',metal:'#c9a35a'},
+  gan_ning:{n:'甘宁',f:'wu',skin:'#c99068',eyes:'round',head:'topknot',hair:'#120d0b',beard:'stubble',body:'armor',cloth:'#16706e',trim:'#ffc940',weapon:'bow',metal:'#e1b46a'},
+  taishi_ci:{n:'太史慈',f:'wu',skin:'#dcaa80',head:'helmet',helm:'#8a6a3a',plume:'#2c8a5a',beard:'mustache',body:'armor',cloth:'#6e5230',trim:'#e2c27a',weapon:'bow',metal:'#e8eef2',quiver:true},
+};
+const IDS = Object.keys(P);
+// 现版战场与头像不一致处（读自 v1-renderer.js / hero-portraits.js）。
+const MISMATCH = { xu_chu:'战场拿斧，头像拿锤', gan_ning:'战场双戟，头像弓', lv_meng:'战场双刀，头像书卷', sun_quan:'战场多一块令牌',
+  xiahou_dun:'战场无盔无红缨', zhang_fei:'战场肤色与头像不同', zhao_yun:'', guan_yu:'' };
+const INK = '#100c09', TAU = Math.PI * 2;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
+const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+function path(g, pts, close) { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); if (close) g.closePath(); }
+function ink(g, fill, w = 2) { if (fill) { g.fillStyle = fill; g.fill(); } g.strokeStyle = INK; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke(); }
+function ell(g, x, y, rx, ry, fill, w = 2) { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU); ink(g, fill, w); }
+function gray(cv) { const g = cv.getContext('2d'), d = g.getImageData(0, 0, cv.width, cv.height), a = d.data; for (let i = 0; i < a.length; i += 4) { const v = a[i] * .3 + a[i + 1] * .59 + a[i + 2] * .11; a[i] = a[i + 1] = a[i + 2] = v; } g.putImageData(d, 0, 0); }
+// —— 战场武将（大头 Q 版，脚底为原点，总高约 46）。pose: {wa 兵器角, arm 手臂抬起 0..1, dy 身体位移, sq 压缩, glow 怒满描金, face 朝向 x 偏移}
+function weapon(g, p, wa, glow) {
+  const m = glow ? '#ffe7a6' : p.metal, wood = '#4a2f18';
+  g.save(); g.rotate(wa);
+  const pole = (len, c = wood) => { path(g, [[-1.6, 8], [-1.6, -len], [1.6, -len], [1.6, 8]], true); ink(g, c, 1.6); };
+  switch (p.weapon) {
+    case 'sword': path(g, [[-2, 2], [-2, -30], [0, -35], [2, -30], [2, 2]], true); ink(g, m); path(g, [[-6, 2], [6, 2], [6, 5], [-6, 5]], true); ink(g, '#f2c46b', 1.4); break;
+    case 'saber': path(g, [[-2, 4], [-3, -14], [1, -32], [8, -36], [5, -20], [3, 4]], true); ink(g, m); path(g, [[-6, 4], [7, 4], [7, 7], [-6, 7]], true); ink(g, '#c9a35a', 1.4); break;
+    case 'hook': pole(40); g.beginPath(); g.moveTo(0, -40); g.quadraticCurveTo(16, -48, 13, -30); g.quadraticCurveTo(9, -38, 0, -34); ink(g, m); break;
+    case 'hammer': pole(30); path(g, [[-9, -44], [9, -44], [9, -28], [-9, -28]], true); ink(g, m); g.strokeStyle = INK; g.lineWidth = 1; g.beginPath(); g.moveTo(-9, -36); g.lineTo(9, -36); g.stroke(); break;
+    case 'glaive': pole(48, '#3a2414'); g.beginPath(); g.moveTo(0, -48); g.quadraticCurveTo(20, -44, 15, -20); g.quadraticCurveTo(10, -34, -1, -34); ink(g, m); path(g, [[-1, -33], [-6, -26], [-1, -24]], true); ink(g, '#c8322a', 1.2); break;
+    case 'serpent': pole(42, '#2a1d14'); g.beginPath(); g.moveTo(0, -42); g.bezierCurveTo(6, -46, -6, -50, 0, -54); g.bezierCurveTo(5, -57, -2, -60, 1, -62); g.lineTo(-2, -60); g.bezierCurveTo(-5, -56, 3, -54, -3, -50); g.bezierCurveTo(-8, -46, 0, -44, -3, -42); g.closePath(); ink(g, m, 1.6); break;
+    case 'spear': pole(46, '#e8e8e8'); path(g, [[0, -58], [-5, -46], [0, -48], [5, -46]], true); ink(g, m, 1.6); path(g, [[-2, -45], [-7, -36], [-1, -38]], true); ink(g, '#c8322a', 1.2); break;
+    case 'fan': case 'feather': case 'firefan': {
+      const fill = p.weapon === 'firefan' ? (glow ? '#ffd36a' : '#ff7a3c') : p.weapon === 'feather' ? '#ffffff' : (glow ? '#e6d4ff' : p.metal);
+      path(g, [[-1.2, 4], [-1.2, -8], [1.2, -8], [1.2, 4]], true); ink(g, '#6a4a24', 1.2);
+      g.beginPath(); g.moveTo(0, -8); g.quadraticCurveTo(-14, -16, -10, -30); g.quadraticCurveTo(0, -36, 10, -30); g.quadraticCurveTo(14, -16, 0, -8); ink(g, fill);
+      g.strokeStyle = '#0006'; g.lineWidth = 1; for (const x of [-6, 0, 6]) { g.beginPath(); g.moveTo(0, -9); g.lineTo(x, -30); g.stroke(); } break; }
+    case 'twin': for (const s of [-1, 1]) { g.save(); g.translate(s === -1 ? -20 : 0, 0); g.rotate(s * .12); path(g, [[-1.8, 2], [-1.8, -26], [0, -30], [1.8, -26], [1.8, 2]], true); ink(g, m, 1.6); path(g, [[-5, 2], [5, 2], [5, 4.5], [-5, 4.5]], true); ink(g, '#f2c46b', 1.2); g.restore(); } break;
+    case 'bow': g.beginPath(); g.moveTo(-2, -32); g.quadraticCurveTo(16, -14, -2, 4); g.strokeStyle = INK; g.lineWidth = 5; g.stroke(); g.strokeStyle = m; g.lineWidth = 2.4; g.stroke();
+      g.strokeStyle = '#f1e4c3'; g.lineWidth = 1; g.beginPath(); g.moveTo(-2, -32); g.lineTo(-2, 4); g.stroke(); break;
+    case 'book': path(g, [[-7, -14], [7, -16], [8, 2], [-6, 4]], true); ink(g, '#2a4a6a', 1.6); g.strokeStyle = m; g.lineWidth = 1.4; g.beginPath(); g.moveTo(-5, -10); g.lineTo(6, -12); g.stroke(); break;
+  }
+  g.restore();
+}
+function headwear(g, p, glow) {
+  const hair = p.hair || '#15110d';
+  const cap = () => { g.beginPath(); g.moveTo(-9, -35); g.quadraticCurveTo(-9, -45, 0, -45); g.quadraticCurveTo(9, -45, 9, -35); g.quadraticCurveTo(4, -40, 0, -40); g.quadraticCurveTo(-4, -40, -9, -35); ink(g, hair, 1.6); };
+  switch (p.head) {
+    case 'guan': cap(); path(g, [[-4, -44], [4, -44], [4, -52], [-4, -52]], true); ink(g, '#1a1a1a', 1.6); g.strokeStyle = p.trim; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-7, -46); g.lineTo(7, -46); g.stroke(); break;
+    case 'crown': cap(); path(g, [[-7, -42], [-6, -50], [-3, -46], [0, -53], [3, -46], [6, -50], [7, -42]], true); ink(g, '#ffc940', 1.6); ell(g, 0, -46, 1.4, 1.4, '#c8322a', .8); break;
+    case 'helmet': g.beginPath(); g.moveTo(-10, -33); g.quadraticCurveTo(-11, -47, 0, -48); g.quadraticCurveTo(11, -47, 10, -33); g.quadraticCurveTo(0, -39, -10, -33); ink(g, p.helm); path(g, [[-1, -48], [-2, -58], [4, -60], [2, -48]], true); ink(g, p.plume, 1.4); break;
+    case 'winged': for (const s of [-1, 1]) { path(g, [[s * 9, -40], [s * 19, -50], [s * 15, -36]], true); ink(g, p.plume, 1.4); } g.beginPath(); g.moveTo(-10, -33); g.quadraticCurveTo(-11, -47, 0, -48); g.quadraticCurveTo(11, -47, 10, -33); g.quadraticCurveTo(0, -39, -10, -33); ink(g, p.helm); break;
+    case 'silver': g.beginPath(); g.moveTo(1, -46); g.quadraticCurveTo(12, -56, 22, -50); g.quadraticCurveTo(12, -50, 4, -42); ink(g, p.plume, 1.4); g.beginPath(); g.moveTo(-10, -30); g.quadraticCurveTo(-11, -48, 0, -48); g.quadraticCurveTo(11, -48, 10, -30); g.lineTo(8, -36); g.quadraticCurveTo(0, -40, -8, -36); g.closePath(); ink(g, p.helm); break;
+    case 'hood': g.beginPath(); g.moveTo(-11, -28); g.quadraticCurveTo(-13, -48, 0, -48); g.quadraticCurveTo(13, -48, 11, -28); g.lineTo(8, -34); g.quadraticCurveTo(0, -42, -8, -34); g.closePath(); ink(g, p.hood); break;
+    case 'whitehood': g.beginPath(); g.moveTo(-11, -26); g.quadraticCurveTo(-12, -48, 0, -48); g.quadraticCurveTo(12, -48, 11, -26); g.lineTo(8, -34); g.quadraticCurveTo(0, -41, -8, -34); g.closePath(); ink(g, p.hood); break;
+    case 'lunjin': cap(); path(g, [[-8, -40], [-6, -51], [6, -51], [8, -40]], true); ink(g, p.hood, 1.6); break;
+    case 'scholar': cap(); path(g, [[-5, -42], [-5, -56], [5, -56], [5, -42]], true); ink(g, '#141016', 1.6); break;
+    case 'bald': g.fillStyle = '#ffffff40'; g.beginPath(); g.ellipse(-3, -42, 4, 2, -.3, 0, TAU); g.fill(); break;
+    case 'wild': path(g, [[-10, -34], [-14, -44], [-7, -42], [-6, -51], [-1, -44], [3, -53], [5, -44], [11, -50], [10, -40], [14, -38], [10, -34]], true); ink(g, hair, 1.6);
+      g.strokeStyle = p.band; g.lineWidth = 2.6; g.beginPath(); g.moveTo(-10, -37); g.quadraticCurveTo(0, -41, 10, -37); g.stroke(); break;
+    case 'topknot': cap(); path(g, [[-3, -44], [3, -44], [3, -50], [-3, -50]], true); ink(g, hair, 1.4);
+      g.beginPath(); g.moveTo(2, -49); g.quadraticCurveTo(14, -62, 20, -58); g.quadraticCurveTo(12, -56, 4, -46); ink(g, '#ff6b57', 1.2); break;
+    case 'young': cap(); path(g, [[-3, -45], [3, -45], [3, -49], [-3, -49]], true); ink(g, '#ffc940', 1.2); break;
+  }
+}
+function beard(g, p) {
+  const hair = p.hair || '#15110d', stache = c => { g.beginPath(); g.moveTo(-5, -27.5); g.quadraticCurveTo(0, -30, 5, -27.5); g.quadraticCurveTo(0, -28, -5, -27.5); g.strokeStyle = c; g.lineWidth = 1.8; g.stroke(); };
+  switch (p.beard) {
+    case 'long': g.beginPath(); g.moveTo(-6, -28); g.quadraticCurveTo(-8, -14, 0, -6); g.quadraticCurveTo(8, -14, 6, -28); g.quadraticCurveTo(0, -25, -6, -28); ink(g, '#120e0b', 1.4); stache('#120e0b'); break;
+    case 'wild': path(g, [[-9, -31], [-10, -22], [-6, -24], [-4, -18], [0, -22], [4, -18], [6, -24], [10, -22], [9, -31], [0, -26]], true); ink(g, '#0f0c0a', 1.4); break;
+    case 'wide': g.beginPath(); g.moveTo(-8, -30); g.quadraticCurveTo(-8, -20, 0, -19); g.quadraticCurveTo(8, -20, 8, -30); g.quadraticCurveTo(0, -26, -8, -30); ink(g, hair, 1.4); break;
+    case 'purple': g.beginPath(); g.moveTo(-7, -29); g.quadraticCurveTo(-7, -18, 0, -16); g.quadraticCurveTo(7, -18, 7, -29); g.quadraticCurveTo(0, -26, -7, -29); ink(g, '#5d2a72', 1.4); break;
+    case 'goatee': stache(hair); path(g, [[-1.6, -26], [0, -20], [1.6, -26]], true); ink(g, hair, 1); break;
+    case 'thin': stache(hair); path(g, [[-1, -26], [0, -16], [1, -26]], true); ink(g, hair, .8); break;
+    case 'short': g.beginPath(); g.moveTo(-6, -29); g.quadraticCurveTo(0, -21, 6, -29); g.quadraticCurveTo(0, -26, -6, -29); ink(g, hair, 1.2); break;
+    case 'mustache': stache('#1a130e'); break;
+    case 'stubble': g.fillStyle = '#1a141055'; g.beginPath(); g.moveTo(-7, -30); g.quadraticCurveTo(0, -22, 7, -30); g.quadraticCurveTo(0, -26, -7, -30); g.fill(); stache('#1a1410'); break;
+  }
+}
+function face(g, p) {
+  const e = p.eyes;
+  g.fillStyle = INK;
+  if (e === 'round') { for (const x of [-3.6, 3.6]) { ell(g, x, -33, 2, 2, '#f8efd8', .8); g.fillStyle = INK; g.beginPath(); g.arc(x, -33, 1.1, 0, TAU); g.fill(); } }
+  else if (e === 'patch') { path(g, [[-6, -35.5], [-1.5, -35.5], [-1.5, -31], [-6, -31]], true); g.fillStyle = '#0b0b0b'; g.fill(); g.strokeStyle = '#0b0b0b'; g.lineWidth = 1; g.beginPath(); g.moveTo(-9, -38); g.lineTo(9, -31); g.stroke(); g.fillStyle = INK; g.fillRect(2.6, -34, 2, 2); }
+  else if (e === 'phoenix') { g.lineWidth = 1.6; g.strokeStyle = INK; for (const s of [-1, 1]) { g.beginPath(); g.moveTo(s * 1.6, -33); g.lineTo(s * 6, -34.5); g.stroke(); } }
+  else { const c = e === 'jade' ? '#21a35e' : e === 'narrow' ? '#6b3fa0' : INK; g.fillStyle = c; g.fillRect(-4.6, -34, 2, e === 'narrow' ? 1.2 : 2); g.fillRect(2.6, -34, 2, e === 'narrow' ? 1.2 : 2); }
+  g.strokeStyle = INK; g.lineWidth = 1.4; for (const s of [-1, 1]) { g.beginPath(); g.moveTo(s * 1.6, -36.6); g.lineTo(s * 6.4, -38); g.stroke(); }
+}
+function drawChibi(g, p, pose = {}) {
+  const { wa = 0, arm = 0, dy = 0, sq = 0, glow = false, lean = 0 } = pose;
+  const broad = p.body === 'broad', robe = p.body === 'robe' || p.body === 'crane', w = broad ? 13 : 10;
+  g.save(); g.translate(0, dy); g.scale(1 + sq * .12, 1 - sq * .12); g.rotate(lean);
+  // 兵器在身后侧的先画（长柄），短兵器在前面画
+  const long = ['hook', 'hammer', 'glaive', 'serpent', 'spear'].includes(p.weapon);
+  const hand = { x: w + 1, y: -14 - arm * 8 };
+  if (long) { g.save(); g.translate(hand.x, hand.y); weapon(g, p, wa, glow); g.restore(); }
+  if (p.cape) { path(g, [[-w + 1, -24], [w - 1, -24], [w + 5, 0], [-w - 5, 0]], true); ink(g, p.cape, 1.6); }
+  // 腿
+  for (const s of [-1, 1]) { path(g, [[s * 2, -6], [s * 6, -6], [s * 6, 0], [s * 2, 0]], true); ink(g, '#2a2a24', 1.4); }
+  // 身体
+  if (robe) { path(g, [[-w + 2, -24], [w - 2, -24], [w + 3, -2], [-w - 3, -2]], true); ink(g, p.cloth); g.strokeStyle = p.trim; g.lineWidth = 2; g.beginPath(); g.moveTo(-4, -24); g.lineTo(3, -12); g.moveTo(4, -24); g.lineTo(-1, -16); g.stroke();
+    if (p.body === 'crane') { g.fillStyle = '#2a2a2a'; g.fillRect(-w - 2, -7, w * 2 + 4, 4); } }
+  else { path(g, [[-w, -24], [w, -24], [w + 1, -4], [-w - 1, -4]], true); ink(g, p.cloth); g.strokeStyle = '#0005'; g.lineWidth = 1; for (const y of [-16, -10]) { g.beginPath(); g.moveTo(-w + 2, y); g.lineTo(w - 2, y); g.stroke(); }
+    for (const s of [-1, 1]) ell(g, s * (w - 1), -22, broad ? 6 : 5, 3.6, p.cloth, 1.6); g.strokeStyle = p.trim; g.lineWidth = 1.8; g.beginPath(); g.moveTo(-4, -24); g.lineTo(0, -19); g.lineTo(4, -24); g.stroke(); }
+  g.fillStyle = p.trim; g.fillRect(-w + 1, -6.5, (w - 1) * 2, 2.4);
+  // 手臂（持兵手随 arm 抬起）
+  g.strokeStyle = INK; g.lineWidth = 5.4; g.lineCap = 'round'; g.beginPath(); g.moveTo(w - 2, -21); g.lineTo(hand.x, hand.y); g.stroke();
+  g.strokeStyle = robe ? p.cloth : p.cloth; g.lineWidth = 3.4; g.beginPath(); g.moveTo(w - 2, -21); g.lineTo(hand.x, hand.y); g.stroke();
+  ell(g, hand.x, hand.y, 2.4, 2.4, p.skin, 1.2);
+  // 头（半径 9.5，头高约占 37%）
+  if (p.head === 'young' || p.head === 'whitehood') { /* 后发 */ g.beginPath(); g.moveTo(-9, -34); g.lineTo(-10, -24); g.lineTo(-6, -27); g.closePath(); ink(g, p.head === 'young' ? p.hair : p.hood, 1.2); }
+  ell(g, 0, -33, 9.5, 10, p.skin);
+  face(g, p); beard(g, p); headwear(g, p, glow);
+  if (!long) { g.save(); g.translate(hand.x, hand.y); weapon(g, p, wa, glow); g.restore(); }
+  if (p.quiver) { path(g, [[-w - 4, -26], [-w, -28], [-w + 2, -10], [-w - 2, -8]], true); ink(g, '#6a4320', 1.2); }
+  g.restore();
+}
+function ground(g, ready, lead = true, rage = 1) {
+  const r = lead ? 17 : 14; g.save();
+  g.fillStyle = '#0006'; g.beginPath(); g.ellipse(0, 1, r, r * .38, 0, 0, TAU); g.fill();
+  g.strokeStyle = ready ? '#ccf6c6' : '#77c5a1'; g.lineWidth = ready ? 2.4 : 1.2; g.beginPath(); g.ellipse(0, 1, r, r * .38, 0, 0, TAU); g.stroke();
+  if (!ready) { g.strokeStyle = '#e8cf8a'; g.lineWidth = 2; g.beginPath(); g.ellipse(0, 1, r, r * .38, 0, Math.PI / 2, Math.PI / 2 + TAU * rage); g.stroke(); }
+  g.fillStyle = '#82c9a9'; path(g, [[-3, r * .38 + 2], [0, r * .38 + 6], [3, r * .38 + 2]], true); g.fill(); g.restore();
+}
+// —— 动作数据。k: [时刻秒, 姿势]；fire/hit 为出手/命中帧；fx 为普攻或无双的示意特效类型。
+// 姿势字段：wa 兵器角（弧度，正为向右下）、arm 抬手 0..1、dy 下蹲/起跳、sq 压缩、lean 身体倾斜、x/y 离开阵位的位移。
+const K = (t, o) => [t, o];
+const MOTION = {
+  guan_yu: { atk: { dur: .7, fire: .32, fx: 'arc', k: [K(0, {}), K(.22, { wa: .9, arm: .6, lean: .1 }), K(.32, { wa: -1.2, arm: .2, lean: -.12 }), K(.7, {})] },
+    ult: { hit: .28, fx: 'wave', k: [K(0, {}), K(.18, { wa: 1.4, arm: 1, dy: 3, sq: .4 }), K(.28, { wa: -1.6, arm: .4, lean: -.2, dy: -3 }), K(.6, { wa: -1.4, arm: .3 }), K(.9, {})] },
+    idle: '刀尖垂地，长髯随呼吸微摆；每 4 秒抚髯一次（第 5 帧）', atkTxt: '右上举刀 → 斜劈，刀光半月弧', ultTxt: '双手举刀过顶蓄力 → 正面横扫，刀波随前锋推进；收刀立正', frames: '6 · 5 · 10' },
+  zhang_fei: { atk: { dur: .75, fire: .3, fx: 'thrust', k: [K(0, {}), K(.18, { wa: -.2, arm: .2, lean: .14 }), K(.3, { wa: 0, arm: .8, lean: -.1, y: -5 }), K(.75, {})] },
+    ult: { hit: .25, fx: 'roar', k: [K(0, {}), K(.15, { arm: .2, dy: 3, sq: .5, lean: .1 }), K(.25, { arm: 1, wa: .2, dy: -2, sq: -.3 }), K(.7, { arm: .8, sq: -.2 }), K(.9, {})] },
+    idle: '矛杆杵地，肩膀起伏较大；胡须外张', atkTxt: '回拉 → 前刺，蛇矛矛尖抖动', ultTxt: '弓身吸气 → 仰头怒吼（张嘴两帧），赭金声浪；矛横举', frames: '6 · 5 · 9' },
+  zhao_yun: { atk: { dur: .45, fire: .18, fx: 'thrust', k: [K(0, {}), K(.1, { wa: -.1, arm: .1, lean: .1 }), K(.18, { wa: 0, arm: .9, y: -6, lean: -.1 }), K(.45, {})] },
+    ult: { hit: .1, fx: 'pierce3', k: [K(0, {}), K(.1, { arm: .9, y: -8 }), K(.2, { arm: .2 }), K(.35, { arm: .9, y: -8 }), K(.45, { arm: .2 }), K(.6, { arm: .9, y: -8 }), K(.9, {})] },
+    idle: '枪斜指前方，白披风两帧飘动', atkTxt: '快速短刺，枪尖银光一点（攻速最快，4 帧）', ultTxt: '原地连刺三次，对齐 0 / 0.25 / 0.5 秒三道枪影，武将本体不前移', frames: '6 · 4 · 10' },
+  liu_bei: { atk: { dur: .55, fire: .22, fx: 'cross', k: [K(0, {}), K(.14, { wa: .5, arm: .5 }), K(.22, { wa: -.5, arm: .3 }), K(.55, {})] },
+    ult: { hit: .1, fx: 'gate', k: [K(0, {}), K(.1, { arm: 1, wa: -.2, dy: -2 }), K(.7, { arm: .9, wa: -.15 }), K(.9, {})] },
+    idle: '双剑交叉于身前，飘带轻摆', atkTxt: '双剑交错一斩，十字剑光', ultTxt: '双剑高举向前 → 城门开（城门两帧），援军冲出时保持举剑；收剑抱拳', frames: '6 · 4 · 8' },
+  zhuge_liang: { atk: { dur: .6, fire: .26, fx: 'wind', k: [K(0, {}), K(.16, { wa: .4, arm: .7 }), K(.26, { wa: -.6, arm: .5 }), K(.6, {})] },
+    ult: { hit: .25, fx: 'trigram', k: [K(0, {}), K(.15, { arm: 1, wa: .3, dy: -1 }), K(.25, { arm: .8, wa: -.8 }), K(.9, { arm: .3 })] },
+    idle: '羽扇轻摇，鹤氅下摆两帧摆动', atkTxt: '羽扇一挥，玉色风刃', ultTxt: '举扇画圈（八卦虚影）→ 扇指落点；持续 3 秒期间扇子保持前指', frames: '6 · 4 · 8' },
+  cao_cao: { atk: { dur: .6, fire: .24, fx: 'arc', k: [K(0, {}), K(.14, { wa: .7, arm: .5 }), K(.24, { wa: -.8, arm: .3 }), K(.6, {})] },
+    ult: { hit: .42, fx: 'banner', k: [K(0, {}), K(.1, { arm: 1, wa: -.6, lean: -.08 }), K(.2, { arm: .4, wa: .8, lean: .12 }), K(.42, { arm: .6, wa: -.3 }), K(.9, {})] },
+    idle: '剑立身前，披风垂地；偶尔扬下巴', atkTxt: '短促直斩，剑光细直', ultTxt: '拔剑指敌 → 侧身甩臂掷出令旗（0.2 秒出手）→ 剑指落点等旗插地', frames: '6 · 4 · 8' },
+  xiahou_dun: { atk: { dur: .8, fire: .34, fx: 'arc', k: [K(0, {}), K(.24, { wa: 1, arm: .7, lean: .12 }), K(.34, { wa: -1.3, arm: .2, lean: -.1 }), K(.8, {})] },
+    ult: { hit: .36, fx: 'leap', move: 'leap', k: [K(0, {}), K(.12, { dy: 4, sq: .6, wa: .8 }), K(.24, { arm: 1, wa: 1.4, sq: -.3 }), K(.36, { wa: -1.6, dy: 2, sq: .4 }), K(.6, { wa: -1.4 }), K(.75, { sq: -.2 }), K(.9, {})] },
+    idle: '厚刀横在肩上，独眼方向朝前；头盔红缨两帧', atkTxt: '大开大合斜劈，比关羽慢、刀光更厚', ultTxt: '下蹲 → 起跳（空中举刀）→ 落地劈砸（命中帧）→ 旋斩 → 跳回；新增“跳起、空中、落地”3 帧', frames: '6 · 5 · 12' },
+  zhang_liao: { atk: { dur: .55, fire: .24, fx: 'hook', k: [K(0, {}), K(.14, { wa: .6, arm: .4 }), K(.24, { wa: -.9, arm: .6, y: -3 }), K(.55, {})] },
+    ult: { hit: .1, fx: 'charge', move: 'charge', k: [K(0, {}), K(.1, { lean: .25, wa: -.4, arm: .9 }), K(.75, { lean: .2, wa: -.4, arm: .9 }), K(.9, {})] },
+    idle: '钩刃斜背，肩甲两翼醒目', atkTxt: '钩刃横拉，金色钩形刀光', ultTxt: '前倾冲出化成金白残影沿路突进（本体淡出），0.75 秒后从城门回位；新增“冲锋”2 帧', frames: '6 · 4 · 10' },
+  xu_chu: { atk: { dur: .9, fire: .42, fx: 'smash', k: [K(0, {}), K(.3, { wa: 1.2, arm: 1, dy: -2 }), K(.42, { wa: -.4, arm: .1, dy: 3, sq: .5 }), K(.9, {})] },
+    ult: { hit: .22, fx: 'quake', move: 'lunge', k: [K(0, {}), K(.1, { wa: 1.5, arm: 1, dy: -3 }), K(.22, { wa: -.3, arm: .1, dy: 4, sq: .7, y: -40 }), K(.5, { sq: .3, y: -40 }), K(.9, {})] },
+    idle: '锤头杵地，双手扶柄，光头反光', atkTxt: '抡锤过顶 → 砸地，落点尘土（最慢普攻，6 帧）', ultTxt: '举锤 → 前扑 40 砸地（命中帧，身体压扁）→ 裂缝推进时保持蹲姿 → 退回；新增“前扑”2 帧', frames: '6 · 6 · 10' },
+  sima_yi: { atk: { dur: .55, fire: .22, fx: 'bolt', k: [K(0, {}), K(.14, { arm: .9, wa: .2 }), K(.22, { arm: .7, wa: -.4 }), K(.55, {})] },
+    ult: { hit: .3, fx: 'thunder', k: [K(0, {}), K(.15, { arm: 1, wa: .3, dy: -2 }), K(.3, { arm: .9, wa: -.6 }), K(.9, { arm: .6, wa: -.5 })] },
+    idle: '羽扇半掩面，眼神斜视；袍角不动（阴冷感）', atkTxt: '扇尖一点，紫色细电', ultTxt: '举扇过顶 → 三点指画（三处预警同时出现）→ 定姿等待 1 秒落雷', frames: '6 · 4 · 8' },
+  sun_quan: { atk: { dur: .6, fire: .24, fx: 'arc', k: [K(0, {}), K(.14, { wa: .7, arm: .5 }), K(.24, { wa: -.8, arm: .3 }), K(.6, {})] },
+    ult: { hit: .15, fx: 'tide', k: [K(0, {}), K(.1, { arm: 1, wa: -.2, dy: -2 }), K(.15, { arm: .2, wa: 1.2, dy: 2, sq: .3 }), K(.9, { wa: .9 })] },
+    idle: '剑尖朝下，冠冕金光；紫须清楚', atkTxt: '平斩一剑，紫金剑光', ultTxt: '举剑 → 一剑劈地（潮浪起点）→ 保持劈姿到退潮', frames: '6 · 4 · 8' },
+  zhou_yu: { atk: { dur: .5, fire: .2, fx: 'flame', k: [K(0, {}), K(.12, { arm: .8, wa: .5 }), K(.2, { arm: .6, wa: -.6 }), K(.5, {})] },
+    ult: { hit: .25, fx: 'ship', k: [K(0, {}), K(.05, { arm: 1, wa: .6 }), K(.25, { arm: .7, wa: -1.1, lean: -.08 }), K(.9, { arm: .4 })] },
+    idle: '火扇半开，衣摆轻扬；年轻、站姿挺', atkTxt: '扇出一团火星', ultTxt: '大幅挥扇（火船出现）→ 扇指路口目送火船冲下', frames: '6 · 4 · 8' },
+  lv_meng: { atk: { dur: .6, fire: .26, fx: 'scroll', k: [K(0, {}), K(.16, { arm: .8, wa: -.2 }), K(.26, { arm: .5, wa: .3 }), K(.6, {})] },
+    ult: { hit: .4, fx: 'mine', k: [K(0, {}), K(.15, { arm: 1, wa: -.4 }), K(.4, { arm: .3, wa: .5, dy: 2 }), K(.9, {})] },
+    idle: '捧书卷，白衣兜帽遮半脸', atkTxt: '书卷一挥，射出白羽', ultTxt: '展卷 → 合卷下指（伏兵标记出现在路上）→ 收卷', frames: '6 · 4 · 8' },
+  gan_ning: { atk: { dur: .5, fire: .24, fx: 'arrow', k: [K(0, {}), K(.16, { arm: .7, wa: -.1, lean: -.06 }), K(.24, { arm: .5, wa: .05 }), K(.5, {})] },
+    ult: { hit: .25, fx: 'volley', k: [K(0, {}), K(.1, { arm: .2, wa: .4, dy: -2 }), K(.25, { arm: 1, wa: -.3 }), K(.9, { arm: .9, wa: -.3 })] },
+    idle: '弓斜挂，腰间铜铃随步伐响（两帧）', atkTxt: '速射一箭，箭羽红黄', ultTxt: '摇铃（铃铛闪光）→ 举弓向天发号箭 → 保持举弓到箭雨结束', frames: '6 · 4 · 8' },
+  taishi_ci: { atk: { dur: .7, fire: .4, fx: 'arrow', k: [K(0, {}), K(.3, { arm: .8, wa: -.1, lean: -.08 }), K(.4, { arm: .5 }), K(.7, {})] },
+    ult: { hit: .3, fx: 'snipe', k: [K(0, {}), K(.2, { arm: 1, wa: -.2, lean: -.1 }), K(.3, { arm: .5 }), K(.45, { arm: 1, wa: -.2 }), K(.55, { arm: .5 }), K(.7, { arm: 1, wa: -.2 }), K(.8, { arm: .5 }), K(.9, {})] },
+    idle: '背弓直立，箭囊露出三支箭羽', atkTxt: '满弓长瞄（停顿）→ 放箭，金白直线', ultTxt: '连拉三次满弓，每次对准一个目标标记', frames: '6 · 5 · 10' },
+};
+// 普攻间隔（秒，读自 balance.json heroes[id].attack.intervalSec）
+const INTERVAL = { cao_cao: 1, xiahou_dun: 1.2, zhang_liao: .95, xu_chu: 1.4, sima_yi: .9, liu_bei: .9, guan_yu: 1.05, zhang_fei: 1.1, zhao_yun: .7, zhuge_liang: .95, sun_quan: 1, zhou_yu: .8, lv_meng: 1.1, gan_ning: .8, taishi_ci: 1.15 };
+function poseAt(keys, t) {
+  let a = keys[0], b = keys[keys.length - 1];
+  for (let i = 0; i < keys.length - 1; i++) if (t >= keys[i][0] && t <= keys[i + 1][0]) { a = keys[i]; b = keys[i + 1]; break; }
+  const span = b[0] - a[0] || 1, k = easeIO(clamp((t - a[0]) / span)), out = {};
+  for (const f of ['wa', 'arm', 'dy', 'sq', 'lean', 'x', 'y']) out[f] = lerp(a[1][f] || 0, b[1][f] || 0, k);
+  return out;
+}
+// —— 动作舞台（380×310 逻辑像素，武将在下方城墙上）
+const FX_COLOR = { wei: '#8fb5e0', shu: '#9ff2bd', wu: '#ffb08a' };
+function fxDraw(g, id, kind, t, o) {
+  // t：距出手/命中帧的秒数（<0 未发生）。o：武将屏幕坐标与缩放。
+  if (t < 0) return;
+  const p = P[id], c = { guan_yu: '#c8f5df', zhang_fei: '#e8b25f', zhao_yun: '#cfe6ff', liu_bei: '#e8ffb0', zhuge_liang: '#bff0dc', cao_cao: '#ffe7a6', xiahou_dun: '#ff9a5a',
+    zhang_liao: '#ffe7a6', xu_chu: '#e0b25a', sima_yi: '#e6d4ff', sun_quan: '#c79bd8', zhou_yu: '#ff7a3c', lv_meng: '#ffffff', gan_ning: '#bff6f0', taishi_ci: '#fff2bd' }[id];
+  const a = clamp(1 - t / .35), X = o.x, Y = o.y - 30 * o.s;
+  g.save(); g.lineCap = 'round'; g.strokeStyle = c; g.fillStyle = c; g.shadowColor = c; g.shadowBlur = 10;
+  if (['arc', 'cross', 'hook'].includes(kind)) { g.globalAlpha = a; g.lineWidth = kind === 'arc' ? 5 : 3; g.beginPath(); g.arc(X + 14 * o.s, Y, 28 * o.s, -2.4, -.5); g.stroke(); if (kind === 'cross') { g.beginPath(); g.arc(X - 4 * o.s, Y, 26 * o.s, -2.6, -.7); g.stroke(); } }
+  else if (kind === 'thrust') { g.globalAlpha = a; g.lineWidth = 3; g.beginPath(); g.moveTo(X + 14 * o.s, Y - 40 * o.s); g.lineTo(X + 14 * o.s, Y - (40 + 50 * clamp(t / .1)) * o.s); g.stroke(); }
+  else if (['wind', 'bolt', 'flame', 'scroll', 'arrow'].includes(kind)) { const d = clamp(t / .3) * 150; g.globalAlpha = clamp(1 - t / .4); g.lineWidth = kind === 'arrow' ? 2 : 3;
+    if (kind === 'flame') { g.beginPath(); g.arc(X + 10, Y - d, 6, 0, TAU); g.fill(); } else if (kind === 'bolt') { g.beginPath(); g.moveTo(X + 10, Y); g.lineTo(X + 4, Y - d * .5); g.lineTo(X + 14, Y - d * .7); g.lineTo(X + 8, Y - d); g.stroke(); }
+    else { g.beginPath(); g.moveTo(X + 10, Y - d); g.lineTo(X + 10, Y - d + (kind === 'wind' ? 26 : 16)); g.stroke(); } }
+  else if (kind === 'smash') { g.globalAlpha = a; g.lineWidth = 3; g.beginPath(); g.ellipse(X + 18 * o.s, o.y - 4, 30 * clamp(t / .2), 10 * clamp(t / .2), 0, 0, TAU); g.stroke(); }
+  else if (kind === 'wave') { const d = clamp(t / .5) * 220; g.globalAlpha = clamp(1 - t / .7); g.lineWidth = 6; g.beginPath(); g.moveTo(X - 70, Y - d); g.quadraticCurveTo(X, Y - d - 20, X + 70, Y - d); g.stroke(); }
+  else if (kind === 'roar') { for (let i = 0; i < 3; i++) { const k = clamp((t - i * .08) / .5); g.globalAlpha = (1 - k) * .9; g.lineWidth = 4; g.beginPath(); g.moveTo(X - 80, Y - 30 - k * 110); g.quadraticCurveTo(X, Y - 50 - k * 120, X + 80, Y - 30 - k * 110); g.stroke(); } }
+  else if (kind === 'pierce3') { for (const at of [0, .25, .5]) { const k = (t - at) / .2; if (k < 0 || k > 1) continue; g.globalAlpha = 1 - k; g.lineWidth = 4; g.beginPath(); g.moveTo(X + 6, Y - 20); g.lineTo(X + 6, Y - 20 - 230 * Math.min(1, k * 2)); g.stroke(); } }
+  else if (kind === 'gate') { const k = clamp(t / .6); g.globalAlpha = clamp(1 - (t - .6) / .3); g.fillStyle = '#e8ffb055'; g.fillRect(X - 30, o.y - 20 - k * 190, 60, k * 190); }
+  else if (kind === 'trigram' || kind === 'thunder' || kind === 'quake' || kind === 'tide' || kind === 'mine' || kind === 'volley' || kind === 'ship' || kind === 'banner') {
+    const C = { x: X, y: 120 }; g.globalAlpha = clamp(1 - (t - .5) / .4) * .9; g.lineWidth = 3;
+    if (kind === 'tide') { const k = clamp(t / .4); g.beginPath(); g.arc(X, o.y - 6, 40 + k * 150, Math.PI, 0); g.stroke(); }
+    else if (kind === 'quake') { const k = clamp(t / .3); g.beginPath(); g.moveTo(X, o.y - 50); g.arc(X, o.y - 50, 40 + k * 140, -2.2, -.95); g.closePath(); g.globalAlpha *= .5; g.fill(); }
+    else if (kind === 'ship') { const k = clamp(t / .4); g.beginPath(); g.ellipse(X - 60 + k * 30, 40 + k * 140, 10, 6, 1, 0, TAU); g.fill(); }
+    else if (kind === 'banner') { g.fillStyle = '#c23a2c'; g.fillRect(C.x + 2, C.y - 26, 18, 12); g.strokeStyle = '#d9c08a'; g.beginPath(); g.moveTo(C.x, C.y + 6); g.lineTo(C.x, C.y - 28); g.stroke(); g.strokeStyle = c; g.beginPath(); g.arc(C.x, C.y, 20 + clamp(t / .3) * 50, 0, TAU); g.stroke(); }
+    else if (kind === 'thunder') { for (const [dx, dy] of [[-90, 30], [0, -30], [90, 20]]) { g.setLineDash([5, 5]); g.beginPath(); g.arc(C.x + dx, C.y + dy, 32, 0, TAU); g.stroke(); g.setLineDash([]); } }
+    else { g.beginPath(); g.arc(C.x, C.y, 26 + clamp(t / .4) * 30, 0, TAU); g.stroke(); }
+  }
+  else if (kind === 'snipe') { for (const at of [0, .15, .4]) { const k = (t - at) / .15; if (k < 0 || k > 1.5) continue; g.globalAlpha = clamp(1.5 - k); g.lineWidth = 2; g.beginPath(); g.moveTo(X + 8, Y - 10); g.lineTo(X + 8 + (at - .2) * 300, 90 + at * 60); g.stroke(); } }
+  g.restore();
+}
+function drawStageBg(g) {
+  g.fillStyle = '#26402f'; g.fillRect(0, 0, 380, 310);
+  g.fillStyle = '#5c5038'; g.beginPath(); g.moveTo(160, 0); g.lineTo(220, 0); g.lineTo(220, 250); g.lineTo(160, 250); g.fill();
+  g.fillStyle = '#3a2f22'; g.fillRect(0, 258, 380, 52); g.fillStyle = '#5a4630'; for (let x = 0; x < 380; x += 26) g.fillRect(x + 2, 250, 18, 12);
+  // 几个敌兵作参照
+  for (const [x, y] of [[176, 60], [196, 74], [182, 96], [204, 112], [186, 136], [172, 150], [198, 160]]) drawEnemy(g, x, y, 'infantry', 1.4, 0);
+}
+// —— 敌兵：识别特征放在头顶与外轮廓。原点在脚底，s 为缩放，ph 为步伐相位。
+const ENEMY = {
+  infantry: { n: '步兵', cls: '普通', sz: '基准 1.0', mark: '尖顶红盔 + 斜举短矛，矛尖高过头顶', body: '#b8402f' },
+  cavalry: { n: '骑兵', cls: '普通', sz: '横向 1.6 倍', mark: '马头朝前伸出身体轮廓；骑手红缨飘向后方', body: '#a5402f' },
+  armor: { n: '重甲兵', cls: '精锐', sz: '1.25 倍、更宽', mark: '铁灰方肩 + 身前一面竖长塔盾（盾面占身体 70%）', body: '#59605a' },
+  ranged: { n: '扰阵弓手', cls: '精锐', sz: '1.0', mark: '头戴宽檐斗笠（顶部平），背后弓弧露出头侧', body: '#7c4a3a' },
+  banner: { n: '军旗手', cls: '精锐', sz: '1.05，旗高 2 倍身高', mark: '背插高旗，旗面在敌潮之上，谁都挡不住', body: '#9a3a32' },
+  siege: { n: '攻城车', cls: '精锐', sz: '2 倍宽', mark: '木屋顶 + 前伸撞木 + 四轮', body: '#765b43' },
+  boss: { n: '敌将', cls: '首领', sz: '1.6 倍', mark: '高冠 / 披风 + 母型兵器；脚下红色威胁环', body: '#7a1f1a' },
+};
+function drawEnemy(g, x, y, type, s = 1, ph = 0, hit = false) {
+  const step = reduce ? 0 : Math.sin(ph) * 1.2, body = hit ? '#f6dcc0' : ENEMY[type].body;
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.fillStyle = '#0005'; g.beginPath(); g.ellipse(0, 1, type === 'cavalry' ? 10 : type === 'siege' ? 16 : 6, 2.4, 0, 0, TAU); g.fill();
+  if (type === 'siege') {
+    for (const xx of [-11, 11]) for (const yy of [-2, -9]) ell(g, xx, yy, 3.6, 3.6, '#333d35', 1.2);
+    path(g, [[-13, -4], [13, -4], [13, -18], [-13, -18]], true); ink(g, hit ? '#e7c69c' : '#765b43', 1.4);
+    path(g, [[-15, -18], [0, -27], [15, -18]], true); ink(g, '#924738', 1.4); path(g, [[-2, -30], [2, -30], [2, -14], [-2, -14]], true); ink(g, '#a6a086', 1.2);
+    g.restore(); return;
+  }
+  if (type === 'cavalry') { path(g, [[-9, -4], [7, -4], [9, -10], [-9, -10]], true); ink(g, '#72503e', 1.2); path(g, [[6, -9], [10, -17], [14, -15], [11, -8]], true); ink(g, '#825c43', 1.2);
+    for (const xx of [-7, -3, 3, 7]) { g.strokeStyle = INK; g.lineWidth = 1.6; g.beginPath(); g.moveTo(xx, -4); g.lineTo(xx + (xx > 0 ? step : -step) * .6, 0); g.stroke(); } g.translate(-1, -8); }
+  else for (const sx of [-1, 1]) { g.strokeStyle = INK; g.lineWidth = 2.4; g.beginPath(); g.moveTo(sx * 2, -5); g.lineTo(sx * 2 + sx * step * .5, 0); g.stroke(); }
+  const wide = type === 'armor' ? 6.5 : type === 'boss' ? 7 : 4.6;
+  path(g, [[-wide, -13], [wide, -13], [wide + .6, -4], [-wide - .6, -4]], true); ink(g, body, 1.2);
+  ell(g, 0, -17, 4, 4, '#d2ac83', 1.1);
+  if (type === 'infantry' || type === 'cavalry' || type === 'banner') { path(g, [[-4.6, -18], [0, -25], [4.6, -18]], true); ink(g, '#b8402f', 1.1); if (type === 'cavalry') { g.strokeStyle = '#e2493b'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(0, -25); g.quadraticCurveTo(-6, -28, -10, -24); g.stroke(); } }
+  if (type === 'infantry') { g.strokeStyle = '#675242'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(5, -6); g.lineTo(9, -26); g.stroke(); path(g, [[9, -30], [7.4, -25], [10.6, -25]], true); ink(g, '#e6e0c8', .8); }
+  if (type === 'armor') { path(g, [[-7, -20], [7, -20], [6, -15], [-6, -15]], true); ink(g, '#4e5049', 1.1); path(g, [[-9, -16], [-1, -16], [-1, -1], [-9, -1]], true); ink(g, hit ? '#f6dcc0' : '#6c7061', 1.3); g.strokeStyle = '#d3c69c'; g.lineWidth = .8; g.beginPath(); g.moveTo(-5, -14); g.lineTo(-5, -3); g.stroke(); }
+  if (type === 'ranged') { path(g, [[-8, -19], [8, -19], [4, -23], [-4, -23]], true); ink(g, '#c9a96a', 1.1); g.strokeStyle = '#dec398'; g.lineWidth = 1.6; g.beginPath(); g.arc(-3, -12, 9, -2.2, -.9); g.stroke(); }
+  if (type === 'banner') { g.strokeStyle = '#d2b582'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(-4, -4); g.lineTo(-4, -46); g.stroke(); const w = reduce ? 0 : Math.sin(ph * 1.3) * 1.5; path(g, [[-4, -46], [10, -43 + w], [6, -38], [10, -33 + w], [-4, -35]], true); ink(g, '#c23a2c', 1.1); }
+  if (type === 'boss') { path(g, [[-3, -20], [0, -32], [3, -20]], true); ink(g, '#c8402f', 1); path(g, [[-6, -20], [6, -20], [5, -23], [-5, -23]], true); ink(g, '#d5b367', 1); g.strokeStyle = '#6b5236'; g.lineWidth = 1.8; g.beginPath(); g.moveTo(8, -2); g.lineTo(8, -26); g.stroke(); path(g, [[8, -26], [15, -29], [16, -18], [8, -21]], true); ink(g, '#c8c3a6', 1); }
+  g.restore();
+}
+// —— 军营：底座轮廓、主色、兵、动作各不相同。level 1..3
+const CAMP = {
+  shield: { n: '盾营', c: '#4f7f95', base: '方形木栅（四角桩）', color: '钢青', troop: '2–4 名盾兵并排，人高塔盾连成盾墙；盾墙前一排拒马', atk: '盾墙前推一步 + 地面青色减速环', lv: '盾兵 2 → 3 → 4，Ⅲ 级加拒马' },
+  archer: { n: '弓营', c: '#4fa36b', base: '圆形土台（草垛边）', color: '青绿', troop: '弓手站成弧形，长弓高过头顶', atk: '齐拉弓（满弓 2 帧）→ 箭矢抛物线', lv: '弓手 2 → 3 → 4，Ⅲ 级加箭垛' },
+  crossbow: { n: '弩营', c: '#a88a4a', base: '六边形石台', color: '铜褐', troop: '一架床弩横置，两名弩手装填', atk: '弩臂回弹 + 直线金白粗箭（不抛物线）', lv: '弩架 1 → 1（加双弦）→ 2' },
+  catapult: { n: '投石营', c: '#8a7a5a', base: '长方形夯土台', color: '土黄', troop: '高臂投石机，一名力士装石', atk: '长臂甩起 → 石块高抛，落点尘圈', lv: '臂长加长，Ⅲ 级双机' },
+  fire_oil: { n: '火油营', c: '#c4583a', base: '圆形石圈（焦黑地面）', color: '赤橙', troop: '两只陶油罐 + 火盆，一名投掷手', atk: '火盆冒焰 → 抛罐，落地火区', lv: '油罐 2 → 3 → 4，火盆变大' },
+  war_drum: { n: '战鼓营', c: '#b0453a', base: '圆形高台（四面旗）', color: '朱红', troop: '一面大鼓 + 鼓手，台角插旗', atk: '鼓手双槌落下，鼓面波纹向外扩（光环范围）', lv: '旗 2 → 3 → 4，鼓更大' },
+};
+function campTroop(g, x, y, color, kind, t, i) {
+  // 军营兵：同样的大头比例，帽子统一青玉色（己方识别），身体用营色
+  const bob = reduce ? 0 : Math.sin(t * 3 + i) * .4;
+  g.save(); g.translate(x, y + bob);
+  for (const s of [-1, 1]) { g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(s * 1.6, -4); g.lineTo(s * 1.6, 0); g.stroke(); }
+  path(g, [[-4, -11], [4, -11], [4.6, -3], [-4.6, -3]], true); ink(g, color, 1.1);
+  ell(g, 0, -14.5, 3.6, 3.6, '#e2c09c', 1); path(g, [[-4, -15.5], [0, -20], [4, -15.5]], true); ink(g, '#2f8a6e', 1);
+  g.restore();
+}
+function drawCampNew(g, type, level, t, atk) {
+  const C = CAMP[type], col = C.c;
+  g.save();
+  g.fillStyle = '#0006'; g.beginPath(); g.ellipse(0, 10, 30, 10, 0, 0, TAU); g.fill();
+  // 1 底座轮廓
+  if (type === 'shield') { path(g, [[-24, -6], [24, -6], [26, 14], [-26, 14]], true); ink(g, '#6b5a3c', 1.6); for (const xx of [-24, 24]) for (const yy of [-6, 14]) { path(g, [[xx - 2, yy], [xx + 2, yy], [xx + 2, yy - 10], [xx - 2, yy - 10]], true); ink(g, '#8a7450', 1); } }
+  else if (type === 'archer') { ell(g, 0, 4, 27, 13, '#6f7a43', 1.6); g.strokeStyle = '#a7a35a'; g.lineWidth = 1; for (let a = 0; a < TAU; a += .5) { g.beginPath(); g.moveTo(Math.cos(a) * 27, 4 + Math.sin(a) * 13); g.lineTo(Math.cos(a) * 30, 2 + Math.sin(a) * 15); g.stroke(); } }
+  else if (type === 'crossbow') { path(g, [...Array(6)].map((_, i) => [Math.cos(i / 6 * TAU) * 27, 4 + Math.sin(i / 6 * TAU) * 13]), true); ink(g, '#77746a', 1.6); }
+  else if (type === 'catapult') { path(g, [[-28, -2], [28, -2], [28, 14], [-28, 14]], true); ink(g, '#8f7a52', 1.6); }
+  else if (type === 'fire_oil') { ell(g, 0, 4, 26, 12, '#3a2a22', 1.6); g.strokeStyle = '#8a7a6a'; g.lineWidth = 3; g.setLineDash([4, 3]); g.beginPath(); g.ellipse(0, 4, 26, 12, 0, 0, TAU); g.stroke(); g.setLineDash([]); }
+  else if (type === 'war_drum') { ell(g, 0, 8, 26, 10, '#6b3b2c', 1.6); path(g, [[-22, 8], [-22, -2], [22, -2], [22, 8]], true); ink(g, '#8a4a34', 1.4); ell(g, 0, -2, 22, 8, '#9a5a3c', 1.4); }
+  // 2 等级旗（数量 = 等级，旗色 = 营色）
+  for (let i = 0; i < level; i++) { const fx = -26 + i * 6, w = reduce ? 0 : Math.sin(t * 3 + i) * 1.2; g.strokeStyle = '#d2b582'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(fx, 8); g.lineTo(fx, -26); g.stroke(); path(g, [[fx, -26], [fx + 9, -24 + w], [fx, -19]], true); ink(g, col, 1); }
+  // 3 兵与器械
+  const n = level + 1, kick = atk > 0 ? clamp(1 - atk / .35) : 0;
+  if (type === 'shield') {
+    for (let i = 0; i < n; i++) { const x = -15 + i * (30 / Math.max(1, n - 1)); campTroop(g, x, -1 - kick * 3, col, 'shield', t, i);
+      path(g, [[x - 5, -14 - kick * 3], [x + 5, -14 - kick * 3], [x + 5, 3 - kick * 3], [x - 5, 3 - kick * 3]], true); ink(g, '#7ea4b4', 1.4); g.strokeStyle = '#d5e2e6'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, -11 - kick * 3); g.lineTo(x, 0 - kick * 3); g.stroke(); }
+    if (level === 3) for (const x of [-18, -6, 6, 18]) { g.strokeStyle = '#bcaa7a'; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 4, 10); g.lineTo(x + 4, 4); g.moveTo(x + 4, 10); g.lineTo(x - 4, 4); g.stroke(); }
+    if (atk > 0) { g.strokeStyle = `rgba(126,164,180,${.7 * (1 - kick)})`; g.lineWidth = 2; g.beginPath(); g.ellipse(0, -4, 34 + kick * 20, 12 + kick * 6, 0, Math.PI, TAU); g.stroke(); }
+  } else if (type === 'archer') {
+    for (let i = 0; i < n; i++) { const a = Math.PI + (i + .5) / n * Math.PI, x = Math.cos(a) * 17, y = 6 + Math.sin(a) * 9; campTroop(g, x, y, col, 'archer', t, i);
+      g.strokeStyle = INK; g.lineWidth = 3.4; g.beginPath(); g.arc(x + 5, y - 13, 9, -1.9, 1.3 - kick * .3); g.stroke(); g.strokeStyle = '#e2c98a'; g.lineWidth = 1.8; g.stroke();
+      g.strokeStyle = '#f1e4c3'; g.lineWidth = .8; g.beginPath(); g.moveTo(x + 2, y - 21); g.lineTo(x + 5 - kick * 4, y - 13); g.lineTo(x + 2, y - 4); g.stroke(); }
+  } else if (type === 'crossbow') {
+    const arm = 14 - kick * 4; for (let r = 0; r < (level === 3 ? 2 : 1); r++) { const yy = -6 + r * 10;
+      path(g, [[-3, yy + 6], [3, yy + 6], [3, yy - 14], [-3, yy - 14]], true); ink(g, '#8a6a3a', 1.2);
+      g.strokeStyle = INK; g.lineWidth = 3.6; g.beginPath(); g.moveTo(-arm - 4, yy - 2); g.quadraticCurveTo(0, yy - 12, arm + 4, yy - 2); g.stroke(); g.strokeStyle = '#c9a35a'; g.lineWidth = 2; g.stroke();
+      g.strokeStyle = '#f1e4c3'; g.lineWidth = 1; g.beginPath(); g.moveTo(-arm - 4, yy - 2); g.lineTo(0, yy + 2 - kick * 4); g.lineTo(arm + 4, yy - 2); g.stroke(); }
+    campTroop(g, -18, 10, col, 'x', t, 0); campTroop(g, 18, 10, col, 'x', t, 1);
+  } else if (type === 'catapult') {
+    const ang = -.8 + kick * 1.3, L = 20 + level * 2;
+    for (const xx of [-14, 14]) ell(g, xx, 10, 5, 5, '#3f4437', 1.2);
+    path(g, [[-14, 8], [0, -12], [14, 8]], false); g.strokeStyle = INK; g.lineWidth = 5; g.stroke(); g.strokeStyle = '#7a6040'; g.lineWidth = 3; g.stroke();
+    g.save(); g.translate(0, -12); g.rotate(ang); g.strokeStyle = INK; g.lineWidth = 5; g.beginPath(); g.moveTo(-10, 0); g.lineTo(L, 0); g.stroke(); g.strokeStyle = '#c9b781'; g.lineWidth = 3; g.stroke(); if (kick < .5) ell(g, L, -3, 5, 4, '#9ea08a', 1.2); g.restore();
+    campTroop(g, -20, 6, col, 'x', t, 0);
+  } else if (type === 'fire_oil') {
+    for (let i = 0; i < n; i++) { const x = -16 + i * 9, y = 2 + (i % 2) * 5; ell(g, x, y - 5, 4.5, 6, '#8a6440', 1.2); ell(g, x, y - 11, 2.4, 1.4, '#3a2a20', .8); }
+    path(g, [[8, 6], [20, 6], [18, 0], [10, 0]], true); ink(g, '#5d503a', 1.2);
+    const fl = reduce ? 1 : 1 + Math.sin(t * 12) * .2 + kick; g.fillStyle = '#ff9a3a'; g.beginPath(); g.moveTo(9, 0); g.quadraticCurveTo(14, -16 * fl, 19, 0); g.fill(); g.fillStyle = '#ffe07a'; g.beginPath(); g.moveTo(11.5, 0); g.quadraticCurveTo(14, -9 * fl, 16.5, 0); g.fill();
+    campTroop(g, 22, 10, col, 'x', t, 0);
+  } else if (type === 'war_drum') {
+    ell(g, 0, -12, 13, 5, '#e8d4a0', 1.4); path(g, [[-13, -12], [13, -12], [13, -2], [-13, -2]], true); ink(g, '#b0453a', 1.4); ell(g, 0, -12, 13, 5, '#e8d4a0', 1.4);
+    const beat = reduce ? 0 : (Math.sin(t * 8) + 1) / 2; campTroop(g, 0, 10, col, 'x', t, 0);
+    for (const s of [-1, 1]) { g.strokeStyle = INK; g.lineWidth = 2.4; g.beginPath(); g.moveTo(s * 3, -2); g.lineTo(s * 7, -14 - beat * 5); g.stroke(); ell(g, s * 7, -14 - beat * 5, 2, 2, '#e2493b', .8); }
+    if (!reduce) { g.strokeStyle = `rgba(226,73,59,${.5 * (1 - (t % 1))})`; g.lineWidth = 2; g.beginPath(); g.ellipse(0, -12, 13 + (t % 1) * 22, 5 + (t % 1) * 8, 0, 0, TAU); g.stroke(); }
+  }
+  g.restore();
+}
+function drawCampOld(g, type, level, t) {
+  // 现版示意：同一个绿色椭圆底座 + 小人，名牌在下方
+  g.fillStyle = '#15382e50'; g.beginPath(); g.ellipse(0, 11, 28, 12, 0, 0, TAU); g.fill();
+  g.fillStyle = '#557059'; g.beginPath(); g.ellipse(0, 2, 27, 20, 0, 0, TAU); g.fill(); g.strokeStyle = '#c0c8a1'; g.lineWidth = 1.3; g.stroke();
+  for (let i = 0; i < level + 1; i++) { const x = (i % 2 ? 1 : -1) * 8, y = -7 + Math.floor(i / 2) * 13; g.fillStyle = '#286c61'; g.fillRect(x - 4, y - 9, 8, 12); g.fillStyle = '#d6b78e'; g.beginPath(); g.arc(x, y - 11, 3.5, 0, TAU); g.fill();
+    g.strokeStyle = '#d5c583'; g.lineWidth = 1.3; if (type === 'shield') { g.fillStyle = '#335f61'; g.fillRect(x - 5, y - 6, 10, 11); } else { g.beginPath(); g.arc(x + 5, y - 4, 6, -Math.PI / 2, Math.PI / 2); g.stroke(); } }
+  g.fillStyle = '#284438'; g.fillRect(-24, 25, 48, 15); g.fillStyle = '#ecdeb7'; g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(`${CAMP[type].n} ${'ⅠⅡⅢ'[level - 1]}`, 0, 33);
+}
+// ====== 页面装配 ======
+const DPR = 2;
+const ctx2 = cv => { const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); return g; };
+// 1) 造型标注图
+(function anatomy() {
+  const cv = document.getElementById('anatomy'), g = ctx2(cv); g.scale(DPR, DPR);
+  g.fillStyle = '#16301f'; g.fillRect(0, 0, 380, 380);
+  g.save(); g.translate(140, 330); g.scale(3.6, 3.6); ground(g, true); drawChibi(g, P.guan_yu, { arm: .3 }); g.restore();
+  const note = (x1, y1, x2, y2, t1, t2) => { g.strokeStyle = '#f2c46b99'; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.setLineDash([]);
+    g.fillStyle = '#ffe7a6'; g.font = '700 13px sans-serif'; g.textAlign = 'left'; g.fillText(t1, x2 + 4, y2 + 4); if (t2) { g.fillStyle = '#b8b296'; g.font = '12px sans-serif'; g.fillText(t2, x2 + 4, y2 + 20); } };
+  note(150, 205, 232, 186, '头 37%', '现版 18%'); note(112, 280, 232, 250, '2px 墨线', '和头像同一条规则');
+  note(205, 112, 232, 92, '兵器 1.3 倍身高', '超出轮廓才认得'); note(150, 336, 232, 318, '青玉脚环', '怒气弧 · 取代名牌');
+  g.strokeStyle = '#7ff0c4'; g.lineWidth = 1; g.beginPath(); g.moveTo(50, 330); g.lineTo(50, 157); g.moveTo(44, 330); g.lineTo(56, 330); g.moveTo(44, 157); g.lineTo(56, 157); g.moveTo(44, 247); g.lineTo(56, 247); g.stroke();
+  g.fillStyle = '#7ff0c4'; g.font = '12px sans-serif'; g.textAlign = 'center'; g.fillText('身 46', 30, 292); g.fillText('头', 34, 206);
+})();
+// 2) 十五将对照
+let lineupMode = 'color';
+function renderLineup() {
+  const root = document.getElementById('lineup'); root.innerHTML = '';
+  for (const id of IDS) {
+    const box = document.createElement('div'); box.className = 'hero-pair';
+    const img = document.createElement('img'); img.alt = `${P[id].n} 大厅头像`; img.src = (window.PORTRAITS || {})[id] || '';
+    if (lineupMode === 'gray') img.style.filter = 'grayscale(1)';
+    const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', `${P[id].n} 战场造型`);
+    const g = ctx2(cv), small = lineupMode === 'small', sc = small ? 1.15 : 3;
+    g.fillStyle = '#26402f'; g.fillRect(0, 0, 200, 200);
+    if (small) { g.imageSmoothingEnabled = true; }
+    g.save(); g.translate(100, small ? 130 : 178); g.scale(sc * (small ? 2 : 1), sc * (small ? 2 : 1)); ground(g, false, true, .6); drawChibi(g, P[id], { arm: .3 }); g.restore();
+    if (small) { const tmp = document.createElement('canvas'); tmp.width = 48; tmp.height = 48; tmp.getContext('2d').drawImage(cv, 0, 0, 200, 200, 0, 0, 48, 48); g.clearRect(0, 0, 200, 200); g.imageSmoothingEnabled = false; g.drawImage(tmp, 0, 0, 48, 48, 0, 0, 200, 200); }
+    if (lineupMode === 'gray') gray(cv);
+    const name = document.createElement('b'); name.textContent = P[id].n;
+    const fix = document.createElement('span'); fix.className = 'fix'; fix.textContent = MISMATCH[id] || '';
+    box.append(img, cv, name, fix); root.append(box);
+  }
+}
+document.querySelectorAll('[data-lineup]').forEach(b => b.addEventListener('click', () => { lineupMode = b.dataset.lineup; document.querySelectorAll('[data-lineup]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderLineup(); }));
+renderLineup();
+// 3) 动作
+let mHero = 'xiahou_dun', mState = 'ult', mT0 = performance.now();
+const STATES = [['idle', '待机'], ['ready', '怒满'], ['atk', '普攻'], ['ult', '无双']];
+const hp = document.getElementById('hero-pick'), sp = document.getElementById('state-pick');
+hp.innerHTML = IDS.map(id => `<button type="button" data-h="${id}" aria-pressed="${id === mHero}">${P[id].n}</button>`).join('');
+sp.innerHTML = '<span class="lbl">动作</span>' + STATES.map(([k, n]) => `<button type="button" data-s="${k}" aria-pressed="${k === mState}">${n}</button>`).join('');
+hp.addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (!b) return; mHero = b.dataset.h; mT0 = performance.now(); hp.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); motionInfo(); });
+sp.addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; mState = b.dataset.s; mT0 = performance.now(); sp.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); motionInfo(); });
+const SKILL_NAME = { cao_cao: '魏武号令', xiahou_dun: '拔矢破军', zhang_liao: '合肥突阵', xu_chu: '虎痴撼地', sima_yi: '三才幽雷', liu_bei: '仁德援军', guan_yu: '青龙横扫', zhang_fei: '长坂怒吼', zhao_yun: '龙胆三穿', zhuge_liang: '八阵风牢', sun_quan: '江东潮壁', zhou_yu: '赤壁火船', lv_meng: '白衣伏兵', gan_ning: '锦帆夜袭', taishi_ci: '笃烈三矢' };
+function clipOf(id, st) { const M = MOTION[id];
+  if (st === 'atk') return { dur: INTERVAL[id], keys: M.atk.k, mark: M.atk.fire, fx: M.atk.fx };
+  if (st === 'ult') return { dur: 1.4, keys: M.ult.k, mark: M.ult.hit, fx: M.ult.fx, move: M.ult.move };
+  return { dur: st === 'ready' ? 1.6 / 1.3 : 1.6, keys: [K(0, {}), K(.8, { dy: -.6, arm: .1 }), K(1.6, {})], mark: -1 }; }
+function heroScreenPos(clip, t) {
+  const base = { x: 190, y: 270 };
+  if (clip.move === 'leap') { const tgt = { x: 150, y: 150 };
+    if (t < .12) return base; if (t < .36) { const k = (t - .12) / .24; return { x: lerp(base.x, tgt.x, k), y: lerp(base.y, tgt.y, k) - Math.sin(Math.PI * k) * 70, air: true }; }
+    if (t < .6) return tgt; if (t < .9) { const k = (t - .6) / .3; return { x: lerp(tgt.x, base.x, k), y: lerp(tgt.y, base.y, k) - Math.sin(Math.PI * k) * 55, air: true }; } return base; }
+  if (clip.move === 'charge') { if (t < .1) return base; if (t < .75) { const k = (t - .1) / .65; return { x: base.x, y: lerp(base.y, 20, k), ghost: true }; } return base; }
+  return base;
+}
+function drawMotion(now) {
+  const cv = document.getElementById('motion-stage'), g = ctx2(cv); g.scale(DPR, DPR);
+  const clip = clipOf(mHero, mState), loop = clip.dur + (mState === 'ult' ? .6 : 0);
+  let t = ((now - mT0) / 1000) % loop; if (reduce && mState === 'ult') t = clip.mark + .05;
+  drawStageBg(g);
+  let pos = heroScreenPos(clip, t);
+  if (reduce && clip.move) pos = { x: 190, y: 270 };
+  const pose = t <= clip.dur ? poseAt(clip.keys, Math.min(t, clip.keys[clip.keys.length - 1][0])) : {};
+  pose.glow = mState === 'ready' || (mState === 'ult' && t < 1);
+  if (mState === 'ult' && t >= 0) fxDraw(g, mHero, clip.fx, t - clip.mark, { x: pos.x, y: pos.y, s: 1.8 });
+  if (mState === 'atk') fxDraw(g, mHero, clip.fx, t - clip.mark, { x: pos.x, y: pos.y, s: 1.8 });
+  g.save(); g.translate(pos.x + (pose.x || 0) * 1.8, pos.y + (pose.y || 0) * 1.8); g.scale(1.8, 1.8);
+  if (!pos.air && !pos.ghost) ground(g, mState === 'ready' || mState === 'ult', true, .55);
+  if (pos.air) { g.fillStyle = '#0005'; g.beginPath(); g.ellipse(0, 30, 10, 3, 0, 0, TAU); g.fill(); }
+  if (pos.ghost) { g.globalAlpha = .55; for (let i = 1; i <= 4; i++) { g.save(); g.translate(0, i * 9); g.globalAlpha = .12 * (5 - i); drawChibi(g, P[mHero], pose); g.restore(); } g.globalAlpha = .75; }
+  drawChibi(g, P[mHero], pose); g.restore();
+  // 时间条
+  g.fillStyle = '#0009'; g.fillRect(12, 290, 356, 10); const span = mState === 'ult' ? 1.4 : clip.dur;
+  g.fillStyle = '#f2c46b'; g.fillRect(12, 290, 356 * clamp(t / span), 10);
+  if (clip.mark >= 0) { g.fillStyle = '#e2493b'; g.fillRect(12 + 356 * clip.mark / span - 1.5, 286, 3, 18); }
+  if (mState === 'ult') { g.fillStyle = '#7ff0c4'; g.fillRect(12 + 356 * .9 / span - 1, 286, 2, 18); }
+  g.fillStyle = '#efe6cf'; g.font = '12px sans-serif'; g.textAlign = 'left'; g.fillText(`${t.toFixed(2)}s`, 14, 282);
+  g.textAlign = 'right'; g.fillStyle = '#b8b296'; g.fillText(mState === 'ult' ? '红 = 命中帧 · 绿 = 0.9s 演出锁' : mState === 'atk' ? `红 = 出手帧 · 条长 = 攻击间隔 ${INTERVAL[mHero]}s` : '循环', 366, 282);
+}
+function motionInfo() {
+  const M = MOTION[mHero], p = P[mHero], clip = clipOf(mHero, mState);
+  const stTxt = { idle: M.idle, ready: '待机循环 ×1.3 速 + 兵器描金 + 脚环常亮；不新增帧', atk: M.atkTxt, ult: M.ultTxt }[mState];
+  document.getElementById('motion-notes').innerHTML = `<span class="eyebrow">${p.n} · ${mState === 'ult' ? SKILL_NAME[mHero] : STATES.find(s => s[0] === mState)[1]}</span>
+    <h3 style="font-size:22px;margin:0">${stTxt}</h3>
+    <div class="card"><b>出手 / 命中</b><p>${mState === 'atk' ? `第 ${(clip.mark).toFixed(2)} 秒出手，普攻间隔 ${INTERVAL[mHero]} 秒；动作 ${M.atk.dur} 秒后回到待机。` : mState === 'ult' ? `第 ${clip.mark.toFixed(2)} 秒命中（与技能稿一致），0.9 秒内收势。` : '无伤害帧。'}</p></div>
+    <div class="card"><b>识别点</b><p>${{ wei: '魏 · 冷色金属与披风', shu: '蜀 · 绿系袍甲', wu: '吴 · 暖色与轻甲' }[p.f]}；兵器 <code>${p.weapon}</code>，冠盔 <code>${p.head}</code>，胡须 <code>${p.beard}</code>。</p></div>`;
+  const fr = document.getElementById('frames'); fr.innerHTML = '';
+  const n = 8, span = mState === 'ult' ? .9 : clip.dur;
+  for (let i = 0; i < n; i++) {
+    const t = span * i / (n - 1), box = document.createElement('div'), c = document.createElement('canvas'); c.width = 120; c.height = 120;
+    const g = ctx2(c); g.fillStyle = '#26402f'; g.fillRect(0, 0, 120, 120); const pose = poseAt(clip.keys, Math.min(t, clip.keys[clip.keys.length - 1][0]));
+    g.save(); g.translate(60 + (pose.x || 0) * .4, 104 + (pose.y || 0) * .4); g.scale(1.7, 1.7); drawChibi(g, p, pose); g.restore();
+    const near = clip.mark >= 0 && Math.abs(t - clip.mark) <= span / (n - 1) / 2;
+    box.className = near ? 'hit' : ''; box.append(c, Object.assign(document.createElement('span'), { textContent: `${t.toFixed(2)}s${near ? ' ★' : ''}` })); fr.append(box);
+  }
+}
+document.querySelector('#motion-table tbody').innerHTML = IDS.map(id => { const M = MOTION[id]; return `<tr><td>${P[id].n}</td><td>${M.idle}</td><td>${M.atkTxt}<small>${M.atk.fire.toFixed(2)}s / 间隔 ${INTERVAL[id]}s</small></td><td>${M.ultTxt}<small>命中 ${M.ult.hit.toFixed(2)}s</small></td><td>${M.frames}</td></tr>`; }).join('');
+document.querySelector('#motion-table thead th:last-child').textContent = '帧数（待机 · 普攻 · 无双）';
+motionInfo();
+// 4) 军营
+let campMode = 'new', campLevel = 3;
+const CAMP_IDS = Object.keys(CAMP);
+function drawCamps(now) {
+  const cv = document.getElementById('camp-board'), g = ctx2(cv); g.scale(DPR, DPR);
+  const t = now / 1000; g.fillStyle = '#4a5a3a'; g.fillRect(0, 0, 600, 380);
+  const small = campMode === 'gray', sc = small ? 1.1 : 2.3;
+  CAMP_IDS.forEach((id, i) => {
+    const x = small ? 50 + i * 100 : 100 + (i % 3) * 200, y = small ? 200 : 130 + Math.floor(i / 3) * 175, atk = (t + i * .37) % 1.6;
+    g.save(); g.translate(x, y); g.scale(sc, sc);
+    if (campMode === 'old') drawCampOld(g, id, campLevel, t); else drawCampNew(g, id, campLevel, t, atk < .35 ? atk : 0);
+    g.restore();
+    if (campMode !== 'old') { g.fillStyle = '#ffe7a6'; g.font = '700 13px sans-serif'; g.textAlign = 'center'; if (!small) g.fillText(CAMP[id].n, x, y + 62); }
+  });
+  if (small) { // 缩到实机尺寸再放大，并去色
+    const tmp = document.createElement('canvas'); tmp.width = 400; tmp.height = 253; tmp.getContext('2d').drawImage(cv, 0, 0, 1200, 760, 0, 0, 400, 253);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(tmp, 0, 0, 400, 253, 0, 0, 1200, 760); gray(cv);
+    g.fillStyle = '#efe6cf'; g.font = '700 24px sans-serif'; g.textAlign = 'left'; g.fillText('灰度 + 实机尺寸：遮掉名牌，仍能靠轮廓分出六营', 24, 40);
+  }
+}
+document.querySelector('#camp-table tbody').innerHTML = CAMP_IDS.map(id => { const c = CAMP[id]; return `<tr><td>${c.n}</td><td>${c.base}</td><td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${c.c};margin-right:6px"></span>${c.color}</td><td>${c.troop}</td><td>${c.atk}</td><td>${c.lv}</td></tr>`; }).join('');
+document.querySelectorAll('[data-camp]').forEach(b => b.addEventListener('click', () => { campMode = b.dataset.camp; document.querySelectorAll('[data-camp]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+document.querySelectorAll('[data-level]').forEach(b => b.addEventListener('click', () => { campLevel = Number(b.dataset.level); document.querySelectorAll('[data-level]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+// 5) 敌潮
+let crowdMode = 'new', density = 'dense';
+function crowdList() {
+  const n = { normal: 34, dense: 60, max: 110 }[density], list = [];
+  const mix = ['infantry', 'infantry', 'infantry', 'cavalry', 'infantry', 'armor', 'infantry', 'ranged', 'infantry', 'banner', 'infantry', 'cavalry'];
+  for (let i = 0; i < n; i++) { const type = i === Math.floor(n * .55) ? 'boss' : i === Math.floor(n * .3) ? 'siege' : mix[i % mix.length]; list.push({ id: i + 3, type, s: i * (density === 'max' ? 1.6 : density === 'dense' ? 2.8 : 5) }); }
+  return list;
+}
+function drawCrowd(now) {
+  const cv = document.getElementById('crowd'), g = ctx2(cv); g.scale(DPR, DPR);
+  const t = now / 1000; g.fillStyle = '#4e5a3c'; g.fillRect(0, 0, 380, 450);
+  // 道路：从右上到中下的一段，宽 36 世界单位 × 3 放大
+  const S = 3, road = s => ({ x: 190 + Math.sin(s / 70) * 22, y: 20 + s * S * .82 });
+  g.strokeStyle = '#6b5e42'; g.lineWidth = 46 * S; g.lineCap = 'round'; g.beginPath(); for (let s = -10; s < 170; s += 4) { const p = road(s); s < -6 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y); } g.stroke();
+  g.strokeStyle = '#8a7a56'; g.lineWidth = 36 * S; g.stroke();
+  const list = crowdList().map(e => ({ ...e })).filter(e => e.s < 166);
+  const local = s => list.filter(o => Math.abs(o.s - s) < 20).length;
+  for (const e of list) {
+    const p = road(e.s);
+    if (crowdMode === 'old') { e.x = p.x; e.y = p.y; }
+    else { const centre = ['armor', 'siege', 'boss'].includes(e.type), lane = centre ? 0 : [-12, -6, 0, 6, 12][(e.id * 7) % 5], spread = local(e.s) > 6 ? 1.4 : 1;
+      e.x = p.x + clamp(lane * spread, -17, 17) * S; e.y = p.y + ((((e.id * 7) % 5) % 2) ? 4 : 0) * S; }
+  }
+  list.sort((a, b) => a.y - b.y || (a.type === 'boss') - (b.type === 'boss'));
+  for (const e of list) {
+    if (crowdMode === 'old') drawEnemyOld(g, e.x, e.y, e.type, S * .62, t * 9 + e.id);
+    else drawEnemy(g, e.x, e.y, e.type, S * .62 * (e.type === 'armor' ? 1.25 : e.type === 'boss' ? 1.6 : 1), t * 9 + e.id);
+  }
+  g.fillStyle = '#000a'; g.fillRect(0, 418, 380, 32); g.fillStyle = '#efe6cf'; g.font = '13px sans-serif'; g.textAlign = 'left';
+  const counts = list.reduce((m, e) => (m[e.type] = (m[e.type] || 0) + 1, m), {});
+  g.fillText(`${crowdMode === 'old' ? '现版' : '重做稿'} · ${list.length} 人 · ` + Object.entries(counts).map(([k, v]) => `${ENEMY[k].n}${v}`).join(' '), 10, 439);
+}
+function drawEnemyOld(g, x, y, type, s, ph) {
+  // 现版示意：无描边的红色小块，兵种特征在身体中段
+  g.save(); g.translate(x, y); g.scale(s, s); const bob = reduce ? 0 : Math.sin(ph) * .65; g.translate(0, bob);
+  if (type === 'cavalry') { g.fillStyle = '#72503e'; g.fillRect(-9, -4, 18, 8); }
+  if (type === 'siege') { g.fillStyle = '#765b43'; g.fillRect(-17, -15, 34, 20); g.restore(); return; }
+  g.fillStyle = type === 'armor' ? '#535951' : '#9b4438'; g.fillRect(-5, -11, 10, 12);
+  g.fillStyle = '#d2ac83'; g.beginPath(); g.arc(0, -14, 3.8, 0, TAU); g.fill(); g.fillStyle = '#934237'; g.fillRect(-5, -19, 10, 4);
+  if (type === 'armor') { g.fillStyle = '#6c7061'; g.fillRect(-8, -7, 7, 11); }
+  if (type === 'banner') { g.fillStyle = '#9f3e37'; g.fillRect(9, -42, 18, 14); }
+  g.restore();
+}
+document.querySelector('#enemy-table tbody').innerHTML = Object.entries(ENEMY).map(([k, e]) => `<tr><td>${e.n}<small>${e.cls}</small></td><td>${e.mark}</td><td>${e.sz}</td></tr>`).join('');
+document.querySelectorAll('[data-crowd]').forEach(b => b.addEventListener('click', () => { crowdMode = b.dataset.crowd; document.querySelectorAll('[data-crowd]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+document.querySelectorAll('[data-density]').forEach(b => b.addEventListener('click', () => { density = b.dataset.density; document.querySelectorAll('[data-density]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+// 只在可见时绘制
+const vis = new Set(); const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? vis.add(e.target.id) : vis.delete(e.target.id)), { rootMargin: '80px' });
+['motion-stage', 'camp-board', 'crowd'].forEach(id => io.observe(document.getElementById(id)));
+function loop(now) { if (vis.has('motion-stage')) drawMotion(now); if (vis.has('camp-board')) drawCamps(reduce ? 0 : now); if (vis.has('crowd')) drawCrowd(reduce ? 0 : now); requestAnimationFrame(loop); }
+drawMotion(performance.now()); drawCamps(0); drawCrowd(0); requestAnimationFrame(loop);
+
+</script>

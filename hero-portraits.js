@@ -1,28 +1,28 @@
 // Original procedural portrait resources. No remote assets, fonts or image requests.
-// HERO_ART drives the battlefield sprites (v1-renderer.js); PORTRAIT drives the high-contrast lobby busts below.
+// PORTRAIT is the sole appearance source for lobby portraits and cached battlefield sprites.
 export const HERO_ART = Object.freeze({
-  cao_cao: { name: '曹操', faction: 'wei', accent: '#365668', glyph: '令', gear: 'sword', silhouette: 'cloak', skill: '魏武号令' },
-  xiahou_dun: { name: '夏侯惇', faction: 'wei', accent: '#5b6472', glyph: '破', gear: 'saber', silhouette: 'headband', skill: '独眼破军' },
-  zhang_liao: { name: '张辽', faction: 'wei', accent: '#4c6b8a', glyph: '突', gear: 'hook', silhouette: 'shoulders', skill: '合肥突阵' },
-  xu_chu: { name: '许褚', faction: 'wei', accent: '#9e8556', glyph: '撼', gear: 'axe', silhouette: 'broad', skill: '虎痴撼地' },
-  sima_yi: { name: '司马懿', faction: 'wei', accent: '#68537c', glyph: '雷', gear: 'curved-fan', silhouette: 'tall', skill: '幽雷诡阵' },
-  liu_bei: { name: '刘备', faction: 'shu', accent: '#6c8850', glyph: '仁', gear: 'swords', silhouette: 'ribbon', skill: '仁德援军' },
-  guan_yu: { name: '关羽', faction: 'shu', accent: '#276b57', glyph: '龙', gear: 'crescent', silhouette: 'beard', skill: '青龙横扫' },
-  zhang_fei: { name: '张飞', faction: 'shu', accent: '#46504c', glyph: '吼', gear: 'serpent', silhouette: 'wide-beard', skill: '长坂怒吼' },
-  zhao_yun: { name: '赵云', faction: 'shu', accent: '#8bafc4', glyph: '胆', gear: 'spear', silhouette: 'silver', skill: '龙胆三穿' },
-  zhuge_liang: { name: '诸葛亮', faction: 'shu', accent: '#81a899', glyph: '阵', gear: 'fan', silhouette: 'sleeves', skill: '八阵风牢' },
-  sun_quan: { name: '孙权', faction: 'wu', accent: '#805b74', glyph: '壁', gear: 'seal', silhouette: 'crown', skill: '江东铁壁' },
-  zhou_yu: { name: '周瑜', faction: 'wu', accent: '#bb6245', glyph: '焰', gear: 'fire-fan', silhouette: 'slim', skill: '赤壁烈焰' },
-  lv_meng: { name: '吕蒙', faction: 'wu', accent: '#5e8481', glyph: '伏', gear: 'knives', silhouette: 'short', skill: '白衣伏兵' },
-  gan_ning: { name: '甘宁', faction: 'wu', accent: '#279292', glyph: '帆', gear: 'halberds', silhouette: 'topknot', skill: '锦帆箭雨' },
-  taishi_ci: { name: '太史慈', faction: 'wu', accent: '#af8f5f', glyph: '矢', gear: 'bow', silhouette: 'quiver', skill: '笃烈三矢' },
+  cao_cao: { name: '曹操', faction: 'wei', glyph: '令', skill: '魏武号令' },
+  xiahou_dun: { name: '夏侯惇', faction: 'wei', glyph: '破', skill: '拔矢破军' },
+  zhang_liao: { name: '张辽', faction: 'wei', glyph: '突', skill: '合肥突阵' },
+  xu_chu: { name: '许褚', faction: 'wei', glyph: '撼', skill: '虎痴撼地' },
+  sima_yi: { name: '司马懿', faction: 'wei', glyph: '雷', skill: '三才幽雷' },
+  liu_bei: { name: '刘备', faction: 'shu', glyph: '仁', skill: '仁德援军' },
+  guan_yu: { name: '关羽', faction: 'shu', glyph: '龙', skill: '青龙横扫' },
+  zhang_fei: { name: '张飞', faction: 'shu', glyph: '吼', skill: '长坂怒吼' },
+  zhao_yun: { name: '赵云', faction: 'shu', glyph: '胆', skill: '龙胆三穿' },
+  zhuge_liang: { name: '诸葛亮', faction: 'shu', glyph: '阵', skill: '八阵风牢' },
+  sun_quan: { name: '孙权', faction: 'wu', glyph: '壁', skill: '江东潮壁' },
+  zhou_yu: { name: '周瑜', faction: 'wu', glyph: '焰', skill: '赤壁火船' },
+  lv_meng: { name: '吕蒙', faction: 'wu', glyph: '伏', skill: '白衣伏兵' },
+  gan_ning: { name: '甘宁', faction: 'wu', glyph: '帆', skill: '锦帆夜袭' },
+  taishi_ci: { name: '太史慈', faction: 'wu', glyph: '矢', skill: '笃烈三矢' },
 });
 
 const INK = '#100c09';
 const FACTION_BG = { wei: ['#6f9cff', '#1b3566'], shu: ['#62e0a0', '#14513a'], wu: ['#ff9f61', '#7a2a14'] };
 
 // Each hero: face, eyes, headgear, beard, garment and signature weapon, chosen from the novel's iconography.
-const PORTRAIT = {
+export const PORTRAIT = Object.freeze(Object.fromEntries(Object.entries({
   cao_cao:     { skin: '#e8bc92', eyes: 'stern', head: 'guan', hair: '#191410', beard: 'goatee', body: 'armor', cloth: '#2b4269', trim: '#f2c46b', cape: '#8a1f22', weapon: 'sword', metal: '#dbe8ff' },
   xiahou_dun:  { skin: '#d9a77d', eyes: 'patch', head: 'helmet', helm: '#6f7a86', plume: '#c8322a', beard: 'stubble', body: 'armor', cloth: '#454e5c', trim: '#c9a35a', weapon: 'saber', metal: '#e4ecf2' },
   zhang_liao:  { skin: '#e0b088', eyes: 'stern', head: 'winged', helm: '#5c7896', plume: '#f2c46b', beard: 'mustache', body: 'armor', cloth: '#30506f', trim: '#e2c27a', weapon: 'hook', metal: '#ffd36a' },
@@ -38,7 +38,7 @@ const PORTRAIT = {
   lv_meng:     { skin: '#ddb088', eyes: 'stern', head: 'whitehood', hood: '#ece8dc', beard: 'mustache', body: 'robe', cloth: '#dcd6c6', trim: '#5f8a86', weapon: 'book', metal: '#c9a35a' },
   gan_ning:    { skin: '#c99068', eyes: 'round', head: 'topknot', hair: '#120d0b', beard: 'stubble', body: 'armor', cloth: '#16706e', trim: '#ffc940', weapon: 'bow', metal: '#e1b46a', feathers: true },
   taishi_ci:   { skin: '#dcaa80', eyes: 'stern', head: 'helmet', helm: '#8a6a3a', plume: '#2c8a5a', beard: 'mustache', body: 'armor', cloth: '#6e5230', trim: '#e2c27a', weapon: 'bow', metal: '#e8eef2', quiver: true },
-};
+}).map(([id, appearance]) => [id, Object.freeze(appearance)])));
 
 const outline = (inner, width = 2.4) => `<g stroke="${INK}" stroke-width="${width}" stroke-linejoin="round" stroke-linecap="round">${inner}</g>`;
 

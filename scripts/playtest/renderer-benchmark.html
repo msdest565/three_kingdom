@@ -1,0 +1,36 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>160 人战场绘制基准</title>
+<style>body{margin:0;background:#0d1b16;color:#efe6cf}canvas{width:390px;height:600px;display:block}</style>
+<canvas id="field"></canvas>
+<script type="module">
+// Controlled render-only fixture. Both versions receive the exact same old engine state.
+import {V1Game,seededRandom} from '../../docs/v1/playtest/skill-art/baseline/v1-engine.js';
+import {V1Renderer as Before} from '../../docs/v1/playtest/skill-art/baseline/v1-renderer.js';
+const q=new URLSearchParams(location.search), versions={before:Before};
+if(q.get('compare')) versions.after=(await import('../../v1-renderer.js')).V1Renderer;
+const game=new V1Game({levelId:'wei_012',party:['guan_yu','xiahou_dun','cao_cao'].map(heroId=>({heroId,level:3,skillLevel:1,equipment:{}})),rng:seededRandom(319)});
+game.start();game.enemies=[];game.effects=[];game.projectiles=[];
+for(let i=0;i<160;i++) game._spawn({type:['infantry','infantry','infantry','cavalry','armor','ranged','banner','siege'][i%8],lane:i%game.paths.length,progress:190+Math.floor(i/game.paths.length)*3,wave:game.level.waves[0]});
+game.camps=['shield','archer','crossbow','catapult','fire_oil','war_drum'].map((type,slot)=>({type,slot,level:3,attackFlash:0}));
+for(const h of game.heroes){h.rage=45;h.target=null;h.attackFlash=0;}
+if(game.heroes.length!==3||game.enemies.length!==160)throw Error('Invalid benchmark fixture');
+const summary=a=>{const s=[...a].sort((x,y)=>x-y);return{frames:a.length,meanMs:a.reduce((v,x)=>v+x,0)/a.length,medianMs:s[Math.floor(s.length*.5)],p95Ms:s[Math.floor(s.length*.95)]};};
+window.runBenchmark=async()=>{
+  const result={fixture:'160 enemies, 6 camps, 3 heroes; identical frozen old-engine fixture',dpr:devicePixelRatio,cssSize:[390,600],warmupFramesPerRenderer:120,metric:'synchronous Canvas draw CPU time after cache warmup; GPU, first-frame cache construction and physical-device FPS excluded',versions:{}};
+  const renderers=Object.fromEntries(Object.entries(versions).map(([id,Ctor])=>[id,new Ctor(document.querySelector('canvas'))]));
+  const samples=Object.fromEntries(Object.keys(versions).map(id=>[id,[]]));
+  const original=JSON.stringify(game);
+  for(const renderer of Object.values(renderers))for(let i=0;i<120;i++)renderer.draw(game,{realDt:1/60});
+  for(let round=0;round<8;round++){
+    const ids=Object.keys(renderers);if(round%2)ids.reverse();
+    for(const id of ids){
+      await new Promise(r=>requestAnimationFrame(r));
+      for(let i=0;i<100;i++){const begin=performance.now();renderers[id].draw(game,{realDt:1/60});samples[id].push(performance.now()-begin);}
+    }
+  }
+  if(JSON.stringify(game)!==original)throw Error('renderer mutated fixture');
+  for(const id of Object.keys(versions)){result.versions[id]=summary(samples[id]);renderers[id].destroy();}
+  if(result.versions.after)result.ratio=result.versions.after.meanMs/result.versions.before.meanMs;
+  return result;
+};
+window.ready=true;
+</script>
