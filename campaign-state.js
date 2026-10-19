@@ -1,4 +1,5 @@
 import { BALANCE, CONTENT } from './runtime-data.js';
+import { planEndlessMilestones, milestoneQualityWeights, summarizeEndlessMilestones } from './endless-milestones.js';
 
 export const CAMPAIGN_SAVE_KEY = 'wushuang-guard-campaign-v2';
 export const CAMPAIGN_BACKUP_KEY = `${CAMPAIGN_SAVE_KEY}-backup`;
@@ -38,8 +39,29 @@ const tierReached = (state, tierId) => BALANCE.stageGrowthTiers.findIndex(tier =
 function nextEquipmentId(state) {
   let id;
   do { id = `gear:${state.accountId}:${state.nextEquipmentSequence++}`; }
-  while (state.inventory.some(item => item.itemInstanceId === id));
+  while (state.inventory.some(item => item.itemInstanceId === id) || state.endlessMilestones?.receipts.some(receipt => receipt.loot.some(loot => loot.item.itemInstanceId === id)));
   return id;
+}
+
+function validateEndlessMilestones(input) {
+  const rules = BALANCE.endless, milestones = rules.milestones;
+  if (!object(input) || !Array.isArray(input.claimedWaves) || !input.claimedWaves.length || input.claimedWaves.length > milestones.length || input.claimedWaves.some((wave, index) => wave !== milestones[index].wave)) throw new Error('invalid_endless_milestones');
+  const highest = input.highestBreakthroughWave;
+  const breakthrough = rules.milestoneBreakthrough;
+  if (!integer(highest, 0, breakthrough.maxReachedWave) || highest !== 0 && (highest < breakthrough.fromWave || (highest - breakthrough.fromWave) % breakthrough.everyWaves || input.claimedWaves.length !== milestones.length)) throw new Error('invalid_endless_milestones');
+  if (!Array.isArray(input.receipts) || input.receipts.length !== input.claimedWaves.length) throw new Error('invalid_endless_milestones');
+  const itemIds = new Set();
+  for (const [index, receipt] of input.receipts.entries()) {
+    const milestone = milestones[index];
+    if (!object(receipt) || receipt.kind !== 'milestone' || receipt.wave !== milestone.wave || !object(receipt.rewards) || Object.keys(receipt.rewards).some(key => !CURRENCIES.includes(key)) || CURRENCIES.some(key => !integer(receipt.rewards[key], 0, milestone.rewards[key] || 0)) || !Array.isArray(receipt.loot) || receipt.loot.length !== milestone.chests) throw new Error('invalid_endless_milestones');
+    for (const loot of receipt.loot) {
+      const item = loot?.item, template = templateFor(item);
+      if (!object(loot) || !object(item) || !template || template.slot !== 'weapon' || item.slot !== 'weapon' || typeof item.itemInstanceId !== 'string' || !item.itemInstanceId.length || item.itemInstanceId.length > 180 || itemIds.has(item.itemInstanceId) || item.equippedHeroId !== null || item.level !== 0 || !META.equipment.qualityIds.includes(item.quality) || (template.quality && item.quality !== template.quality) || (!template.quality && item.quality === 'gold') || loot.quality !== item.quality || loot.templateId !== item.templateId || typeof loot.name !== 'string' || typeof loot.salvaged !== 'boolean' || META.equipment.qualityIds.indexOf(item.quality) < META.equipment.qualityIds.indexOf(milestone.minimumQuality || 'white')) throw new Error('invalid_endless_milestone_loot');
+      if (loot.salvaged && (!object(loot.salvageResources) || CURRENCIES.some(key => !integer(loot.salvageResources[key], 0, META.equipment.salvage.byQuality[item.quality][key] || 0)))) throw new Error('invalid_endless_milestone_loot');
+      itemIds.add(item.itemInstanceId);
+    }
+  }
+  return { claimedWaves: [...input.claimedWaves], highestBreakthroughWave: highest, receipts: clone(input.receipts) };
 }
 
 function describeEquipment(item, heroId = null) {
@@ -186,6 +208,8 @@ function validateSnapshot(input, now, { filterUnknown = false } = {}) {
     if (!transaction.won || !object(loot) || !object(item) || !template || template.slot !== 'weapon' || item.slot !== 'weapon' || typeof item.itemInstanceId !== 'string' || !item.itemInstanceId.length || item.itemInstanceId.length > 180 || item.equippedHeroId !== null || item.level !== 0 || !META.equipment.qualityIds.includes(item.quality) || (template.quality && item.quality !== template.quality) || (!template.quality && item.quality === 'gold') || loot.quality !== item.quality || loot.templateId !== item.templateId || typeof loot.name !== 'string' || typeof loot.salvaged !== 'boolean') throw new Error('invalid_loot_receipt');
     if (loot.salvaged && (!object(loot.salvageResources) || CURRENCIES.some(key => !integer(loot.salvageResources[key], 0, MAX_RESOURCE)))) throw new Error('invalid_loot_receipt');
   }
+  // Optional within schema 3: old saves and pre-wave-10 endless runs stay byte-compatible.
+  if (own(input, 'endlessMilestones')) state.endlessMilestones = validateEndlessMilestones(input.endlessMilestones);
   if (!object(input.progress) || !object(input.progress.dailyRepeat) || !/^\d{4}-\d{2}-\d{2}$/.test(input.progress.dailyRepeat.date) || !integer(input.progress.dailyRepeat.count, 0, META.dailyRepeatPolicy.limit)) throw new Error('invalid_daily_progress');
   state.progress.dailyRepeat = clone(input.progress.dailyRepeat);
   refreshProgress(state);
@@ -523,7 +547,7 @@ export class CampaignStore {
     return result.ok ? `${prefix}${sequence}` : null;
   }
 
-  _rollVictoryLoot(next) {
+  _rollVictoryLoot(next, qualityWeights = BALANCE.loot.qualityWeights) {
     const sample = () => {
       const value = this.rng();
       if (!Number.isFinite(value) || value < 0 || value >= 1) throw new Error('invalid_loot_rng');
@@ -532,7 +556,7 @@ export class CampaignStore {
     const point = Math.floor(sample() * BALANCE.loot.weightScale);
     let cumulative = 0;
     let quality = null;
-    for (const [id, weight] of Object.entries(BALANCE.loot.qualityWeights)) {
+    for (const [id, weight] of Object.entries(qualityWeights)) {
       cumulative += weight;
       if (point < cumulative) { quality = id; break; }
     }
@@ -544,6 +568,50 @@ export class CampaignStore {
     if (salvaged) loot.salvageResources = cappedCredit(next.resources, META.equipment.salvage.byQuality[quality]);
     else next.inventory.push(item);
     return loot;
+  }
+
+  getEndlessProgress() { return summarizeEndlessMilestones(this.state.endlessMilestones); }
+
+  /** One account transaction pays all newly reached thresholds, never a run-start token. */
+  claimEndlessMilestones(reachedWave) {
+    if (this.readOnly) return error('save_read_only');
+    let plan;
+    try { plan = planEndlessMilestones(reachedWave, this.state.endlessMilestones); }
+    catch (failure) { return error(failure.message); }
+    if (!plan.milestones.length && !plan.breakthrough) return { ok: true, reason: null, persisted: true, claims: [], progress: this.getEndlessProgress() };
+    let previousRaw = null, verifyStorage = false;
+    if (this.storage && !this.preserveUnreadableSave) {
+      try {
+        previousRaw = this.storage.getItem(CAMPAIGN_SAVE_KEY);
+        verifyStorage = true;
+        if (previousRaw) {
+          const latest = validateSnapshot(JSON.parse(previousRaw), this.now, { filterUnknown: true });
+          if (latest.accountId !== this.state.accountId || latest.revision !== this.state.revision || JSON.stringify(latest.endlessMilestones) !== JSON.stringify(this.state.endlessMilestones)) return error('stale_save_revision');
+        }
+      } catch { return error('storage_read_failed'); }
+    }
+    const next = clone(this.state), claims = [];
+    const progress = next.endlessMilestones ||= { claimedWaves: [], highestBreakthroughWave: 0, receipts: [] };
+    try {
+      for (const milestone of plan.milestones) {
+        const rewards = cappedCredit(next.resources, milestone.rewards), loot = [];
+        const weights = milestoneQualityWeights(milestone.minimumQuality || 'white', milestone.goldProbability || 0);
+        for (let index = 0; index < milestone.chests; index++) loot.push(this._rollVictoryLoot(next, weights));
+        const claim = { kind: 'milestone', wave: milestone.wave, rewards, loot };
+        progress.claimedWaves.push(milestone.wave); progress.receipts.push(clone(claim)); claims.push(claim);
+      }
+      if (plan.breakthrough) {
+        const entry = plan.breakthrough;
+        const rewards = cappedCredit(next.resources, { copper_coin: entry.copper });
+        progress.highestBreakthroughWave = entry.toWave;
+        claims.push({ kind: 'breakthrough', wave: entry.toWave, fromWave: entry.fromWave, toWave: entry.toWave, claimCount: entry.claimCount, rewards, loot: [] });
+      }
+    } catch (failure) { return error(failure.message === 'invalid_loot_rng' ? 'invalid_loot_rng' : 'milestone_generation_failed'); }
+    if (verifyStorage) {
+      try { if (this.storage.getItem(CAMPAIGN_SAVE_KEY) !== previousRaw) return error('stale_save_revision'); }
+      catch { return error('storage_read_failed'); }
+    }
+    return this._commit(next, { claims, progress: summarizeEndlessMilestones(progress) });
   }
 
   settleBattle({ battleId, levelId, won, hp, maxHp, kills = 0, bestBurst = 0, time = 0, casts = 0 } = {}) {
@@ -622,6 +690,13 @@ export class CampaignStore {
     if (!preview.ok) return preview;
     // Import is a user-reviewed replacement. A future-version local save is preserved as a backup.
     const next = validateSnapshot(JSON.parse(text), this.now);
+    // A reviewed import can replace resources, but cannot erase paid achievement watermarks.
+    if (this.state.endlessMilestones) {
+      const retained = this.state.endlessMilestones, incoming = next.endlessMilestones;
+      const prefix = incoming && incoming.claimedWaves.length >= retained.claimedWaves.length ? incoming : retained;
+      next.endlessMilestones = { ...clone(prefix), highestBreakthroughWave: Math.max(retained.highestBreakthroughWave, incoming?.highestBreakthroughWave || 0) };
+      if (next.accountId === this.state.accountId) next.nextEquipmentSequence = Math.max(next.nextEquipmentSequence, this.state.nextEquipmentSequence);
+    }
     if (this.readOnly || this.preserveUnreadableSave) {
       try {
         const prior = this.storage?.getItem(CAMPAIGN_SAVE_KEY);

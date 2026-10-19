@@ -1,0 +1,54 @@
+/* P5: endless-only feedback. Every moving state has an explicit static equivalent. */
+.is-endless .synergy-status{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.is-endless .choice-overlay{position:absolute;inset:0;z-index:30;padding:10px 12px;background:#13251efc;border:1px solid #bca36b66;border-radius:8px;gap:6px;overflow:hidden}
+.is-endless .choice-overlay>.overlay-kicker{display:none}.is-endless .choice-overlay h2{font-size:20px;margin:0;flex:none}.is-endless .choice-overlay>p{margin:0;max-width:none;font-size:10px;line-height:1.5;flex:none}.is-endless .choice-tools{position:static;margin-top:auto;padding:4px 0 0}
+.is-endless .upgrade-choices{gap:8px;margin:0;flex:none}
+#tactic-counter{white-space:nowrap;color:#f0d38e}#tactic-total{font-variant-numeric:tabular-nums}
+.is-endless .tactic-card .upgrade-choice{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:2px 8px;padding:8px 10px;text-align:left}
+.tactic-card .upgrade-choice>*{grid-column:1/-1;min-width:0}.tactic-card .upgrade-choice>.tactic-icon{grid-column:1;grid-row:1/3;width:44px;height:44px;object-fit:contain;align-self:center}
+.tactic-card .upgrade-choice>.tactic-meta,.tactic-card .upgrade-choice>strong{grid-column:2}.tactic-card .upgrade-choice>span:not(.tactic-meta){font-size:11px;line-height:1.45}.tactic-card .upgrade-choice strong{line-height:1.4}.tactic-card .tactic-meta{gap:3px;flex-wrap:wrap;line-height:1.4}
+/* Reserve the icon's touch target only in the final detail lines, without a footer row. */
+.tactic-card .upgrade-choice>small{padding-right:40px;line-height:1.4}.tactic-card .upgrade-choice>small:last-child{min-height:24px}.tactic-card .tactic-description{padding-right:40px}
+.tactic-card.is-entering{animation:p5-card-enter .32s var(--ease-spring) both;animation-delay:var(--card-delay,0s)}
+@keyframes p5-card-enter{from{opacity:0;transform:translateY(14px) rotate(-1.5deg) scale(.98)}to{opacity:1;transform:none}}
+.tactic-card.rarity-epic.is-entering::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,#dfc9ff65 50%,transparent 62%);animation:p5-card-shine .7s var(--ease-out) both;animation-delay:var(--card-delay,0s)}
+@keyframes p5-card-shine{from{transform:translateX(-110%)}to{transform:translateX(110%)}}
+.tactic-card.rarity-legendary{animation:p5-legendary 1.6s ease-in-out infinite}
+.tactic-card.rarity-legendary.is-entering{animation:p5-card-enter .32s var(--ease-spring) both,p5-legendary 1.6s ease-in-out infinite;animation-delay:var(--card-delay,0s),.32s}
+@keyframes p5-legendary{0%,100%{box-shadow:0 0 4px #ffc94040,inset 0 0 5px #ffc94033}50%{box-shadow:0 0 13px #ffc94088,inset 0 0 13px #ffc94055}}
+.roguelike-pick-cue{position:fixed;z-index:70;pointer-events:none;width:116px;display:flex;align-items:center;flex-direction:column;gap:3px;color:#fff0b7;text-shadow:0 1px 3px #000;animation:p5-pick .42s var(--ease-out) forwards;transform-origin:center}
+.roguelike-pick-cue img{width:56px;height:56px}.roguelike-pick-cue strong{font-size:12px;white-space:nowrap}
+@keyframes p5-pick{0%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}75%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--pick-x,0px)),calc(-50% + var(--pick-y,0px))) scale(.2)}}
+.endless-bond-marks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.bond-mark{--bond-color:#e88b96;display:inline-flex;align-items:center;gap:4px;padding:2px 5px;border:1px solid var(--bond-color);border-radius:4px;color:#f0e1bd;font-size:10px;background:#0c2118}
+.bond-symbol{display:block;width:24px;height:24px}.bond-symbol svg{width:100%;height:100%;fill:none;stroke:var(--bond-color);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bond-weiwu_xiongfeng{--bond-color:#6294b8}.bond-jiangdong_huchen{--bond-color:#62bda2}.bond-wolong_zhonghu{--bond-color:#aa86ce}
+.bond-mark.is-activating .bond-symbol{animation:p5-peach 1.2s var(--ease-spring) both}.bond-mark.bond-weiwu_xiongfeng.is-activating .bond-symbol{animation-name:p5-flags;transform-origin:bottom}.bond-mark.bond-jiangdong_huchen.is-activating .bond-symbol{animation-name:p5-water}.bond-mark.bond-wolong_zhonghu.is-activating .bond-symbol{animation-name:p5-strategy}
+@keyframes p5-peach{from{opacity:.15;transform:translateY(12px) scale(.7)}to{opacity:1;transform:none}}
+@keyframes p5-flags{from{opacity:.2;transform:scaleY(.1)}to{opacity:1;transform:none}}
+@keyframes p5-water{from{opacity:.1;transform:translateX(-10px)}to{opacity:1;transform:none}}
+@keyframes p5-strategy{from{opacity:.15;transform:rotate(-45deg) scale(.6)}to{opacity:1;transform:none}}
+.party-section.bond-weiwu_xiongfeng{border-radius:0;border-color:#6294b8}.party-section.bond-jiangdong_huchen{border-bottom:3px double #62bda2}
+.party-section.bond-jiangdong_huchen::after{content:"";position:absolute;bottom:-3px;left:12px;right:12px;height:6px;background:radial-gradient(ellipse at 50% 0,transparent 6px,#62bda2 7px,transparent 8px) 0 0/16px 8px repeat-x;pointer-events:none}
+.party-section.bond-taoyuan .party-meds::after{content:"";position:absolute;left:20px;right:20px;top:48px;height:2px;background:#e88b96;box-shadow:0 0 0 2px #e88b9622;pointer-events:none;z-index:0}
+.party-section.bond-taoyuan,.party-section.bond-jiangdong_huchen,.party-meds{position:relative}.bond-strategy-stamp{position:absolute;left:calc(25px + var(--bond-position,1) * 30px);bottom:-5px;z-index:5;width:22px;height:22px;display:grid;place-items:center;border:1px solid #c29fe1;border-radius:2px;background:#453450;color:#f0e3fa;font:700 15px serif;pointer-events:none}
+.hero-combo-cue{--combo-from:#eed287;--combo-to:#aee1c2;border-color:var(--combo-from);background:linear-gradient(105deg,#12231af7,#172b26f5);box-shadow:inset 3px 0 var(--combo-from),inset -3px 0 var(--combo-to)}
+.hero-combo-portraits{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px}.hero-combo-portraits img{width:36px;height:42px;object-fit:contain;border-bottom:2px solid var(--combo-from)}.hero-combo-portraits img+img{border-color:var(--combo-to)}
+.hero-combo-cue[data-phase="hold"] .hero-combo-portraits{filter:contrast(1.5) grayscale(1)}
+.hero-combo-cue[data-phase="dual"] .hero-combo-portraits img:first-child{animation:p5-combo-from .35s var(--ease-out) both}.hero-combo-cue[data-phase="dual"] .hero-combo-portraits img+img{animation:p5-combo-to .35s var(--ease-out) both}
+@keyframes p5-combo-from{from{opacity:.1;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes p5-combo-to{from{opacity:.1;transform:translateX(18px)}to{opacity:1;transform:none}}
+.hero-combo-cue[data-phase="hold"] strong,.hero-combo-cue[data-phase="dual"] strong{opacity:.2}
+.hero-combo-cue[data-phase="title"] strong{animation:p5-combo-name .32s var(--ease-spring) both}
+@keyframes p5-combo-name{from{opacity:.1;transform:scale(1.18)}to{opacity:1;transform:none}}
+.hero-combo-cue[data-phase="settle"]{box-shadow:inset 0 0 24px #eed28766}
+.roguelike-notice{flex:none;z-index:8;padding:6px 10px;background:#2d4030;border-bottom:1px solid #d5be7766;color:#f0e0a2;text-align:center;font-size:11px;line-height:1.55}
+.is-endless #wave-label.is-wave-flip{display:block;animation:v2-swap .28s var(--ease-out)}
+body.reduce-motion .is-endless .choice-overlay,body.reduce-motion .tactic-card,body.reduce-motion .tactic-card.is-entering,body.reduce-motion .tactic-card.rarity-legendary,body.reduce-motion .tactic-card::after,body.reduce-motion .bond-symbol,body.reduce-motion .bond-mark.is-activating .bond-symbol,body.reduce-motion .hero-combo-cue,body.reduce-motion .hero-combo-cue *,body.reduce-motion .is-endless #wave-label,body.reduce-motion .is-endless .castle-stat.is-hit{animation:none!important;transition:none!important;transform:none!important}
+body.reduce-motion .tactic-card::after{display:none}body.reduce-motion .hero-combo-cue strong{opacity:1!important}body.reduce-motion .hero-combo-portraits{filter:none!important}
+body.reduce-motion .roguelike-pick-cue{animation:p5-pick-static .2s linear forwards!important;transform:none!important;transition:none!important}
+@keyframes p5-pick-static{from{opacity:1}to{opacity:0}}
+body.reduce-motion .is-endless .gate-flash{transition:none!important;animation:none!important;transform:none!important}body.reduce-motion .is-endless .gate-flash.is-on{box-shadow:inset 0 0 65px 8px #e2493b99}
+@media(prefers-reduced-motion:reduce){.tactic-card,.tactic-card.is-entering,.tactic-card.rarity-legendary,.tactic-card::after,.bond-symbol,.bond-mark.is-activating .bond-symbol,.hero-combo-cue,.hero-combo-cue *,.is-endless #wave-label{animation:none!important;transition:none!important;transform:none!important}.hero-combo-cue strong{opacity:1!important}.roguelike-pick-cue{animation:p5-pick-static .2s linear forwards!important;transform:none!important}}
+@media(max-width:360px){.hero-combo-cue{top:10%}.hero-combo-cue strong{font-size:23px}.endless-bond-marks{gap:4px}.bond-mark{font-size:9px}}
+@media(max-height:650px){.is-endless .choice-overlay{padding:8px 10px;gap:4px}.is-endless .choice-overlay h2{font-size:20px}.is-endless .upgrade-choices{gap:6px}.is-endless .tactic-card .upgrade-choice{padding:6px 8px;gap:1px 7px;grid-template-columns:38px minmax(0,1fr)}.tactic-card .upgrade-choice>.tactic-icon{width:38px;height:38px}.tactic-card .upgrade-choice>small{font-size:10px;line-height:1.35}.is-endless .choice-tools p{margin-top:3px;line-height:1.35}}
+@media(max-height:560px){.is-endless .choice-overlay{padding:6px 10px;gap:3px}.is-endless .choice-overlay h2{font-size:18px}.is-endless .choice-overlay>p{font-size:9.5px;line-height:1.35}.is-endless .upgrade-choices{gap:4px}.is-endless .tactic-card .upgrade-choice{grid-template-columns:32px minmax(0,1fr);padding:5px 8px}.tactic-card .upgrade-choice>.tactic-icon{width:32px;height:32px}.tactic-card .tactic-meta,.tactic-card .tactic-meta b{font-size:9px;line-height:1.3}.tactic-card .upgrade-choice strong{font-size:15px;line-height:1.3}.tactic-card .upgrade-choice>span:not(.tactic-meta){font-size:10.5px;line-height:1.35}.tactic-card .upgrade-choice>small{line-height:1.3}}

@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>无双守关 · 肉鸽与无尽模式现行规格 v3.1</title>
+<style>
+:root{
+  --red:#c41e3a; --red-deep:#8b1526; --gold:#d4af37; --gold-soft:#e8cf7a;
+  --bg:#141210; --panel:#1e1b19; --line:#3a3431;
+  --txt:#e9e4de; --txt2:#a89f97; --txt3:#7d746d;
+  --blue:#4a9eff; --purple:#a970ff; --goldq:#e8b923;
+  --green:#4caf7d; --warn:#ff9f43; --danger:#e05252;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  background:var(--bg); color:var(--txt); line-height:1.75;
+  font-size:15px; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+
+header{
+  background:linear-gradient(135deg,var(--red-deep) 0%,#5c0d1b 60%,#2a0a12 100%);
+  border-bottom:3px solid var(--gold); padding:52px 20px 40px; text-align:center;
+  position:relative; overflow:hidden;
+}
+header::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 20% 0%,rgba(212,175,55,.16),transparent 55%),
+             radial-gradient(circle at 85% 100%,rgba(196,30,58,.22),transparent 60%);
+  pointer-events:none;
+}
+header h1{font-size:2.5rem;letter-spacing:.06em;position:relative;
+  text-shadow:0 3px 14px rgba(0,0,0,.6);font-weight:700}
+header .sub{color:var(--gold-soft);margin-top:12px;font-size:1.02rem;position:relative;letter-spacing:.04em}
+header .meta{margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;position:relative}
+header .meta span{
+  background:rgba(0,0,0,.3);border:1px solid rgba(212,175,55,.35);
+  color:var(--gold-soft);padding:4px 16px;border-radius:99px;font-size:.82rem;
+}
+
+nav{position:sticky;top:0;z-index:50;background:rgba(20,18,16,.96);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 20px}
+nav .inner{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+nav a{color:var(--txt2);text-decoration:none;font-size:.85rem;padding:6px 13px;
+  border:1px solid var(--line);border-radius:6px;transition:.18s;white-space:nowrap}
+nav a:hover{color:var(--gold-soft);border-color:var(--gold);background:rgba(212,175,55,.08)}
+
+section{margin-top:56px;scroll-margin-top:70px}
+h2{font-size:1.62rem;color:var(--gold);padding-bottom:12px;margin-bottom:8px;
+  border-bottom:2px solid var(--red);display:flex;align-items:center;gap:12px;font-weight:700}
+h2 .num{background:var(--red);color:#fff;font-size:.8rem;padding:3px 11px;border-radius:5px;
+  letter-spacing:.05em;font-weight:600;flex:none}
+h3{font-size:1.16rem;color:var(--txt);margin:32px 0 12px;padding-left:13px;
+  border-left:3px solid var(--gold);font-weight:700}
+h4{font-size:1rem;color:var(--gold-soft);margin:22px 0 9px;font-weight:600}
+p{margin:11px 0;color:var(--txt)}
+ul,ol{margin:11px 0 11px 24px}
+li{margin:7px 0;color:var(--txt)}
+strong{color:var(--gold-soft);font-weight:700}
+code{background:#0d0c0b;border:1px solid var(--line);padding:2px 7px;border-radius:4px;
+  font-family:Consolas,"Courier New",monospace;font-size:.87em;color:#ffc7a0}
+
+.tw{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;background:var(--panel);min-width:560px}
+th{background:linear-gradient(180deg,#3a141c,#2a0f15);color:var(--gold-soft);
+  padding:11px 12px;text-align:left;font-weight:600;border-bottom:2px solid var(--red);
+  white-space:nowrap;font-size:.83rem;letter-spacing:.03em}
+td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--txt2);vertical-align:top}
+tbody tr:nth-child(even){background:rgba(255,255,255,.017)}
+tbody tr:hover{background:rgba(196,30,58,.09)}
+td strong{color:var(--txt)}
+td.n{text-align:right;font-family:Consolas,monospace;color:var(--txt)}
+.hi{color:var(--gold-soft);font-weight:700}
+.danger{color:var(--danger);font-weight:700}
+.good{color:var(--green);font-weight:700}
+
+.r{display:inline-block;padding:1px 9px;border-radius:4px;font-size:.76rem;
+  font-weight:700;white-space:nowrap;border:1px solid}
+.r-c{color:#c8ccd2;border-color:#5a6068;background:rgba(154,160,166,.13)}
+.r-b{color:#7cc0ff;border-color:#3a6fa8;background:rgba(74,158,255,.14)}
+.r-p{color:#c4a4ff;border-color:#6b4ba8;background:rgba(169,112,255,.15)}
+.r-g{color:#ffd24a;border-color:#9c7d18;background:rgba(232,185,35,.16)}
+
+.box{border-radius:8px;padding:15px 18px;margin:18px 0;border-left:4px solid;font-size:.92rem}
+.box .t{font-weight:700;margin-bottom:6px;display:block;font-size:.95rem}
+.box p:first-of-type{margin-top:0}
+.box p:last-child{margin-bottom:0}
+.box.info{background:rgba(74,158,255,.08);border-color:var(--blue)}
+.box.info .t{color:#8cc6ff}
+.box.warn{background:rgba(255,159,67,.08);border-color:var(--warn)}
+.box.warn .t{color:#ffbe7a}
+.box.ok{background:rgba(76,175,125,.08);border-color:var(--green)}
+.box.ok .t{color:#7ddba9}
+.box.key{background:rgba(212,175,55,.08);border-color:var(--gold)}
+.box.key .t{color:var(--gold-soft)}
+
+.f{background:#0d0c0b;border:1px solid var(--line);border-left:3px solid var(--gold);
+  padding:14px 17px;border-radius:6px;margin:15px 0;font-family:Consolas,"Courier New",monospace;
+  font-size:.85rem;color:#ffc7a0;overflow-x:auto;line-height:2;white-space:pre}
+.f .cm{color:var(--txt3)}
+
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin:20px 0}
+.hcard{background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.hcard .hd{padding:11px 15px;background:linear-gradient(90deg,rgba(196,30,58,.28),transparent);
+  border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hcard .hd .nm{font-size:1.06rem;font-weight:700;color:var(--gold-soft)}
+.hcard .hd .role{font-size:.76rem;color:var(--txt3);font-family:Consolas,monospace}
+.hcard .bd{padding:10px 15px 14px}
+.hcard .base{font-size:.79rem;color:var(--txt3);margin-bottom:9px;
+  padding-bottom:8px;border-bottom:1px dashed var(--line);font-family:Consolas,monospace}
+.up{margin:9px 0;padding-left:11px;border-left:2px solid var(--line)}
+.up .un{font-weight:700;color:var(--txt);font-size:.92rem}
+.up .ud{font-size:.85rem;color:var(--txt2);margin-top:2px}
+.tag{display:inline-block;font-size:.7rem;color:var(--txt3);border:1px solid var(--line);
+  padding:0 6px;border-radius:3px;margin-right:6px;font-family:Consolas,monospace}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:20px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--red);
+  border-radius:7px;padding:13px 15px}
+.stat .v{font-size:1.5rem;font-weight:700;color:var(--gold);font-family:Consolas,monospace;line-height:1.3}
+.stat .l{font-size:.79rem;color:var(--txt3);margin-top:3px}
+
+.flow{display:flex;gap:0;flex-wrap:wrap;margin:20px 0;align-items:stretch}
+.flow .st{flex:1;min-width:118px;background:var(--panel);border:1px solid var(--line);
+  padding:13px 12px;text-align:center}
+.flow .st:not(:last-child){border-right:none}
+.flow .st .n{font-size:.72rem;color:var(--red);font-weight:700;letter-spacing:.08em}
+.flow .st .h{font-weight:700;color:var(--txt);font-size:.9rem;margin:3px 0}
+.flow .st .d{font-size:.76rem;color:var(--txt3);line-height:1.6}
+.flow .st:first-child{border-radius:7px 0 0 7px}
+.flow .st:last-child{border-radius:0 7px 7px 0}
+
+footer{margin-top:64px;padding:26px 0;border-top:1px solid var(--line);
+  text-align:center;color:var(--txt3);font-size:.82rem}
+
+@media(max-width:768px){
+  body{font-size:14px}
+  header h1{font-size:1.6rem}
+  header{padding:34px 16px 26px}
+  .wrap{padding:0 14px 60px}
+  h2{font-size:1.3rem}
+  .hgrid{grid-template-columns:1fr}
+  .flow{flex-direction:column}
+  .flow .st{border-right:1px solid var(--line)!important;border-radius:7px!important;margin-bottom:-1px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔ 无双守关 · 肉鸽强化体系与无尽模式 ⚔</h1>
+  <p class="sub">已完成 P0–P5 · 136 卡 · 程序波次 · 当前实现与模型依据</p>
+  <div class="meta">
+    <span>现行规格 v3.1</span><span>2026-10-20</span><span>源 JSON + 可运行曲线脚本</span><span>15 武将 / 6 军营 / 136 张卡</span>
+  </div>
+</header>
+
+<nav>
+  <div class="inner">
+    <a href="#diag">实现状态</a>
+    <a href="#model">成长模型</a>
+    <a href="#pool">卡池总纲</a>
+    <a href="#attr">纯属性卡</a>
+    <a href="#camp">军营专精卡</a>
+    <a href="#hero">武将专属强化</a>
+    <a href="#syn">羁绊与合击</a>
+    <a href="#endless">无尽模式</a>
+    <a href="#curve">难度数值表</a>
+    <a href="#camp5">军营 L4/L5</a>
+    <a href="#econ">经济与消耗</a>
+    <a href="#bal">平衡校验</a>
+    <a href="#presentation">美术音效动效</a>
+    <a href="#errata">命名勘误</a>
+    <a href="#impl">数据与实现地图</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<div class="box key">
+  <span class="t">阅读入口与事实优先级</span>
+  <p>P0–P5 与后续选卡紧凑布局均已完成。本文件保留 15 节规则、模型与命名附录，作为当前功能的详细参考；接手先读 <a href="PROJECT-STATUS.txt">PROJECT-STATUS.txt</a>，阶段记录见 <a href="DEVELOPMENT-HISTORY.txt">DEVELOPMENT-HISTORY.txt</a>，最近验收见 <a href="verification/latest.json">verification/latest.json</a>。不要重新把已交付阶段当作待办。</p>
+  <p>数值维护只编辑 <code>docs/v1/data/balance.json</code> 的 <code>v1Baseline</code> 与 <code>levels.json</code>，然后运行 <code>npm run data:build</code>。<strong>runtime-data.js 是生成物，禁止直接编辑。</strong>曲线以 <code>node docs/data/endless-curve.mjs</code> 的导出函数与输出为准。模型中的期望输出、压力比和目标时长不等于真人实战结论。</p>
+  <p>剧情 60 关仍走原路径、军营上限 3；无尽由 <code>V1Game.reset()</code> 的 <code>options.mode === 'endless'</code> 启用，军营上限 5，80 波为软目标，可继续突破。正文统一采用附录 A 的修正名称，附录原名仅供核对。</p>
+</div>
+
+<!-- ══════════ 1. 实现状态 ══════════ -->
+<section id="diag">
+  <h2><span class="num">01</span>当前实现状态</h2>
+  <h3>1.1 已交付范围</h3>
+  <div class="tw"><table>
+    <thead><tr><th>系统</th><th>当前状态</th><th>隔离与数据入口</th></tr></thead>
+    <tbody>
+      <tr><td><strong>军营</strong></td><td>6 营 L1–L5，L5 质变</td><td>L1–L3 原值不变；剧情上限 3，无尽上限 5</td></tr>
+      <tr><td><strong>卡池</strong></td><td>136 卡＝属性 26＋军营 42＋武将 60＋羁绊 8</td><td>实际目录 <code>game.tacticCatalog</code>；保留原 22 卡 ID 与剧情语义</td></tr>
+      <tr><td><strong>抽卡</strong></td><td>每波三选一；稀有度/类别权重、三条保底、无限属性卡、刷新/跳过/锁定</td><td><code>roguelike-system.js</code>；重复次数用 <code>tacticCounts</code>，不能只读 Set</td></tr>
+      <tr><td><strong>武将/军营机制</strong></td><td>15 将各 4 卡、6 营各 7 卡；均接入实际命中和状态</td><td><code>hero-upgrade-*</code>、<code>camp-upgrade-*</code></td></tr>
+      <tr><td><strong>羁绊与合击</strong></td><td>4 羁绊、8 卡、8 合击，真实命中同区窗口与次数限制</td><td><code>synergy-rules.js</code>、<code>synergy-effects.js</code></td></tr>
+      <tr><td><strong>无尽</strong></td><td>程序化波次、80 波软目标、11 个锚点、永久一次性里程碑与突破奖励</td><td><code>endless-rules.js</code>、<code>endless-milestones.js</code>；只从存档接口发永久奖励</td></tr>
+      <tr><td><strong>表现</strong></td><td>61 符号合成 136 卡面、11 音效、8 合击演出、三段听觉变化、8 类动效</td><td>本地 SVG/Canvas/WebAudio，无运行音视频素材；所有新动效消费 reducedMotion</td></tr>
+      <tr><td><strong>选卡布局</strong></td><td>三卡和底部工具同时可读，无需滑动；右下角锁图标</td><td>开锁透明底、锁定闭锁金底，44×44 触控区、读屏标签与状态保留</td></tr>
+    </tbody>
+  </table></div>
+  <h3>1.2 已核实的实现口径</h3>
+  <ul>
+    <li>第 20 波按数值脚本为 <strong>1 只疾行督骑</strong>；第 45 波 238 人集中排队，最多 160 存活在场、余 78 等待；第 70 波精锐比例 <strong>0.38792</strong>（约 39%）。</li>
+    <li>攻城车 <code>controlEffectFraction=.35</code> 表示控制只生效 35%；第 40 波守将整波减伤系数 .75，与既有技能取强者，不二次叠乘。</li>
+    <li>普通兵模型展示 HP 用 round，引擎沿用 ceil；锚点编成、技能和入场节奏叠加在模型曲线上，平均 DPS 表不是逐场战斗的精确预测。</li>
+    <li>里程碑逐档合计 <strong>32000 铜/312 铁/4 册/7 箱</strong>；80 波两箱各自 5% 金色概率，非必出金。剧情箱原 2.5% 不变。</li>
+    <li>孙权「潮势」基于现行 .4 秒乘 1.8/2.2，约 .3273 秒。其他旧技能文案与基准对齐记录在源数据 <code>runtimeNotes</code>。</li>
+    <li>无尽选卡已在 360×640、320×568、320×510 对 136 卡各三份极端组合验证，共 408 组；不以隐藏溢出代替完整阅读。任意更矮屏幕尚无覆盖结论。</li>
+  </ul>
+  <h3>1.3 验收边界</h3>
+  <p>最近完整基线为 <strong>486/486 测试通过</strong>，含剧情 60 关仿真与既有固定种子轨迹；最新选卡修复未修改 54 个已有测试文件。详细证据统一保存在 <a href="verification/latest.json">verification/latest.json</a>。</p>
+  <p>浏览器隔离夹具能验证图标、界面、真实事件接线与降级；不证明自然从第 1 波通关 80 波。真人多编队长局、实机性能与主观听感仍需样本验证，当前没有用自动化结果声称平衡已完成，也没有擅自调曲线。</p>
+</section>
+
+<!-- ══════════ 2. 成长模型 ══════════ -->
+<section id="model">
+  <h2><span class="num">02</span>核心成长模型</h2>
+
+  <p>以下是可运行脚本采用的参考成长模型，用于解释目标难度。实际局内输出由卡牌、施放、目标覆盖与锚点共同决定；模型通过不等于真人平衡通过。</p>
+
+  <h3>2.1 双桶模型</h3>
+  <div class="f">玩家总输出 = 军营基础DPS × 无双系数 × <span style="color:#7cc0ff">（1 + 加法池）</span> × <span style="color:#c4a4ff">乘区</span>
+<span class="cm">                  ↑ 可升级          ↑ 怒气/卡     ↑ 纯属性卡累积       ↑ 稀有卡复利</span></div>
+
+  <div class="tw"><table>
+    <thead><tr><th>桶</th><th>来源</th><th>增长方式</th><th>80 波量级</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>加法池</strong><br><span class="tag">additive</span></td>
+        <td>所有"+X% 伤害 / 攻速 / 耐久"的普通与稀有卡</td>
+        <td>对应效果线性聚合；同名递减、部分效果有局部上限</td>
+        <td class="n hi">×3.37</td>
+        <td>提供稳定、可预期的成长，是构筑的地基</td>
+      </tr>
+      <tr>
+        <td><strong>乘区</strong><br><span class="tag">multiplicative</span></td>
+        <td>史诗 / 传说卡的"×1.0X"效果</td>
+        <td>复利相乘，<strong>数量稀缺</strong></td>
+        <td class="n hi">×5.58</td>
+        <td>追赶敌人几何增长的关键，也是金卡的价值所在</td>
+      </tr>
+      <tr>
+        <td><strong>军营等级</strong></td>
+        <td>参考 L3 场输出 × 随波成长代理（非实战升营时间表）</td>
+        <td>离散跳跃</td>
+        <td class="n hi">×1.90</td>
+        <td>把军粮转化为永久战力，构成中期经济目标</td>
+      </tr>
+      <tr>
+        <td><strong>无双系数</strong></td>
+        <td>怒气效率 + 专属强化 + 羁绊</td>
+        <td>卡牌驱动</td>
+        <td class="n hi">×1.26</td>
+        <td>武将维度的成长，与卡池深度直接挂钩</td>
+      </tr>
+      <tr style="background:rgba(212,175,55,.07)">
+        <td colspan="3"><strong>四级乘子合计</strong></td>
+        <td class="n hi">×44.9</td>
+        <td>玩家总输出从 219 DPS 提升到 9,835 DPS</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="f"><span class="cm">玩家侧（波 1 → 波 80）：</span>
+军营 141→268 DPS (×1.90) × 无双 1.549→1.950 (×1.26) × 加法池 1.00→3.37 (×3.37) × 乘区 1.00→5.58 (×5.58)
+= <span style="color:#ffd24a">219 DPS → 9,835 DPS，合计 ×44.9</span>
+
+<span class="cm">敌人侧（波 1 → 波 80）：</span>
+血量倍率 1.00 → 30.88 (×30.88)
+敌兵数量   40 → 272    (×6.80)
+单波时长  20s → 40s    (×2.00)
+→ 单波总血量 1,120 → 425,150 (×379.6)，需求DPS 56 → 10,629 (<span style="color:#e8cf7a">×189.8</span>)
+
+<span class="cm">结果：玩家 ×44.9 追不上需求 ×189.8，但玩家起点有 3.8 倍余量</span>
+<span class="cm">→ 压力比 0.26 缓慢爬升至 1.08，第 80 波首次突破 1.0</span></div>
+
+  <div class="box ok">
+    <span class="t">这个模型为什么能成立</span>
+    <p>关键在于<strong>两个桶的增速被刻意设计成不匹配</strong>：加法池线性增长（×3.37），乘区复利增长（×5.58），而敌人的需求是复利增长（×189.8）。因此<strong>中前期靠加法池就能稳住（压力比 &lt; 0.6），后期必须靠乘区卡才能跟上</strong>。</p>
+    <p>模型表达的是后期需要乘区与军营升级的构筑压力。原稿「无乘区第 28 波、无升级第 20 波」属于假设场景推断，并非当前脚本打印项或已测真人结论，不作为验收值。</p>
+  </div>
+
+  <h3>2.2 同名卡递减规则（无限叠加不崩盘的关键）</h3>
+  <p>纯属性卡允许无限重复获取，但为避免"堆同一张卡"导致数值爆炸，采用<strong>几何递减</strong>：</p>
+  <div class="f">第 n 次获取同名卡的实际效果 = 基础效果 × 0.85<sup>(n-1)</sup>
+
+<span class="cm">例：「兵器淬炼」（军营伤害 +10%）</span>
+第 1 张：+10.00%     第 2 张：+8.50%     第 3 张：+7.23%
+第 5 张：+5.22%      第 10 张：+2.31%
+<span class="cm">无限张的理论上限 = 10% ÷ (1−0.85) = +66.7%</span></div>
+
+  <div class="tw"><table>
+    <thead><tr><th>获取张数</th><th>该张效果</th><th>累计加成</th><th>边际趋势</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td class="n">+10.00%</td><td class="n hi">+10.00%</td><td>—</td></tr>
+      <tr><td>2</td><td class="n">+8.50%</td><td class="n hi">+18.50%</td><td class="good">高效</td></tr>
+      <tr><td>3</td><td class="n">+7.23%</td><td class="n hi">+25.73%</td><td class="good">高效</td></tr>
+      <tr><td>5</td><td class="n">+5.22%</td><td class="n hi">+37.02%</td><td>尚可</td></tr>
+      <tr><td>10</td><td class="n">+2.31%</td><td class="n hi">+54.93%</td><td>低</td></tr>
+      <tr><td>20</td><td class="n">+0.46%</td><td class="n hi">+63.09%</td><td class="danger">极低</td></tr>
+      <tr><td>∞</td><td class="n">→ 0</td><td class="n hi">+66.67%</td><td class="danger">收敛</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">设计意图</span>
+    <p>递减让"重复拿同一张卡"变成<strong>次优但不亏</strong>的选择：前期拿它是正收益，后期边际收益趋零，玩家会自然转向新卡。这既保证了"后期永远有卡可选"（不会因为池子抽空而卡住），又避免了单卡垄断构筑。</p>
+    <p><strong>例外</strong>：第 4.1 节全部 8 张城墙方向属性卡<strong>不递减</strong>（见 04 节），因为它们是生存底线，后期必须有稳定收益，否则无尽模式会在第 50 波后变成必死局。</p>
+  </div>
+
+  <h3>2.3 卡牌稀有度与权重</h3>
+  <div class="tw"><table>
+    <thead><tr><th>稀有度</th><th>权重</th><th>占比</th><th>典型强度</th><th>设计定位</th></tr></thead>
+    <tbody>
+      <tr><td><span class="r r-c">普通</span></td><td class="n">5000</td><td class="n">50.0%</td><td>+8 ~ 12% 加法</td><td>构筑地基，量大管饱</td></tr>
+      <tr><td><span class="r r-b">稀有</span></td><td class="n">3000</td><td class="n">30.0%</td><td>+15 ~ 25% 加法 / 小机制</td><td>流派定向</td></tr>
+      <tr><td><span class="r r-p">史诗</span></td><td class="n">1650</td><td class="n">16.5%</td><td>独立乘区 / 强机制（以实际效果为准）</td><td>构筑核心</td></tr>
+      <tr><td><span class="r r-g">传说</span></td><td class="n">350</td><td class="n">3.5%</td><td>改变玩法规则</td><td>情绪峰值，每局 2–4 张</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>保底与刷新规则</h4>
+  <div class="tw"><table>
+    <thead><tr><th>规则</th><th>参数</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>每次候选数</td><td class="n">3</td><td>沿用现有 <code>choicesPerOffer: 3</code></td></tr>
+      <tr><td>史诗保底</td><td class="n">每 4 次</td><td>连续 3 次未出史诗及以上，第 4 次候选至少含 1 张史诗及以上</td></tr>
+      <tr><td>传说保底</td><td class="n">每 12 次</td><td>连续 11 次未出传说，第 12 次候选的传说权重 ×3（软保底，非必出）</td></tr>
+      <tr><td>刷新费用</td><td class="n">40 × (1+n)</td><td>n = 本局已刷新次数。依次 40 / 80 / 120 / 160…</td></tr>
+      <tr><td>跳过补偿</td><td class="n">+25 军粮</td><td>三张都不想要可选「整军备战」，避免被迫选废卡</td></tr>
+      <tr><td>候选内去重</td><td>必不重复</td><td>三张必为不同卡</td></tr>
+      <tr><td>锁定</td><td class="n">每局 3 次</td><td>可锁 1 张带入下次候选，跨波保留</td></tr>
+      <tr><td>专属保底</td><td class="n">每 3 次</td><td>连续 2 次未出当前武将专属强化，第 3 次候选必含 1 张</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">关于「锁定」功能</span>
+    <p>三张候选出现两张好卡是常见困境。锁定机制让玩家把当前未选中的一张留到下次（典型场景：这次两张都想要，先选另一张），把一次性的随机选择变成<strong>跨波的资源规划</strong>。每局 3 次的限制保证它不会被滥用为无限筛卡。按钮位于每张卡右下角：默认开锁、透明背景；锁定后闭锁、金色背景。三卡与刷新/跳过需完整可读，不通过滑动查看，也不隐藏溢出文字。</p>
+  </div>
+</section>
+<!-- ══════════ 3. 卡池总纲 ══════════ -->
+<section id="pool">
+  <h2><span class="num">03</span>卡池总纲</h2>
+
+  <p>卡池从 22 张扩展到 <strong>136 张</strong>，分为四类。这个结构解决了"后期无卡可选"的核心问题——因为纯属性卡可以无限重复获取。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>类别</th><th>数量</th><th>可否重复</th><th>解锁条件</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><strong>纯属性卡</strong></td><td class="n hi">26</td><td class="good">可无限重复（递减）</td><td>无，开局即可出现</td><td>保证任何波次都有牌可打；构筑地基</td></tr>
+      <tr><td><strong>军营专精卡</strong></td><td class="n hi">42</td><td class="danger">不可重复</td><td>已建造对应军营</td><td>定义流派，与军营等级联动</td></tr>
+      <tr><td><strong>武将专属强化</strong></td><td class="n hi">60</td><td class="danger">不可重复</td><td>该武将在队伍中</td><td>差异化 15 名武将，改变无双玩法</td></tr>
+      <tr><td><strong>羁绊 / 合击卡</strong></td><td class="n hi">8</td><td class="danger">不可重复</td><td>满足羁绊条件</td><td>奖励编队决策</td></tr>
+      <tr style="background:rgba(212,175,55,.07)"><td colspan="2"><strong>合计</strong></td><td class="n hi">136</td><td colspan="2">其中纯属性卡池开放重复，实际可用候选永远 &ge; 3</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box key">
+    <span class="t">为什么这个结构能保证"永远有卡"</span>
+    <p>设玩家已抽走所有 42 张军营卡与全部专属卡（理论极限）。此时候选池仍有 <strong>26 张纯属性卡 × 无限重复</strong>。哪怕玩家把 26 张全拿过一遍，它们依然会重新出现在候选中（只是效果按 0.85 递减）。<strong>候选池在任何波次都不会低于 26 张</strong>，从数学上杜绝了"无卡可选"。</p>
+  </div>
+
+  <h3>3.1 出现权重与条件</h3>
+  <div class="f">单张卡出现权重 = 稀有度基础权重 × 类别修正 × 条件修正
+
+<span class="cm">条件修正：</span>
+纯属性卡        × 1.0   （永远可出）
+军营专精卡      × 4.0   （已建该营时才进入池；加权保证构筑成型）
+武将专属卡      × 3.0   （该武将在队时进入池）
+羁绊卡          × 6.0   （满足羁绊时进入池，强提示）
+
+<span class="cm">后期平衡：波 40 之后纯属性卡权重 ×1.5，避免专属卡抽完后候选质量下降</span></div>
+
+  <div class="box info">
+    <span class="t">专精卡 ×4 权重的用意</span>
+    <p>玩家建了弓营，就应该更容易看到弓营的卡。×4 权重让"我建了什么，就更容易强化什么"成立，让建造决策能立刻得到反馈。同时因为不可重复，抽完后该权重自动归零，不会挤占后期候选空间。</p>
+  </div>
+</section>
+
+<!-- ══════════ 4. 纯属性卡 ══════════ -->
+<section id="attr">
+  <h2><span class="num">04</span>纯属性卡（26 张）</h2>
+
+  <p>这是无尽模式后期的主力牌。全部可无限重复获取，效果按 2.2 节规则递减（城墙类除外）。分三个方向：<strong>城墙 / 军阵 / 武将</strong>。</p>
+
+  <h3>4.1 城墙方向（8 张）<span style="font-size:.8rem;color:var(--txt3);font-weight:400">　— 不递减</span></h3>
+  <p>城墙是无尽模式唯一的失败条件，因此这类卡<strong>不做边际递减</strong>，保证后期仍有稳定收益，给玩家"投资生存"的真实出口。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>递减速</th><th>设计说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>加筑城墙</strong></td><td><span class="r r-c">普通</span></td><td>城墙耐久上限 +12</td><td>1.00</td><td>最纯粹的生存卡。基础耐久 100，拿 8 张加 96，接近翻倍</td></tr>
+      <tr><td><strong>夯土加厚</strong></td><td><span class="r r-b">稀有</span></td><td>城墙耐久上限 +9%</td><td>1.00</td><td>百分比成长，与「加筑城墙」形成互补，越后期越强</td></tr>
+      <tr><td><strong>匠人修补</strong></td><td><span class="r r-b">稀有</span></td><td>每波开始时回复 4 点城墙耐久</td><td>1.00</td><td>把"总量"变成"续航"。拿 3 张就是每波 +12，显著延长寿命</td></tr>
+      <tr><td><strong>瓮城</strong></td><td><span class="r r-p">史诗</span></td><td>每波首次漏怪伤害降低 60%</td><td>1.00</td><td>针对"偶发大额漏怪"的保险，与「匠人修补」互补</td></tr>
+      <tr><td><strong>护城河</strong></td><td><span class="r r-b">稀有</span></td><td>城墙脚下 100 范围内敌兵移速降低 15%</td><td>1.00</td><td>把防御转化为输出时间，与军营射程联动</td></tr>
+      <tr><td><strong>女墙箭垛</strong></td><td><span class="r r-c">普通</span></td><td>每次漏怪伤害 -2，最低 1</td><td>1.00</td><td>对步兵（漏伤 3）几乎免疫；对首领（漏伤 45）效果有限，设计上刻意如此</td></tr>
+      <tr><td><strong>铁水浇筑</strong></td><td><span class="r r-b">稀有</span></td><td>城墙耐久上限 +25%，立即失去 20 点当前耐久</td><td>1.00</td><td>风险回报卡：血量健康时纯赚，残血时是赌命</td></tr>
+      <tr><td><strong>背水死守</strong></td><td><span class="r r-p">史诗</span></td><td>城墙耐久低于 35% 时，全军伤害 +30%</td><td>1.00</td><td>把"濒死"变成"爆发窗口"，构建残血翻盘的高光时刻</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">城墙卡组的数学意义</span>
+    <p><strong>「匠人修补」×3＋「加筑城墙」×5</strong> 提供 +60 上限与 12/波回复；若从一开始就持有且每次回复都有效，40 波累计理论预算为 100+60+12×40=<strong>640</strong>。真实获取时机、满血溢出和漏伤会降低收益；不能据此承诺「多打 30 波」。</p>
+  </div>
+
+  <h3>4.2 军阵方向（10 张）</h3>
+  <p>作用于<strong>所有军营</strong>的通用强化，是加法池的主要来源。与军营专精卡的区别在于：专精卡改机制，这些卡纯堆数值。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>递减速</th><th>设计说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>兵器淬炼</strong></td><td><span class="r r-c">普通</span></td><td>军营伤害 +10%</td><td>0.85</td><td>最基础的增长轴。上限 +66.7%</td></tr>
+      <tr><td><strong>锻炉精钢</strong></td><td><span class="r r-c">普通</span></td><td>军营伤害 +7%，对重甲兵额外 +5%</td><td>0.85</td><td>「兵器淬炼」的定向版本，总收益更高但有条件</td></tr>
+      <tr><td><strong>强弓劲弩</strong></td><td><span class="r r-c">普通</span></td><td>军营攻击间隔缩短 7%，与战鼓攻速乘算</td><td>0.85</td><td>攻速轴。与战鼓营的攻速加成<strong>乘算</strong>，刻意区分</td></tr>
+      <tr><td><strong>阵型操练</strong></td><td><span class="r r-c">普通</span></td><td>军营攻速 +6%，与战鼓共用 30% 上限</td><td>0.85</td><td>受现有 <code>globalAttackSpeedBonusCap: 0.3</code> 约束，防止攻速失控</td></tr>
+      <tr><td><strong>目力训练</strong></td><td><span class="r r-c">普通</span></td><td>军营射程 +14</td><td>0.85</td><td>射程是隐性强度：更早开火 = 更多输出轮次</td></tr>
+      <tr><td><strong>甲胄压制</strong></td><td><span class="r r-b">稀有</span></td><td>军营对精锐伤害 +18%</td><td>0.85</td><td>无尽中期精锐占比升到 18–26%，这是关键定向卡</td></tr>
+      <tr><td><strong>攻坚重锤</strong></td><td><span class="r r-b">稀有</span></td><td>军营对首领伤害 +25%</td><td>0.85</td><td>首领波提供定向增伤选择，不代表该卡是唯一解</td></tr>
+      <tr><td><strong>连环阵</strong></td><td><span class="r r-p">史诗</span></td><td>每有一个军营射程覆盖目标，其受到伤害 +4%，最多 5 层</td><td>0.85</td><td>奖励<strong>军营位置重叠</strong>，把布阵从"铺开"变成"集火"</td></tr>
+      <tr><td><strong>火油配方</strong></td><td><span class="r r-b">稀有</span></td><td>所有持续伤害效果 +30%</td><td>0.85</td><td>火油营 + 周瑜火带 + 司马懿雷区的共同增益</td></tr>
+      <tr><td><strong>军粮征收</strong></td><td><span class="r r-b">稀有</span></td><td>每波结束额外获得 18 军粮</td><td>0.85</td><td>经济卡。拿 3 张 = 每波 +44，整局多出约 2000 军粮</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>4.3 武将方向（8 张）</h3>
+  <p>强化武将本体（普攻与无双），不涉及具体技能形态。这是"武将攻击力"需求的实现。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>递减速</th><th>设计说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>武艺精进</strong></td><td><span class="r r-c">普通</span></td><td>武将普攻伤害 +12%</td><td>0.85</td><td>普攻是无双之间的主要输出，尤其对赵云/太史慈这类高频武将</td></tr>
+      <tr><td><strong>亲兵卫队</strong></td><td><span class="r r-c">普通</span></td><td>武将普攻攻速 +10%</td><td>0.85</td><td>与「武艺精进」形成 DPS 双轴</td></tr>
+      <tr><td><strong>怒气涌动</strong></td><td><span class="r r-b">稀有</span></td><td>怒气获取速度 +12%</td><td>0.85</td><td>核心卡。怒气是无双的燃料，收益远超表面数值</td></tr>
+      <tr><td><strong>怒气回复</strong></td><td><span class="r r-b">稀有</span></td><td>无双释放后 4 秒内怒气获取 +60%</td><td>0.85</td><td>把"放完大招后的真空期"缩短，提升无双循环频率</td></tr>
+      <tr><td><strong>无双淬炼</strong></td><td><span class="r r-b">稀有</span></td><td>无双伤害 +15%</td><td>0.85</td><td>对赵云（每次无双 3 段）与太史慈（3 目标）收益最高</td></tr>
+      <tr><td><strong>破军之势</strong></td><td><span class="r r-p">史诗</span></td><td>无双伤害 +22%，怒气消耗 +8%</td><td>0.85</td><td>风险回报：高伤换低频，适合爆发流构筑</td></tr>
+      <tr><td><strong>威压</strong></td><td><span class="r r-b">稀有</span></td><td>被无双命中的敌人受到伤害 +10%，持续 5 秒</td><td>0.85</td><td>与诸葛亮的「八阵·风牢」（已有 incomingDamageMultiplier 1.2）可叠加</td></tr>
+      <tr><td><strong>军心所向</strong></td><td><span class="r r-p">史诗</span></td><td>队伍每有一名武将，全军伤害 +6%</td><td>0.85</td><td>奖励满编队，对抗「人数放大敌人血量」的惩罚</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box key">
+    <span class="t">纯属性卡如何服务无尽模式</span>
+    <p>这 26 张卡构成一个<strong>永不枯竭的成长池</strong>。原设计估计一局获得约 30 张纯属性卡（37%），但此分布不作为当前已验证均值；应从真人选择与本地统计核实。按上面设计的递减速，30 张平均分布在 26 张卡上（每张约 1.15 次），绝大多数落在"边际收益仍有 8.5–10%"的高效区间——该理论分布旨在提供持续成长，实际体感仍待验证。这正是 2.2 节递减率取 0.85 而非 0.7 或 0.95 的原因。</p>
+    <p>原稿其余类别期望（军营约 35、武将约 8、羁绊约 7）同属设计假设，未作为当前验收指标。</p>
+  </div>
+</section>
+
+<!-- ══════════ 5. 军营专精卡 ══════════ -->
+<section id="camp">
+  <h2><span class="num">05</span>军营专精卡（42 张）</h2>
+
+  <p>每种军营 7 张卡：现有 3 张保留，新增 4 张。新增卡重点补两个缺口——<strong>与 L4/L5 联动</strong>，以及<strong>每个军营都要有至少一张史诗级的玩法改变卡</strong>。</p>
+
+  <div class="box info">
+    <span class="t">命名与数值沿用现有规范</span>
+    <p>卡牌沿用 name/camp/effects 和新增元数据，但完整 42 卡位于 <code>BALANCE.campUpgrades</code>；聚合与运行效果已接入 <code>camp-upgrade-rules.js</code>/<code>camp-upgrade-effects.js</code>，不是仅添字段即可自动执行所有新机制。</p>
+  </div>
+
+  <h3>5.1 弓营 · 持续伤害（7 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>穿云箭</strong></td><td><span class="r r-c">普通</span></td><td>主箭贯穿一名敌军，造成35%伤害</td><td>现有</td></tr>
+      <tr><td><strong>连珠齐射</strong></td><td><span class="r r-b">稀有</span></td><td>追加一箭，造成25%伤害</td><td>现有</td></tr>
+      <tr><td><strong>破骑劲弩</strong></td><td><span class="r r-b">稀有</span></td><td>对骑兵、重甲与首领伤害增加25%</td><td>现有</td></tr>
+      <tr><td><strong>万箭齐发</strong></td><td><span class="r r-p">史诗</span></td><td>每次攻击额外命中两名敌人，追加目标造成60%伤害；每次攻击最多命中三个不同目标<br><small>每次攻击共享最多三个唯一敌人的目标预算；穿云箭不能额外引入第四个目标，连珠与5级追加箭可继续命中已计入预算的目标。</small></td><td class="good">新增</td></tr>
+      <tr><td><strong>箭雨覆盖</strong></td><td><span class="r r-b">稀有</span></td><td>弓营攻击间隔缩短15%，达到5级时额外缩短5%</td><td class="good">新增</td></tr>
+      <tr><td><strong>鸣镝示警</strong></td><td><span class="r r-b">稀有</span></td><td>弓营命中的目标减速18%，持续1.5秒</td><td class="good">新增</td></tr>
+      <tr><td><strong>养由基之弓</strong></td><td><span class="r r-g">传说</span></td><td>弓营射程增加40，每击杀一名敌人，本营本波伤害增加1%，最多增加40%<br><small>本卡为传说军营专精，每个弓营独立记录本波击杀；每次击杀线性增加1%，最多40%，构成独立1.00至1.40倍乘区，下一波重置。</small></td><td class="good">新增</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.87rem;color:var(--txt3)">流派定位：<strong>通用主力</strong>。弓营基础 DPS 从 L1 的 13.3 到 L5 的 73.4，是全程最稳的输出来源。「养由基之弓」的滚雪球效果让它成为无尽模式中期的核心。</p>
+
+  <h3>5.2 盾营 · 聚集与迟滞（7 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>坚壁铁阵</strong></td><td><span class="r r-c">普通</span></td><td>盾营减速强化至0.32，仍受控制抗性影响</td><td>现有</td></tr>
+      <tr><td><strong>连营拒马</strong></td><td><span class="r r-b">稀有</span></td><td>盾营控制范围增加25</td><td>现有</td></tr>
+      <tr><td><strong>破阵反击</strong></td><td><span class="r r-b">稀有</span></td><td>盾营每次攻击最多命中5名敌人</td><td>现有</td></tr>
+      <tr><td><strong>拒马连环</strong></td><td><span class="r r-p">史诗</span></td><td>盾营减速范围内的敌人，受到其他军营的伤害增加15%</td><td class="good">新增</td></tr>
+      <tr><td><strong>陷阵之志</strong></td><td><span class="r r-b">稀有</span></td><td>盾营范围内每有10名敌人，本营伤害增加8%，最多增加80%<br><small>本卡为稀有军营专精，每10名范围内敌人提供8%伤害、最多80%；该增益与普通和稀有属性卡的军营伤害加法池相加。</small></td><td class="good">新增</td></tr>
+      <tr><td><strong>铁壁军令</strong></td><td><span class="r r-b">稀有</span></td><td>盾营减速下限降低至0.22，对精锐的减速效果额外增加15%</td><td class="good">新增</td></tr>
+      <tr><td><strong>八门金锁阵</strong></td><td><span class="r r-g">传说</span></td><td>进入盾营范围的敌人定身1秒，每名敌人每6秒最多触发一次</td><td class="good">新增</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.87rem;color:var(--txt3)">流派定位：<strong>控场核心</strong>。盾营本身 DPS 极低（L5 仅 6.3），但「拒马连环」把它变成了<strong>全队伤害放大器</strong>——这是它存在的真正意义，也是"塔防"里控制塔的经典价值。</p>
+
+  <h3>5.3 投石营 · 密度伤害（7 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>霹雳巨石</strong></td><td><span class="r r-c">普通</span></td><td>投石爆炸半径增加12</td><td>现有</td></tr>
+      <tr><td><strong>碎石封路</strong></td><td><span class="r r-b">稀有</span></td><td>投石落点附加35%减速，持续2.5秒</td><td>现有</td></tr>
+      <tr><td><strong>摧城破甲</strong></td><td><span class="r r-b">稀有</span></td><td>投石对重甲与首领伤害增加25%</td><td>现有</td></tr>
+      <tr><td><strong>火油弹</strong></td><td><span class="r r-p">史诗</span></td><td>投石爆炸区域留下火场，每秒造成12点伤害，持续3秒</td><td class="good">新增</td></tr>
+      <tr><td><strong>天崩地裂</strong></td><td><span class="r r-b">稀有</span></td><td>无尽模式投石爆炸伤害最多命中的目标由6名增加至10名</td><td class="good">新增</td></tr>
+      <tr><td><strong>连发投石</strong></td><td><span class="r r-b">稀有</span></td><td>投石营攻击间隔缩短18%</td><td class="good">新增</td></tr>
+      <tr><td><strong>霹雳连车</strong></td><td><span class="r r-g">传说</span></td><td>每次投石追加一枚70%伤害的石弹，瞄准随机另一目标；爆炸半径增加10</td><td class="good">新增</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.87rem;color:var(--txt3)">流派定位：<strong>清兵海</strong>。投石营 L5 持「天崩地裂」时单发 41 伤 × 最多 10 目标 = 410 总伤，是应对波 45+ 平均 238 名敌兵的关键。「天崩地裂」把上限从 6 提到 10，是一次质的飞跃。</p>
+
+  <h3>5.4 弩营 · 精锐点杀（7 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>贯甲强弩</strong></td><td><span class="r r-b">稀有</span></td><td>弩营对精锐与首领额外增伤25%，与基础精锐增伤乘算</td><td>现有</td></tr>
+      <tr><td><strong>穿阵劲矢</strong></td><td><span class="r r-b">稀有</span></td><td>弩矢贯穿一名敌军，造成35%伤害</td><td>现有</td></tr>
+      <tr><td><strong>瞭望校射</strong></td><td><span class="r r-c">普通</span></td><td>弩营射程增加25</td><td>现有</td></tr>
+      <tr><td><strong>破甲锥</strong></td><td><span class="r r-p">史诗</span></td><td>弩矢命中攻城车或首领时，额外造成其最大生命值3%的伤害<br><small>最大生命3%作为独立附伤，不被弩营基础精锐倍率、科技或贯甲强弩放大；穿阵劲矢的35%伤害分支只携带35%的该附伤，附伤继续受敌方易伤与减免影响。</small></td><td class="good">新增</td></tr>
+      <tr><td><strong>连弩机关</strong></td><td><span class="r r-b">稀有</span></td><td>弩营攻击间隔缩短20%，达到5级时额外缩短5%</td><td class="good">新增</td></tr>
+      <tr><td><strong>神射营</strong></td><td><span class="r r-b">稀有</span></td><td>弩营每击杀一名敌人，下次攻击伤害增加80%，最多积蓄三层<br><small>本卡为稀有军营专精，发射时快照并消耗本营积蓄层数，每层增加80%伤害、最多三层；该增益与普通和稀有属性卡的军营伤害加法池相加。</small></td><td class="good">新增</td></tr>
+      <tr><td><strong>蹶张神射</strong></td><td><span class="r r-g">传说</span></td><td>弩营优先命中当前血量最高的敌人，并使其受到的所有伤害增加18%</td><td class="good">新增</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.87rem;color:var(--txt3)">流派定位：<strong>单体爆发</strong>。「破甲锥」的百分比伤害是应对首领血量几何增长的<strong>唯一有效手段</strong>——波 60 首领 12510 HP，3% = 375 点/击，远超固定伤害。「蹶张神射」则把弩营变成定向易伤标记手。</p>
+
+  <h3>5.5 火油营 · 区域压制（7 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>泼油成阵</strong></td><td><span class="r r-c">普通</span></td><td>火油营的火场半径增加16</td><td>现有</td></tr>
+      <tr><td><strong>烈火炙甲</strong></td><td><span class="r r-b">稀有</span></td><td>对精锐与首领灼烧伤害增加15%</td><td>现有</td></tr>
+      <tr><td><strong>泥油阻路</strong></td><td><span class="r r-b">稀有</span></td><td>火油命中附加25%减速，持续1秒</td><td>现有</td></tr>
+      <tr><td><strong>膏油猛火</strong></td><td><span class="r r-p">史诗</span></td><td>火油营火场半径增加25，每跳伤害增加25%<br><small>本卡为史诗军营专精，每跳伤害提高25%形成独立乘区倍率1.25，与普通和稀有属性卡的伤害加法池分开结算。</small></td><td class="good">新增</td></tr>
+      <tr><td><strong>火势蔓延</strong></td><td><span class="r r-b">稀有</span></td><td>火油营火场持续时间延长1.5秒</td><td class="good">新增</td></tr>
+      <tr><td><strong>焦土</strong></td><td><span class="r r-b">稀有</span></td><td>敌人离开火场后持续燃烧2秒，每秒受到火油每跳伤害50%的伤害</td><td class="good">新增</td></tr>
+      <tr><td><strong>余烬燎原</strong></td><td><span class="r r-g">传说</span></td><td>火场内敌人受到的所有伤害增加20%，同一火油营可同时维持两个火场</td><td class="good">新增</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.87rem;color:var(--txt3)">流派定位：<strong>区域放大器</strong>。火油营本身 DPS 最低（L5 约 12.9），但「余烬燎原」让它成为全队增益地块。「余烬燎原」+ 周瑜火带 + 司马懿雷区可以形成强力的复合持续伤害区。</p>
+
+  <h3>5.6 战鼓营 · 攻速光环（7 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>效果</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>鼓声远传</strong></td><td><span class="r r-c">普通</span></td><td>战鼓光环范围增加30</td><td>现有</td></tr>
+      <tr><td><strong>振军奋勇</strong></td><td><span class="r r-b">稀有</span></td><td>战鼓攻速增益增加5%，受当前攻速上限约束</td><td>现有</td></tr>
+      <tr><td><strong>整军固守</strong></td><td><span class="r r-b">稀有</span></td><td>鼓声范围内军营获得25%扰阵抗性</td><td>现有</td></tr>
+      <tr><td><strong>一鼓作气</strong></td><td><span class="r r-p">史诗</span></td><td>无尽模式战鼓攻速加成上限由30%提高至45%</td><td class="good">新增</td></tr>
+      <tr><td><strong>三通鼓</strong></td><td><span class="r r-b">稀有</span></td><td>战鼓光环内每有一个军营，攻速增益额外增加2%，最多增加12%</td><td class="good">新增</td></tr>
+      <tr><td><strong>战意昂扬</strong></td><td><span class="r r-b">稀有</span></td><td>战鼓光环内武将的普攻攻速增加12%</td><td class="good">新增</td></tr>
+      <tr><td><strong>鼓角齐鸣</strong></td><td><span class="r r-g">传说</span></td><td>光环内军营伤害增加15%；每次无双释放时，光环增益翻倍并持续5秒<br><small>翻倍鼓源的攻速、伤害及武将普攻光环加成，包括5级、科技与振军奋勇；不翻倍范围或持续时间，仍受当前无尽局部30%或45%上限约束；其他武将提供的加速与射程效果不属于鼓源。</small></td><td class="good">新增</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.87rem;color:var(--txt3)">流派定位：<strong>倍率乘区</strong>。战鼓营 DPS 为 0，但它提供的攻速是<strong>乘算</strong>的（现有公式 <code>baseIntervalSec/(1+strongestAttackSpeedBonus)</code>），因此对高基础 DPS 的军营收益最大。「一鼓作气」把上限从 30% 提到 45%，是纯属性卡之外唯一的攻速上限提升途径。</p>
+
+  <div class="box key">
+    <span class="t">军营卡的平衡锚点</span>
+    <p>六种军营的定位互不重叠、各有不可替代的作用：<strong>弓营</strong>提供基础 DPS，<strong>弩营</strong>处理高血量目标，<strong>投石营</strong>清除兵海，<strong>盾营</strong>放大全队伤害，<strong>火油营</strong>铺增益地块，<strong>战鼓营</strong>提供乘算攻速。玩家只有 6 个营位，因此<strong>必须取舍</strong>——这就是构筑决策的来源。任何一张卡都不应该让某个军营"全能"，这是本设计严守的边界。</p>
+  </div>
+</section>
+<!-- ══════════ 6. 武将专属强化 ══════════ -->
+<section id="hero">
+  <h2><span class="num">06</span>武将专属强化（60 张）</h2>
+
+  <p>每名武将 <strong>4 张专属强化</strong>，共 60 张。设计原则：<strong>每张都从该武将无双的实际帧数据出发</strong>，强化它本来就擅长的事，或补上它明显的短板。四张卡固定遵循同一套结构，保证 15 名武将的成长节奏一致：</p>
+
+  <div class="flow">
+    <div class="st"><div class="n">CARD 1</div><div class="h">数值强化</div><div class="d">稀有度 稀有<br>直接强化无双核心数值</div></div>
+    <div class="st"><div class="n">CARD 2</div><div class="h">形态扩展</div><div class="d">稀有度 稀有<br>扩大范围 / 增加段数</div></div>
+    <div class="st"><div class="n">CARD 3</div><div class="h">机制改变</div><div class="d">稀有度 史诗<br>赋予全新行为</div></div>
+    <div class="st"><div class="n">CARD 4</div><div class="h">玩法重塑</div><div class="d">稀有度 传说<br>改变该武将的使用方式</div></div>
+  </div>
+
+  <div class="box info">
+    <span class="t">专属卡的出现规则</span>
+    <p>以下 60 卡效果与稀有度已对齐源 JSON；技能基准解释以 runtimeNotes 为准。仅在<strong>该武将当前在队</strong>且满足卡片附加条件时进入候选池，权重 ×3。存在可用专属卡时，连续 2 次未出现专属卡，第 3 次候选必含 1 张（对应 2.3 节「专属保底」）。每名武将的 4 张卡不可重复获取，但一名武将可拿满 4 张。<strong>三人队伍理论上可拿 12 张专属卡</strong>——这构成了"专精一名武将"与"均衡发展三名武将"的真实取舍。</p>
+  </div>
+
+  <h3>6.1 魏国组</h3>
+
+  <div class="hgrid">
+    <div class="hcard">
+      <div class="hd"><span class="nm">曹操</span><span class="role">army_command · 魏武号令</span></div>
+      <div class="bd">
+        <div class="base">无双形态：抛掷令旗圆形（半径 165）<br>令旗驻留 6s · 友军攻速 +25% · 持续 6s · 伤害 50/50/160</div>
+        <div class="up"><span class="un">魏武·令旗驻留</span> <span class="r r-b">稀有</span>
+          <div class="ud">令旗驻留期间每秒回复城墙3点耐久，驻留时间延长2秒</div></div>
+        <div class="up"><span class="un">魏武·号令延音</span> <span class="r r-b">稀有</span>
+          <div class="ud">号令攻速增益持续9秒，增益调整为20%</div></div>
+        <div class="up"><span class="un">魏武·挟天子令</span> <span class="r r-p">史诗</span>
+          <div class="ud">令旗落点范围内的友军军营射程增加25%，持续6秒</div></div>
+        <div class="up"><span class="un">魏武·天下归心</span> <span class="r r-g">传说</span>
+          <div class="ud">令旗范围内每击杀一名敌人，曹操怒气回复速度永久增加0.5%，本局最多50%</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">夏侯惇</span><span class="role">close_ring_rescue · 拔矢破军</span></div>
+      <div class="bd">
+        <div class="base">无双形态：跃击圆（半径 150）<br>跃距 430 · 落地 0.36s · 返回 0.9s · 伤害 90/90/260 · 击退精锐 30</div>
+        <div class="up"><span class="un">独眼·怒目</span> <span class="r r-b">稀有</span>
+          <div class="ud">落地时处决血量低于50%且无斩杀免疫的步兵，可穿透无敌与减伤<br><small>实现口径：保留基础无双对普通步兵的斩杀；额外阈值处决可穿透其他无敌与减伤，仍尊重executeImmune。</small></div></div>
+        <div class="up"><span class="un">独眼·连跃</span> <span class="r r-p">史诗</span>
+          <div class="ud">落地0.3秒后追加一次半径75的跃击，造成60%伤害</div></div>
+        <div class="up"><span class="un">独眼·拔矢啖睛</span> <span class="r r-b">稀有</span>
+          <div class="ud">跃击半径扩大至195，精锐击退距离增加至45</div></div>
+        <div class="up"><span class="un">独眼·残躯血战</span> <span class="r r-g">传说</span>
+          <div class="ud">城墙每次实际受伤后，夏侯惇下一次无双伤害增加60%，半径增加30</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">张辽</span><span class="role">narrow_lane_charge · 合肥突阵</span></div>
+      <div class="bd">
+        <div class="base">无双形态：沿路径冲锋（宽 100 / 长 610）<br>前推 0.8s · 精锐眩晕 1s · 击退精锐 35 · 伤害 95/95/280</div>
+        <div class="up"><span class="un">突阵·旋风</span> <span class="r r-b">稀有</span>
+          <div class="ud">冲锋推开敌人后，在路线留下1秒减速雾，敌人移速降低40%</div></div>
+        <div class="up"><span class="un">突阵·八百破十万</span> <span class="r r-p">史诗</span>
+          <div class="ud">冲锋宽度扩大至150，同时覆盖两条路线，伤害不衰减</div></div>
+        <div class="up"><span class="un">突阵·先登陷阵</span> <span class="r r-b">稀有</span>
+          <div class="ud">冲锋精锐眩晕延长至2秒，击退距离增加至55</div></div>
+        <div class="up"><span class="un">突阵·止啼</span> <span class="r r-g">传说</span>
+          <div class="ud">命中敌人的移速在本波内永久降低20%，且无法被军旗手加速</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">许褚</span><span class="role">short_heavy_cone · 虎痴撼地</span></div>
+      <div class="bd">
+        <div class="base">无双形态：正面锥形（距离 360 / 角度 75°）<br>伤害 150/150/390 · 无击退 · 步兵斩杀</div>
+        <div class="up"><span class="un">虎痴·碾压</span> <span class="r r-b">稀有</span>
+          <div class="ud">撼地命中的重甲兵额外减速40%，持续2秒</div></div>
+        <div class="up"><span class="un">虎痴·连锁粉碎</span> <span class="r r-p">史诗</span>
+          <div class="ud">命中首领时，对其周围100范围内的其他敌人造成50%溅射伤害</div></div>
+        <div class="up"><span class="un">虎痴·裸衣血战</span> <span class="r r-b">稀有</span>
+          <div class="ud">撼地锥形角度扩大至110度，距离增加至420</div></div>
+        <div class="up"><span class="un">虎痴·虎卫之躯</span> <span class="r r-g">传说</span>
+          <div class="ud">释放无双时，为城墙抵挡接下来3秒内的全部漏怪伤害</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">司马懿</span><span class="role">delayed_prediction · 三才幽雷</span></div>
+      <div class="bd">
+        <div class="base">无双形态：延迟三圆（半径 90 / 3 个 / 最小间距 140）<br>延迟 1s · 命中减速 ×0.65 持续 3s · 伤害 110/110/340</div>
+        <div class="up"><span class="un">幽雷·诡算</span> <span class="r r-p">史诗</span>
+          <div class="ud">若两个雷圆所选敌人间距不足140，第三个圆改为瞄准最远处敌人</div></div>
+        <div class="up"><span class="un">幽雷·连环</span> <span class="r r-b">稀有</span>
+          <div class="ud">幽雷命中已被减速的敌人时，减速系数变为0.5并延长2秒</div></div>
+        <div class="up"><span class="un">幽雷·天罚</span> <span class="r r-b">稀有</span>
+          <div class="ud">雷圆半径扩大至120，落雷延迟缩短至0.6秒</div></div>
+        <div class="up"><span class="un">幽雷·鹰视狼顾</span> <span class="r r-g">传说</span>
+          <div class="ud">被幽雷命中的敌人死亡时引发半径70、伤害80的雷爆，并可连锁触发</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.2 蜀国组</h3>
+
+  <div class="hgrid">
+    <div class="hcard">
+      <div class="hd"><span class="nm">刘备</span><span class="role">gate_recovery_and_rally · 仁德援军</span></div>
+      <div class="bd">
+        <div class="base">无双形态：城门沿线涌进（长 320 / 宽 110）<br>回复城墙 8%（上限 10%）· 友军军营伤害 +20% 持续 6s · 伤害 70/70/180</div>
+        <div class="up"><span class="un">仁德·兵源</span> <span class="r r-b">稀有</span>
+          <div class="ud">每次释放无双后，援军宽度永久增加8，本局最多增加48</div></div>
+        <div class="up"><span class="un">仁德·盾墙</span> <span class="r r-p">史诗</span>
+          <div class="ud">援军推进尽头留下盾墙，阻挡敌人前进2秒</div></div>
+        <div class="up"><span class="un">仁德·携民渡江</span> <span class="r r-b">稀有</span>
+          <div class="ud">城墙回复比例提高至12%，回复比例上限提高至18%</div></div>
+        <div class="up"><span class="un">仁德·惟贤惟德</span> <span class="r r-g">传说</span>
+          <div class="ud">无双改为回复城墙已损失耐久的25%，满血时无效</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">关羽</span><span class="role">instant_directional_clear · 青龙横扫</span></div>
+      <div class="bd">
+        <div class="base">无双形态：定向扫掠矩形（宽 184 / 长 610）<br>持续 0.76s · 击退精锐 22 · 命中减速 0.65s · 伤害 90/85/310</div>
+        <div class="up"><span class="un">青龙展刃</span> <span class="r r-b">稀有</span>
+          <div class="ud">青龙横扫宽度增加24</div></div>
+        <div class="up"><span class="un">偃月破阵</span> <span class="r r-b">稀有</span>
+          <div class="ud">精锐击退距离增加16</div></div>
+        <div class="up"><span class="un">青龙·刀风</span> <span class="r r-p">史诗</span>
+          <div class="ud">连续两次无双的间隔区域内，敌人额外受到15%伤害，持续3秒</div></div>
+        <div class="up"><span class="un">青龙·单骑绝尘</span> <span class="r r-g">传说</span>
+          <div class="ud">仅关羽一人上阵时，无双伤害乘以1.8，整个蓄怒与恢复循环缩短30%<br><small>实现口径：仅单将编队可进入候选；恢复期乘0.7、怒气获取率除0.7，使完整无双循环缩短30%。</small></div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">张飞</span><span class="role">wide_short_road_push · 长坂怒吼</span></div>
+      <div class="bd">
+        <div class="base">无双形态：宽短矩形（宽 230 / 长 340）<br>精英眩晕 1s · 击退精锐 45 · 伤害 90/85/240</div>
+        <div class="up"><span class="un">长坂·怒吼延音</span> <span class="r r-b">稀有</span>
+          <div class="ud">怒吼持续1.5秒，范围增加15%</div></div>
+        <div class="up"><span class="un">长坂·断后</span> <span class="r r-b">稀有</span>
+          <div class="ud">无双后的3秒内，怒吼范围内敌人受到伤害增加10%</div></div>
+        <div class="up"><span class="un">长坂·据水断桥</span> <span class="r r-p">史诗</span>
+          <div class="ud">怒吼横向宽度扩大至520，纵向长度保持不变</div></div>
+        <div class="up"><span class="un">长坂·燕人咆哮</span> <span class="r r-g">传说</span>
+          <div class="ud">怒吼命中的精锐与首领减速60%，持续4秒，且无法被军旗手加速</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">赵云</span><span class="role">multi_pass_pierce · 龙胆三穿</span></div>
+      <div class="bd">
+        <div class="base">无双形态：三道窄穿刺（宽 85 / 长 610）<br>3 段于 0 / 0.25 / 0.5s · 每段伤害 40/45/100 · 每敌最多命中 3 次</div>
+        <div class="up"><span class="un">龙胆·加速</span> <span class="r r-b">稀有</span>
+          <div class="ud">三穿间隔由0.25秒缩短至0.15秒</div></div>
+        <div class="up"><span class="un">龙胆·连贯</span> <span class="r r-b">稀有</span>
+          <div class="ud">第二、第三穿命中范围各增加10%</div></div>
+        <div class="up"><span class="un">龙胆·七进七出</span> <span class="r r-p">史诗</span>
+          <div class="ud">穿刺段数由3段增加至5段，每段伤害不衰减</div></div>
+        <div class="up"><span class="un">龙胆·一身是胆</span> <span class="r r-g">传说</span>
+          <div class="ud">无双未击杀任何敌人时返还35%怒气，并使下次伤害增加25%，最多积蓄3层</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">诸葛亮</span><span class="role">gather_and_expose · 八阵风牢</span></div>
+      <div class="bd">
+        <div class="base">无双形态：牵引锁定圆（半径 150 / 持续 3s）<br>每 0.25s 一跳 · 后退 12/s（上限 36）· 易伤 ×1.2</div>
+        <div class="up"><span class="un">八阵·风势</span> <span class="r r-b">稀有</span>
+          <div class="ud">风牢额外施加50%减速并保留控制抗性，无双伤害降低10%<br><small>实现口径：当前风牢基础控制是牵引；本卡额外施加0.5移速系数，继续沿用控制抗性。</small></div></div>
+        <div class="up"><span class="un">八阵·攻心</span> <span class="r r-b">稀有</span>
+          <div class="ud">阵内敌人移速越低，受到伤害越高，最多额外增加25%</div></div>
+        <div class="up"><span class="un">八阵·空城计</span> <span class="r r-p">史诗</span>
+          <div class="ud">阵内敌人无法被军旗手加速，后退速度与后退距离上限翻倍</div></div>
+        <div class="up"><span class="un">八阵·出师表</span> <span class="r r-g">传说</span>
+          <div class="ud">风牢易伤倍率提高至1.5，易伤持续时间延长至5秒</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.3 吴国组</h3>
+
+  <div class="hgrid">
+    <div class="hcard">
+      <div class="hd"><span class="nm">孙权</span><span class="role">gate_protection · 江东潮壁</span></div>
+      <div class="bd">
+        <div class="base">无双形态：城门半圆波（半径 320 / 180°）<br>波持续 0.4s · 城门受伤系数 0.8 持续 6s · 伤害 90/75/210</div>
+        <div class="up"><span class="un">江东·潮势</span> <span class="r r-b">稀有</span>
+          <div class="ud">潮浪半径增加25%，推进时间由0.4秒按1.8/2.2比例缩短至约0.327秒<br><small>实现口径：正文2.2秒为旧稿；以现行waveSec=0.4按1.8/2.2比例加速，不将其改成1.8秒。</small></div></div>
+        <div class="up"><span class="un">江东·统御</span> <span class="r r-b">稀有</span>
+          <div class="ud">潮浪经过的军营在4秒内下次攻击射程增加20%</div></div>
+        <div class="up"><span class="un">江东·濡须坞</span> <span class="r r-p">史诗</span>
+          <div class="ud">城门受伤系数降低至0.55，保护持续时间延长至10秒</div></div>
+        <div class="up"><span class="un">江东·仲谋之志</span> <span class="r r-g">传说</span>
+          <div class="ud">孙权在队期间，每波首次漏怪伤害完全免疫，并获得30军粮</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">周瑜</span><span class="role">sustained_area · 赤壁火船</span></div>
+      <div class="bd">
+        <div class="base">无双形态：沿路火带（长 320 / 宽 110 / 持续 4s）<br>每 0.25s 一跳 · 每敌上限 16 跳 · 伤害 8/6/15 · 可伤新进场敌人</div>
+        <div class="up"><span class="un">连营火势</span> <span class="r r-b">稀有</span>
+          <div class="ud">赤壁火船的火带宽度增加24</div></div>
+        <div class="up"><span class="un">烈焰余势</span> <span class="r r-b">稀有</span>
+          <div class="ud">火场持续增加1秒，命中次数上限保持</div></div>
+        <div class="up"><span class="un">赤壁·烈火</span> <span class="r r-p">史诗</span>
+          <div class="ud">火带每跳伤害增加20%，基础宽度缩窄至90</div></div>
+        <div class="up"><span class="un">赤壁·火势滔天</span> <span class="r r-g">传说</span>
+          <div class="ud">火带范围内每有一个军营，火带长度与宽度增加15%，最多增加45%</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">吕蒙</span><span class="role">prepared_ambush · 白衣伏兵</span></div>
+      <div class="bd">
+        <div class="base">无双形态：路径布雷（4 雷 / 2 路 / 触发半径 45 / 爆炸半径 65）<br>持续 8s · 每敌最多命中 2 次 · 伤害 55/45/75 · 步兵斩杀</div>
+        <div class="up"><span class="un">白衣·布置</span> <span class="r r-b">稀有</span>
+          <div class="ud">伏兵触发时，使周围80范围内的敌人减速30%，持续2秒</div></div>
+        <div class="up"><span class="un">白衣·示弱</span> <span class="r r-b">稀有</span>
+          <div class="ud">每次无双的首次伏兵触发时，个人无双恢复期缩短2秒，每次施放仅生效一次<br><small>实现口径：当前地雷一次触发、没有独立冷却；减少本次无双的个人恢复期，一次施放只触发一次。</small></div></div>
+        <div class="up"><span class="un">白衣·连雷阵</span> <span class="r r-p">史诗</span>
+          <div class="ud">两路各布置4雷，共8雷，爆炸半径扩大至85</div></div>
+        <div class="up"><span class="un">白衣·士别三日</span> <span class="r r-g">传说</span>
+          <div class="ud">伏兵最多驻留24秒；未触发的地雷每4秒伤害增加30%，最多增加150%<br><small>实现口径：普通伏兵仍驻留8秒；本卡将驻留时间下限设为24秒，容纳20秒满蓄力与4秒触发窗口。</small></div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">甘宁</span><span class="role">rain_and_armor_break · 锦帆夜袭</span></div>
+      <div class="bd">
+        <div class="base">无双形态：沿路箭雨（长 300 / 宽 150 / 持续 2s）<br>每 0.25s 一跳 · 每敌上限 8 跳 · 易伤 ×1.2 持续 4s · 伤害 10/8/18</div>
+        <div class="up"><span class="un">锦帆·箭雨</span> <span class="r r-b">稀有</span>
+          <div class="ud">箭雨宽度扩大至180，易伤倍率提高至1.35</div></div>
+        <div class="up"><span class="un">锦帆·夜袭</span> <span class="r r-b">稀有</span>
+          <div class="ud">箭雨再次命中已经易伤的敌人时，使其失明1.5秒，期间无法使用攻击能力</div></div>
+        <div class="up"><span class="un">锦帆·百骑劫营</span> <span class="r r-p">史诗</span>
+          <div class="ud">箭雨同时覆盖地图全部路线，每路宽度120</div></div>
+        <div class="up"><span class="un">锦帆·铃震三军</span> <span class="r r-g">传说</span>
+          <div class="ud">箭雨易伤在本波内永久保留，最多叠加两层；基础1.2倍率叠为1.44</div></div>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <div class="hd"><span class="nm">太史慈</span><span class="role">elite_snipe · 笃烈三矢</span></div>
+      <div class="bd">
+        <div class="base">无双形态：三个不同目标狙击（射程 610）<br>优先级 首领 &gt; 精锐 &gt; 距城门最近 · 伤害 150/150/400 · 不可重复目标</div>
+        <div class="up"><span class="un">三矢·穿透</span> <span class="r r-b">稀有</span>
+          <div class="ud">本次无双任意一矢命中首领后，其余箭矢伤害增加30%</div></div>
+        <div class="up"><span class="un">三矢·速射</span> <span class="r r-b">稀有</span>
+          <div class="ud">无尽模式的逐矢间隔由0.15秒缩短至0.1秒<br><small>实现口径：仅无尽模式将三矢基准分解为0.15秒间隔；速射改为0.1秒，剧情仍保留原瞬时三目标结算。</small></div></div>
+        <div class="up"><span class="un">三矢·神亭酣战</span> <span class="r r-p">史诗</span>
+          <div class="ud">无双箭矢增加至5矢，并允许重复射击同一目标</div></div>
+        <div class="up"><span class="un">三矢·笃烈信义</span> <span class="r r-g">传说</span>
+          <div class="ud">无双无视伤害减免，且对首领伤害增加50%；不改变敌人的控制抗性</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box key">
+    <span class="t">武将专属设计的平衡原则</span>
+    <ol style="margin-bottom:0">
+      <li><strong>每名武将都有一张「不可替代」的传说卡</strong>。曹操的永久怒气加速、刘备的残血回复、诸葛亮的 ×1.5 易伤、太史慈的无视减伤——它们服务于不同的团队需求，不同构筑优劣仍需真人样本验证。</li>
+      <li><strong>传说卡的收益都带条件</strong>。刘备需要残血、吕蒙需要憋雷、关羽需要单将上阵。有条件才有决策，无条件就是纯数值碾压。</li>
+      <li><strong>第 1、2 张卡（稀有）数值强度刻意接近</strong>。这让玩家在"先拿哪张"上有真实取舍，而不是无脑等传说。</li>
+      <li><strong>输出与容错需取舍</strong>；部分卡有条件双收益，不能据设计原则推断所有卡绝对互斥。</li>
+    </ol>
+  </div>
+</section>
+<!-- ══════════ 7. 羁绊与合击 ══════════ -->
+<section id="syn">
+  <h2><span class="num">07</span>羁绊与合击（8 张）</h2>
+
+  <p>羁绊奖励<strong>编队决策</strong>——这是目前游戏里唯一"局外思考、局内兑现"的系统，也是把 15 名武将真正变成"角色"而不是"技能包"的关键。</p>
+
+  <h3>7.1 四大羁绊</h3>
+  <div class="tw"><table>
+    <thead><tr><th>羁绊</th><th>成员要求</th><th>基础效果</th><th>额外加成（有羁绊卡时）</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>桃园结义</strong></td>
+        <td>刘备 + 关羽 + 张飞<br>三人全上阵</td>
+        <td>三人无双冷却 <strong>−15%</strong></td>
+        <td><strong>义结金兰</strong>：三人中任意一人释放无双时，另外两人获得 15 点怒气</td>
+      </tr>
+      <tr>
+        <td><strong>魏武雄风</strong></td>
+        <td>张辽 / 许褚 / 夏侯惇 / 司马懿 / 曹操<br>任选 3 人</td>
+        <td>对精锐与首领伤害 <strong>+15%</strong></td>
+        <td><strong>虎豹骑锋</strong>：三名魏武雄风的无双均可斩杀 60% 血以下的步兵</td>
+      </tr>
+      <tr>
+        <td><strong>江东虎臣</strong></td>
+        <td>孙权 / 周瑜 / 吕蒙 / 甘宁 / 太史慈<br>五名吴将任选 2 人</td>
+        <td>火与箭类无双范围 <strong>+12%</strong></td>
+        <td><strong>江东之力</strong>：另须周瑜与甘宁同时在队；火带内敌人受甘宁箭雨伤害 +30%</td>
+      </tr>
+      <tr>
+        <td><strong>卧龙冢虎</strong></td>
+        <td>诸葛亮 + 司马懿<br>两人全上阵</td>
+        <td>减速中的敌人额外受伤 <strong>+20%</strong></td>
+        <td><strong>谋定天下</strong>：诸葛亮风牢与司马懿幽雷的易伤效果可叠加（×1.2 ×1.2 = ×1.44）</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">羁绊的经济性</span>
+    <p>队伍上限为 3 人（<code>party.maxHeroes: 3</code>）。因此「桃园结义」需固定 3 人占满编队；「魏武雄风」为魏 5 选 3。「卧龙冢虎」固定占 2 席，「江东虎臣」为吴 5 选 2，可保留一席搭配。这形成了清晰的编队哲学：<strong>要极致羁绊，还是保留武将多样性？</strong></p>
+  </div>
+
+  <h3>7.2 合击机制</h3>
+  <p>触发条件：A 武将无双命中 → <strong>2 秒内</strong> B 武将无双命中同一区域 → 触发合击。<strong>每局最多触发 3 次</strong>（避免滥用）。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>发起</th><th>响应</th><th>合击名</th><th>效果</th><th>数值换算</th></tr></thead>
+    <tbody>
+      <tr><td>诸葛亮</td><td>周瑜</td><td><strong>借东风</strong></td><td>火带长度 ×1.5，宽度不变，持续 2 秒</td><td>火带长 320 → 480，覆盖提升 50%</td></tr>
+      <tr><td>刘备</td><td>关羽</td><td><strong>义薄云天</strong></td><td>援军与刀波双重扫过</td><td>总伤害 ×1.4</td></tr>
+      <tr><td>张飞</td><td>赵云</td><td><strong>长坂坡守卫</strong></td><td>怒吼与枪刺同时生效</td><td>击退 ×1.8，赵云五穿全中</td></tr>
+      <tr><td>司马懿</td><td>甘宁</td><td><strong>雷海箭雨</strong></td><td>三雷圆变十字形</td><td>覆盖面积 +40%</td></tr>
+      <tr><td>许褚</td><td>曹操</td><td><strong>虎卫号令</strong></td><td>锥形与令旗同时触发</td><td>周围军营射程 +50%，持续 2 秒</td></tr>
+      <tr><td>太史慈</td><td>张辽</td><td><strong>神箭突骑</strong></td><td>三矢标记目标，冲锋必定命中</td><td>冲锋伤害 ×1.6，且必定击中首领</td></tr>
+      <tr><td>孙权</td><td>周瑜</td><td><strong>火烧赤壁</strong></td><td>潮壁化作火墙推进</td><td>潮波伤害 ×2，附带 4 秒燃烧</td></tr>
+      <tr><td>夏侯惇</td><td>许褚</td><td><strong>独眼虎痴</strong></td><td>跃击与锥形重叠打击</td><td>重叠区内伤害 ×1.5</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box ok">
+    <span class="t">为什么合击值得做</span>
+    <p>它把"连放两个大招"从<strong>操作习惯</strong>变成了<strong>有回报的操作技巧</strong>。玩家会主动规划怒气节奏、瞄准同一片区域，把原本被动的"怒气满了就放"变成有意识的配合。同时它天然带演出价值——两次特效叠加、屏幕震动、双重音效，是极好的分享素材。</p>
+  </div>
+
+  <h3>7.3 羁绊卡池（8 张）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>卡名</th><th>稀有度</th><th>条件</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td><strong>义结金兰</strong></td><td><span class="r r-p">史诗</span></td><td>桃园结义</td><td>桃园三人中任一人释放无双时，另外两人各获得15点怒气<br><small>只奖励该羁绊的另外两名成员；怒气遵守各自当前怒气上限。</small></td></tr>
+      <tr><td><strong>虎豹骑锋</strong></td><td><span class="r r-p">史诗</span></td><td>魏武雄风</td><td>魏武雄风成员的无双可以斩杀血量低于60%的步兵<br><small>仅针对步兵且保留executeImmune规则，不削弱原有无双已经具备的步兵斩杀；不更改其他兵种。</small></td></tr>
+      <tr><td><strong>江东之力</strong></td><td><span class="r r-p">史诗</span></td><td>江东虎臣</td><td>周瑜火带内的敌人受到甘宁箭雨伤害增加30%<br><small>除江东虎臣外还要求周瑜与甘宁同时在队，避免没有对应技能时出现无效牌。只对真实处于周瑜火带内的甘宁箭雨命中生效。</small></td></tr>
+      <tr><td><strong>谋定天下</strong></td><td><span class="r r-p">史诗</span></td><td>卧龙冢虎</td><td>幽雷命中附加持续3秒的1.2倍易伤，并可与风牢易伤相乘<br><small>现行司马懿本体没有易伤，本卡补上雷击1.2倍、3秒来源。风雷两来源为1.2乘1.2等于1.44；出师表的风1.5时为1.8。卧龙冢虎本身对减速目标的1.2倍仍另行乘算。</small></td></tr>
+      <tr><td><strong>三人同心</strong></td><td><span class="r r-b">稀有</span></td><td>任意 3 人队</td><td>三人满编时，全军伤害增加12%<br><small>本卡为稀有强化，12%并入现有全军伤害加法池；属于己方普通伤害成长，不放大破甲锥独立百分比附伤。</small></td></tr>
+      <tr><td><strong>合击精通</strong></td><td><span class="r r-b">稀有</span></td><td>任意</td><td>合击窗口由2秒延长至4秒，每局合击上限由3次提高至5次<br><small>依正文可在任意编队进入候选；窗口使用战斗时间，每局总上限由所有八组合击共享。</small></td></tr>
+      <tr><td><strong>同袍之谊</strong></td><td><span class="r r-b">稀有</span></td><td>任意 2 人同势力</td><td>至少两名同势力武将在队时，该势力武将怒气获取速度增加10%<br><small>只增益属于已满足两人成组势力的武将，队伍中单独来自其他势力的成员不获得该增益。</small></td></tr>
+      <tr><td><strong>四方来朝</strong></td><td><span class="r r-g">传说</span></td><td>三人分属不同势力</td><td>三人分属魏蜀吴时，每种势力使全军伤害增加15%，共45%<br><small>本卡为传说强化，按势力数形成独立乘区1加3乘0.15等于1.45，不并入普通伤害加法池。可与诸葛亮、司马懿及一名吴将组成的卧龙冢虎并存；不放大破甲锥独立百分比附伤。</small></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box key">
+    <span class="t">「四方来朝」的设计意图</span>
+    <p>三名武将分属不同势力时，本卡形成独立 ×1.45 乘区。它与桃园/魏/吴同势力编队条件不同，但<strong>可与诸葛亮＋司马懿＋吴将组成的卧龙冢虎并存</strong>；以具体成员资格为准，不作全羁绊互斥。</p>
+  </div>
+</section>
+
+<!-- ══════════ 8. 无尽模式 ══════════ -->
+<section id="endless">
+  <h2><span class="num">08</span>无尽模式设计</h2>
+
+  <h3>8.1 模式定位</h3>
+  <div class="stats">
+    <div class="stat"><div class="v">80</div><div class="l">设计目标波数（软上限）</div></div>
+    <div class="stat"><div class="v">~45min</div><div class="l">一局时长</div></div>
+    <div class="stat"><div class="v">5</div><div class="l">军营最高等级</div></div>
+    <div class="stat"><div class="v">1</div><div class="l">每波选卡次数</div></div>
+    <div class="stat"><div class="v">100</div><div class="l">初始城墙耐久</div></div>
+  </div>
+
+  <div class="box info">
+    <span class="t">为什么是 80 波</span>
+    <p>这是从数值模型反推出来的。按 2.1 节的双桶成长模型与第 09 节的敌人曲线，<strong>压力比（需求DPS ÷ 玩家DPS）在第 80 波首次突破 1.0</strong>——也就是玩家输出开始跟不上敌人血量增长。这是一个自然形成的"墙体"，并非通关后强制结束的硬上限。</p>
+    <p>选择让墙体出现在 80 波而非 40 波，是因为 40 波只能支撑约 22 分钟的局，对"无尽"来说太短；而 120 波会出现明显的数值疲劳（后期新机制卡逐渐减少、属性卡仍可重复）。<strong>80 波 ≈ 45 分钟</strong>恰好是一个完整的长局体验，且留有"顶尖玩家能突破到 90 波"的空间。</p>
+  </div>
+
+  <h3>8.2 结构流程</h3>
+  <div class="flow">
+    <div class="st"><div class="n">PHASE 1</div><div class="h">波 1–10</div><div class="d">建立期<br>建营 + 凑基础卡<br>压力比 0.28–0.60</div></div>
+    <div class="st"><div class="n">PHASE 2</div><div class="h">波 11–25</div><div class="d">成型期<br>军营升到 L4–L5<br>压力比 0.47–0.56</div></div>
+    <div class="st"><div class="n">PHASE 3</div><div class="h">波 26–50</div><div class="d">构筑期<br>专精卡 + 乘区卡<br>压力比 0.56–0.91</div></div>
+    <div class="st"><div class="n">PHASE 4</div><div class="h">波 51–80</div><div class="d">极限期<br>纯属性卡堆叠<br>压力比 0.74–1.08</div></div>
+  </div>
+
+  <h3>8.3 每波规则</h3>
+  <div class="tw"><table>
+    <thead><tr><th>要素</th><th>设计</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>选卡时机</strong></td><td>每波结束必选 1 次</td><td>沿用现有 <code>choiceAfterWaves</code> 机制，改为<strong>每波都触发</strong></td></tr>
+      <tr><td><strong>波间间隔</strong></td><td>1.8 秒（现有 <code>betweenWavesSec</code>）</td><td>不额外延长，保持节奏紧凑</td></tr>
+      <tr><td><strong>选卡暂停</strong></td><td>战斗时钟冻结</td><td>现有 <code>allowPause: true</code> 已支持</td></tr>
+      <tr><td><strong>首领波</strong></td><td>每 10 波（10/20/30…）</td><td>波 10/20 各 1 只，波 30/40 各 2 只，波 50+ 各 3 只</td></tr>
+      <tr><td><strong>首领类型</strong></td><td>从 5 种模板轮换</td><td>破门猛将 / 疾行督骑 / 号令统领 / 坚壁守将 / 攻城统帅</td></tr>
+      <tr><td><strong>兵种构成</strong></td><td>步兵 + 骑兵 + 重甲 + 弓手 + 军旗 + 攻城车</td><td>随波次逐步加入，波 25 后六兵种齐全</td></tr>
+      <tr><td><strong>军粮</strong></td><td>击杀获得，波末可选额外</td><td>普通击杀只给局内军粮；局外资源仅由永久里程碑/突破档发放</td></tr>
+      <tr><td><strong>失败</strong></td><td>城墙耐久归零</td><td>沿用现有 <code>lossCondition: gateHp &lt;= 0</code></td></tr>
+      <tr><td><strong>结束结算</strong></td><td>记录波数 + 发放一次性奖励</td><td>见 11.2 节奖励表</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>8.4 无尽模式专属规则</h3>
+
+  <h4>规则 A · 军营可升至 5 级</h4>
+  <p>这是无尽模式与剧情模式的<strong>核心差异</strong>。剧情模式军营仍封顶 3 级（现有平衡不动），无尽模式开放 L4/L5。详细数值见第 10 节。</p>
+
+  <h4>规则 B · 纯属性卡永不枯竭</h4>
+  <p>26 张纯属性卡可无限重复获取，效果按 0.85 递减。这保证了从第 1 波到第 80 波<strong>每次选择都有意义</strong>。</p>
+
+  <h4>规则 C · 敌兵强度按波数几何增长</h4>
+  <div class="f">敌人最终HP = 基础HP × <span style="color:#7cc0ff">波次血量倍率</span> × 队伍人数倍率(精锐/首领)
+敌人最终速度 = 基础速度 × 波次速度倍率
+波次血量倍率 = 分段几何增长（见 9.1 节）
+
+<span class="cm">注意：保留现有 party.enemyHpMultipliersByPartySize = {1:1, 2:1.5, 3:1.9}</span>
+<span class="cm">这意味着 3 人队的精锐/首领血量是 1 人队的 1.9 倍 —— 3 人队必须靠</span>
+<span class="cm">羁绊、合击、与「军心所向」这类多人加成卡来抵平这个惩罚</span></div>
+
+  <h4>规则 D · 波次速度倍率设上限</h4>
+  <p>移速最高 <strong>×1.25</strong>（波 50 达到）。敌兵速度从 11（首领）到 36（骑兵），若无限提升会让玩家完全无法反应。上限设在 1.25 是"明显更快但可反应"的边界。</p>
+
+  <h4>规则 E · 无局外资源产出</h4>
+  <div class="box warn">
+    <span class="t">这一条是刻意的</span>
+    <p>无尽模式<strong>不产出</strong>经验书、铜钱、精铁等局外资源，只有一次性波数里程碑奖励。原因：无尽模式的成长曲线极陡（80 波玩家输出提升约 45 倍），若把它接入局外经济，会瞬间摧毁剧情模式的养成节奏。<strong>它的定位是"纯技巧挑战 + 长局体验"，不是刷资源的地方。</strong></p>
+  </div>
+
+  <h3>8.5 难度锚点事件</h3>
+  <p>纯数值增长会让 80 波显得冗长。以下事件在第 9 节的数值曲线之上叠加，用于制造记忆点：</p>
+  <div class="tw"><table>
+    <thead><tr><th>波次</th><th>事件</th><th>效果</th><th>设计意图</th></tr></thead>
+    <tbody>
+      <tr><td class="hi">10</td><td>首位首领</td><td>1 只攻城统帅（模型基准 <strong>1,200 HP</strong>）</td><td>第一次真正的压力测试，检验玩家是否投资了城墙</td></tr>
+      <tr><td class="hi">20</td><td>疾行督骑</td><td>按数值脚本为 <strong>1 只</strong>疾行督骑（模型基准 <strong>1,918 HP</strong>）</td><td>引入"移动速度差"的战术问题</td></tr>
+      <tr><td class="hi">25</td><td>军旗潮</td><td>军旗手占比提升至 6%，步兵移速 ×1.15</td><td>逼迫玩家处理"加速光环"而非只堆伤害</td></tr>
+      <tr><td class="hi">30</td><td>攻城车阵</td><td>8 台攻城车 + 2 首领（各 <strong>3,065 HP</strong>）</td><td>攻城车控制只生效 35%（削减 65%），检验玩家的伤害结构</td></tr>
+      <tr><td class="hi">35</td><td>扰阵弓手群</td><td>弓手占比提升至 10%</td><td>弓手会降低军营攻速，逼迫玩家拿「整军固守」或投资射程</td></tr>
+      <tr><td class="hi">40</td><td>双坚壁守将</td><td>2 只坚壁守将（各 <strong>4,898 HP</strong>），整波受伤系数 ×0.75（与技能取强者，不二次叠乘）</td><td>减伤首领是"伤害检验墙"，纯靠数量无法解决</td></tr>
+      <tr><td class="hi">45</td><td>兵海</td><td>238 名集中进入队列，最多 160 存活在场、余 78 等待；步兵模型 <strong>253 HP</strong></td><td>检验投石营「天崩地裂」与范围卡的强度</td></tr>
+      <tr><td class="hi">50</td><td>三首领</td><td>号令统领 + 坚壁守将 + 攻城统帅（各 <strong>7,828 HP</strong>）</td><td>号令统领会召唤 6 名步兵，需要同时处理首领与增援</td></tr>
+      <tr><td class="hi">60</td><td>全兵种混编</td><td>六兵种全开，252 名敌兵，3 首领（各 <strong>12,510 HP</strong>）</td><td>真正的中期考验，此时玩家应已有完整构筑</td></tr>
+      <tr><td class="hi">70</td><td>精锐潮</td><td>精锐比例保留 <strong>0.38792</strong>（约 39%），步兵模型 <strong>619 HP</strong></td><td>精锐抗性高，检验弩营「破甲锥」的百分比伤害</td></tr>
+      <tr><td class="hi">80</td><td>最终波</td><td>3 首领（各 <strong>31,950 HP</strong>）+ 272 名敌兵</td><td>设计目标终点。压力比 1.08，首次超过玩家输出能力</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<!-- ══════════ 9. 难度数值表 ══════════ -->
+<section id="curve">
+  <h2><span class="num">09</span>无尽难度数值表</h2>
+
+  <div class="box key">
+    <span class="t">这些数字是怎么来的</span>
+    <p>本节的曲线不是拍脑袋定的，而是<strong>反解</strong>出来的：先设定一条目标压力比曲线（玩家应该感受到的难度节奏），再根据玩家成长模型反推出敌人血量应该涨多快。曲线可用 <code>node docs/data/endless-curve.mjs</code> 复现。HP 表按参考模型展示，普通兵展示 round、引擎实际 ceil，且精锐/首领还受队伍人数与模板/变体影响；锚点编成与技能使实际压力不等于表中平均值。</p>
+  </div>
+
+  <h3>9.1 敌人血量倍率分段</h3>
+  <p>血量采用<strong>分段几何增长</strong>。前期涨得快（建立成长感），后续增幅逐段放缓；总倍率仍持续累积（制造后期压力）。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>波次段</th><th>每波增长率</th><th>段首倍率</th><th>段末倍率</th><th>设计意图</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1 – 10</strong></td><td class="n hi">+7.0%</td><td class="n">1.00</td><td class="n">1.84</td><td>快速建立"变强"的体感，让玩家感受到卡牌价值</td></tr>
+      <tr><td><strong>11 – 20</strong></td><td class="n hi">+5.2%</td><td class="n">1.93</td><td class="n">3.05</td><td>放缓，给军营升级留出时间窗口</td></tr>
+      <tr><td><strong>21 – 30</strong></td><td class="n hi">+4.8%</td><td class="n">3.20</td><td class="n">4.88</td><td>构筑成型期，压力温和</td></tr>
+      <tr><td><strong>31 – 45</strong></td><td class="n hi">+4.2%</td><td class="n">5.08</td><td class="n">9.04</td><td>开始需要乘区卡才能跟上</td></tr>
+      <tr><td><strong>46 – 60</strong></td><td class="n hi">+3.8%</td><td class="n">9.39</td><td class="n">15.82</td><td>纯数值增长，边际收益全靠卡池质量</td></tr>
+      <tr><td><strong>61 – 80</strong></td><td class="n hi">+3.4%</td><td class="n">16.36</td><td class="n">30.88</td><td>墙体段。玩家成长开始跟不上</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="f">血量倍率递推：<span style="color:#7cc0ff">hpMult(1) = 1</span>
+<span style="color:#7cc0ff">hpMult(w) = hpMult(w-1) × (1 + step(w))</span>
+
+敌人最终 HP = <span style="color:#ffd24a">ceil( 基础HP × hpMult(w) × 队伍人数倍率 × 变体倍率 )</span>
+
+<span class="cm">队伍人数倍率仅作用于 elite 与 boss（现有规则）：1人 ×1 / 2人 ×1.5 / 3人 ×1.9</span>
+<span class="cm">普通兵（步兵/骑兵）不随人数放大，这是现有设计中很好的一条保护</span></div>
+
+  <h3>9.2 敌人数量与精锐占比</h3>
+  <div class="tw"><table>
+    <thead><tr><th>波次段</th><th>敌兵数量</th><th>精锐占比</th><th>波时长</th><th>每 10 波首领数</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1 – 10</strong></td><td class="n">40 → 96</td><td class="n">0% → 6%</td><td class="n">20.0 → 22.7s</td><td class="n">1</td></tr>
+      <tr><td><strong>11 – 25</strong></td><td class="n">96 → 170</td><td class="n">6% → 14%</td><td class="n">23.0 → 27.2s</td><td class="n">1</td></tr>
+      <tr><td><strong>26 – 45</strong></td><td class="n">170 → 238</td><td class="n">15% → 25%</td><td class="n">27.5 → 33.2s</td><td class="n">2</td></tr>
+      <tr><td><strong>46 – 80</strong></td><td class="n">242 → 272（上限）</td><td class="n">28% → 42%</td><td class="n">34.7 → 40.0s（上限）</td><td class="n">3</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">两个上限为什么必须存在</span>
+    <p><strong>数量上限 272</strong>：现有引擎已有 <code>maximumAliveEnemies: 160</code> 的硬限制，且溢出时敌人会排队等待。若波 45 后数量继续线性增长到 400+，实际表现是"屏幕外排队"，玩家感受不到难度提升，只会看到卡顿。因此数量在波 45 后基本停涨，难度<strong>改由血量和精锐占比承担</strong>。</p>
+    <p><strong>时长上限 40 秒</strong>：这是为了让后期波次不至于变成"看 60 秒敌人慢慢走"。40 秒配合 <code>battleSpeed</code> 的 2 倍速选项，实际体验约 20 秒，节奏依然紧凑。</p>
+  </div>
+
+  <h3>9.3 完整数值表（波 1 – 80）</h3>
+  <div class="tw"><table>
+    <thead><tr>
+      <th>波</th><th>敌兵数</th><th>精锐</th><th>时长</th><th>首领</th>
+      <th>血量倍率</th><th>步兵HP</th><th>精锐HP</th><th>首领HP</th>
+      <th>该波总HP</th><th>需求DPS</th><th>压力比</th><th>体感</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="hi">1</td><td class="n">40</td><td class="n">0%</td><td class="n">20.0</td><td class="n">—</td><td class="n">1.00</td><td class="n">28</td><td class="n">55</td><td class="n">—</td><td class="n">1,120</td><td class="n">56</td><td class="n good">0.26</td><td class="good">轻松</td></tr>
+      <tr><td class="hi">5</td><td class="n">65</td><td class="n">0%</td><td class="n">21.2</td><td class="n">—</td><td class="n">1.31</td><td class="n">37</td><td class="n">72</td><td class="n">—</td><td class="n">2,405</td><td class="n">113</td><td class="n good">0.35</td><td class="good">轻松</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">10</td><td class="n">96</td><td class="n">6%</td><td class="n">22.7</td><td class="n hi">1</td><td class="n">1.84</td><td class="n">51</td><td class="n">101</td><td class="n">1,200</td><td class="n">6,360</td><td class="n">280</td><td class="n good">0.56</td><td class="good">轻松</td></tr>
+      <tr><td class="hi">15</td><td class="n">117</td><td class="n">9%</td><td class="n">24.2</td><td class="n">—</td><td class="n">2.37</td><td class="n">66</td><td class="n">129</td><td class="n">—</td><td class="n">8,358</td><td class="n">345</td><td class="n good">0.47</td><td class="good">轻松</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">20</td><td class="n">144</td><td class="n">11%</td><td class="n">25.7</td><td class="n hi">1</td><td class="n">3.05</td><td class="n">85</td><td class="n">167</td><td class="n">1,918</td><td class="n">15,483</td><td class="n">602</td><td class="n good">0.56</td><td class="good">轻松</td></tr>
+      <tr><td class="hi">25</td><td class="n">170</td><td class="n">14%</td><td class="n">27.2</td><td class="n">—</td><td class="n">3.86</td><td class="n">108</td><td class="n">211</td><td class="n">—</td><td class="n">20,864</td><td class="n">767</td><td class="n good">0.54</td><td class="good">轻松</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">30</td><td class="n">184</td><td class="n">17%</td><td class="n">28.7</td><td class="n hi">2</td><td class="n">4.88</td><td class="n">137</td><td class="n">267</td><td class="n">3,065</td><td class="n">35,497</td><td class="n">1,237</td><td class="n">0.70</td><td>正常</td></tr>
+      <tr><td class="hi">35</td><td class="n">202</td><td class="n">20%</td><td class="n">30.2</td><td class="n">—</td><td class="n">5.99</td><td class="n">168</td><td class="n">328</td><td class="n">—</td><td class="n">40,443</td><td class="n">1,339</td><td class="n">0.61</td><td>正常</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">40</td><td class="n">220</td><td class="n">23%</td><td class="n">31.7</td><td class="n hi">2</td><td class="n">7.36</td><td class="n">206</td><td class="n">402</td><td class="n">4,898</td><td class="n">64,946</td><td class="n">2,049</td><td class="n">0.77</td><td>正常</td></tr>
+      <tr><td class="hi">45</td><td class="n">238</td><td class="n">25%</td><td class="n">33.2</td><td class="n">—</td><td class="n">9.04</td><td class="n">253</td><td class="n">494</td><td class="n">—</td><td class="n">74,818</td><td class="n">2,254</td><td class="n">0.71</td><td>正常</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">50</td><td class="n">242</td><td class="n">28%</td><td class="n">34.7</td><td class="n hi">3</td><td class="n">10.89</td><td class="n">305</td><td class="n">596</td><td class="n">7,828</td><td class="n">117,105</td><td class="n">3,375</td><td class="n" style="color:#ff9f43;font-weight:700">0.90</td><td style="color:#ff9f43;font-weight:700">吃紧</td></tr>
+      <tr><td class="hi">55</td><td class="n">247</td><td class="n">31%</td><td class="n">36.2</td><td class="n">—</td><td class="n">13.13</td><td class="n">368</td><td class="n">718</td><td class="n">—</td><td class="n">117,520</td><td class="n">3,246</td><td class="n">0.73</td><td>正常</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">60</td><td class="n">252</td><td class="n">33%</td><td class="n">37.7</td><td class="n hi">3</td><td class="n">15.82</td><td class="n">443</td><td class="n">865</td><td class="n">12,510</td><td class="n">184,751</td><td class="n">4,901</td><td class="n" style="color:#ff9f43;font-weight:700">0.94</td><td style="color:#ff9f43;font-weight:700">吃紧</td></tr>
+      <tr><td class="hi">65</td><td class="n">257</td><td class="n">36%</td><td class="n">39.2</td><td class="n">—</td><td class="n">18.70</td><td class="n">524</td><td class="n">1022</td><td class="n">—</td><td class="n">180,906</td><td class="n">4,615</td><td class="n">0.75</td><td>正常</td></tr>
+      <tr style="background:rgba(196,30,58,.11)"><td class="hi">70</td><td class="n">262</td><td class="n">39%</td><td class="n">40.0</td><td class="n hi">3</td><td class="n">22.10</td><td class="n">619</td><td class="n">1208</td><td class="n">19,992</td><td class="n">282,017</td><td class="n">7,050</td><td class="n" style="color:#ff9f43;font-weight:700">0.98</td><td style="color:#ff9f43;font-weight:700">吃紧</td></tr>
+      <tr><td class="hi">75</td><td class="n">267</td><td class="n">41%</td><td class="n">40.0</td><td class="n">—</td><td class="n">26.12</td><td class="n">731</td><td class="n">1428</td><td class="n">—</td><td class="n">272,328</td><td class="n">6,808</td><td class="n">0.81</td><td>正常</td></tr>
+      <tr style="background:rgba(224,82,82,.16)"><td class="hi">80</td><td class="n">272</td><td class="n">42%</td><td class="n">40.0</td><td class="n hi">3</td><td class="n">30.88</td><td class="n">865</td><td class="n">1688</td><td class="n danger">31,950</td><td class="n danger">425,150</td><td class="n danger">10,629</td><td class="n danger">1.08</td><td class="danger">极限</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box warn">
+    <span class="t">注意首领波的"尖峰"结构</span>
+    <p>首领波会形成模型压力尖峰（具体还取决于相邻波编成）（例如波 30 的 35,497 总血量 vs 波 35 的 40,443，但波 30 需要 DPS 1,237 vs 波 35 的 1,339 —— 看起来接近，但波 30 的敌人数量更少、时长更短，实际体验是"一口气打完首领"）。这是刻意设计的<strong>节奏起伏</strong>：非首领波是持续的兵海压力，首领波是短促的爆发检验。玩家会清楚记得每一个首领波的紧张感。</p>
+  </div>
+
+  <h3>9.4 压力比曲线可视化</h3>
+  <div class="f">压力比 = 需求DPS ÷ 玩家DPS
+<span class="cm">刻度：每格 = 0.05    ┊0.60 = 轻松/正常分界      ┊1.00 = 墙体（崩盘线）</span>
+
+波  1  <span style="color:#4caf7d">0.26</span>  <span style="color:#4caf7d">█████</span>
+波 10  <span style="color:#4caf7d">0.56</span>  <span style="color:#4caf7d">███████████</span>
+波 20  <span style="color:#4caf7d">0.56</span>  <span style="color:#4caf7d">███████████</span>
+波 30  <span style="color:#e8cf7a">0.70</span>  <span style="color:#e8cf7a">██████████████</span>
+波 40  <span style="color:#e8cf7a">0.77</span>  <span style="color:#e8cf7a">███████████████</span>
+波 50  <span style="color:#ff9f43">0.90</span>  <span style="color:#ff9f43">██████████████████</span>
+波 60  <span style="color:#ff9f43">0.94</span>  <span style="color:#ff9f43">███████████████████</span>
+波 70  <span style="color:#ff9f43">0.98</span>  <span style="color:#ff9f43">████████████████████</span>
+波 80  <span style="color:#e05252">1.08</span>  <span style="color:#e05252">██████████████████████</span>  ← 突破墙体
+      └────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼──
+         0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.10
+
+<span class="cm">结论：参考曲线整体增长并有首领尖峰，波 30–70 所列采样约 0.61–0.98，</span>
+<span class="cm">      属于「策略考验」区间（首领处理、伤害结构）而非纯数值碾压。</span>
+<span class="cm">      第 80 波首次越过 1.00 —— 这就是设计墙体。</span>
+<span class="cm">对比：无乘区构筑的墙体变化需按实际卡牌选择另行模拟，当前不作为已验收波次。</span></div>
+
+  <div class="box ok">
+    <span class="t">曲线设计的三个检查点</span>
+    <ol style="margin-bottom:0">
+      <li><strong>前 15 波除首领波 10（.56）外，压力比 &lt; 0.5</strong>：新手有充足的试错空间，可以放心尝试不同军营组合。</li>
+      <li><strong>波 50–70 是"高原"而非"悬崖"</strong>：所列采样压力比在 0.73–0.98 之间波动，说明这几波是<strong>策略考验</strong>（首领处理、伤害结构）而非纯数值碾压。玩家会输在决策上，而不是输在数字上。</li>
+      <li><strong>墙体出现在 80 波而非更早</strong>：这保证了玩家能完整体验三个构筑阶段，不会因为数值失衡而"莫名其妙地卡在 45 波"。</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ══════════ 10. 军营 L4/L5 ══════════ -->
+<section id="camp5">
+  <h2><span class="num">10</span>军营 4 / 5 级数值</h2>
+
+  <p>无尽模式开放 L4/L5。设计原则：<strong>L4 是"量变"（继续线性提升），L5 是"质变"（数值跳跃 + 解锁质变效果）</strong>。这样玩家在升 L5 时能感受到明显的战力跃升。</p>
+
+  <h3>10.1 完整等级表</h3>
+  <div class="tw"><table>
+    <thead><tr>
+      <th>军营</th><th>属性</th><th>L1</th><th>L2</th><th>L3（现有）</th><th>L4（新增）</th><th>L5（新增）</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td rowspan="4"><strong>弓营</strong><br><span class="tag">sustained</span></td>
+        <td>伤害</td><td class="n">12</td><td class="n">18</td><td class="n hi">26</td><td class="n hi">35</td><td class="n hi">47</td>
+      </tr>
+      <tr><td>攻击间隔</td><td class="n">0.90</td><td class="n">0.81</td><td class="n hi">0.72</td><td class="n hi">0.68</td><td class="n hi">0.64</td></tr>
+      <tr><td>射程</td><td class="n">205</td><td class="n">214</td><td class="n hi">223</td><td class="n hi">232</td><td class="n hi">242</td></tr>
+      <tr><td><strong>单营 DPS</strong></td><td class="n">13.3</td><td class="n">22.2</td><td class="n hi">36.1</td><td class="n hi">51.5</td><td class="n hi">73.4</td></tr>
+
+      <tr style="border-top:2px solid var(--red)">
+        <td rowspan="4"><strong>弩营</strong><br><span class="tag">elite_precision</span></td>
+        <td>伤害</td><td class="n">20</td><td class="n">30</td><td class="n hi">44</td><td class="n hi">59</td><td class="n hi">80</td>
+      </tr>
+      <tr><td>攻击间隔</td><td class="n">1.30</td><td class="n">1.17</td><td class="n hi">1.04</td><td class="n hi">0.98</td><td class="n hi">0.92</td></tr>
+      <tr><td>射程</td><td class="n">205</td><td class="n">214</td><td class="n hi">223</td><td class="n hi">232</td><td class="n hi">242</td></tr>
+      <tr><td><strong>单营 DPS</strong></td><td class="n">15.4</td><td class="n">25.6</td><td class="n hi">42.3</td><td class="n hi">60.2</td><td class="n hi">87.0</td></tr>
+
+      <tr style="border-top:2px solid var(--red)">
+        <td rowspan="4"><strong>投石营</strong><br><span class="tag">density</span></td>
+        <td>伤害</td><td class="n">14</td><td class="n">18</td><td class="n hi">23</td><td class="n hi">31</td><td class="n hi">41</td>
+      </tr>
+      <tr><td>攻击间隔</td><td class="n">3.00</td><td class="n">2.85</td><td class="n hi">2.70</td><td class="n hi">2.55</td><td class="n hi">2.40</td></tr>
+      <tr><td>爆炸半径</td><td class="n">48</td><td class="n">48</td><td class="n hi">48</td><td class="n hi">54</td><td class="n hi">60</td></tr>
+      <tr><td><strong>最多命中</strong></td><td class="n">6</td><td class="n">6</td><td class="n hi">6</td><td class="n hi">6</td><td class="n hi">6</td></tr>
+
+      <tr style="border-top:2px solid var(--red)">
+        <td rowspan="4"><strong>盾营</strong><br><span class="tag">gather</span></td>
+        <td>伤害</td><td class="n">4</td><td class="n">5</td><td class="n hi">6</td><td class="n hi">7</td><td class="n hi">9</td>
+      </tr>
+      <tr><td>攻击间隔</td><td class="n">1.80</td><td class="n">1.70</td><td class="n hi">1.60</td><td class="n hi">1.50</td><td class="n hi">1.44</td></tr>
+      <tr><td>减速系数</td><td class="n">0.46</td><td class="n">0.42</td><td class="n hi">0.38</td><td class="n hi">0.35</td><td class="n hi">0.32</td></tr>
+      <tr><td><strong>范围</strong></td><td class="n">145</td><td class="n">154</td><td class="n hi">163</td><td class="n hi">172</td><td class="n hi">182</td></tr>
+
+      <tr style="border-top:2px solid var(--red)">
+        <td rowspan="3"><strong>火油营</strong><br><span class="tag">area_dot</span></td>
+        <td>每跳伤害</td><td class="n">3</td><td class="n">4</td><td class="n hi">5</td><td class="n hi">7</td><td class="n hi">9</td>
+      </tr>
+      <tr><td>火场持续</td><td class="n">3.0</td><td class="n">3.0</td><td class="n hi">3.0</td><td class="n hi">3.5</td><td class="n hi">4.0</td></tr>
+      <tr><td><strong>范围</strong></td><td class="n">58</td><td class="n">58</td><td class="n hi">58</td><td class="n hi">64</td><td class="n hi">70</td></tr>
+
+      <tr style="border-top:2px solid var(--red)">
+        <td rowspan="3"><strong>战鼓营</strong><br><span class="tag">aura</span></td>
+        <td>攻速增益</td><td class="n">+10%</td><td class="n">+15%</td><td class="n hi">+20%</td><td class="n hi">+24%</td><td class="n hi">+28%</td>
+      </tr>
+      <tr><td>光环范围</td><td class="n">180</td><td class="n">190</td><td class="n hi">200</td><td class="n hi">210</td><td class="n hi">220</td></tr>
+      <tr><td><strong>伤害</strong></td><td class="n">0</td><td class="n">0</td><td class="n hi">0</td><td class="n hi">0</td><td class="n hi">0</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box warn">
+    <span class="t">战鼓营 28% 与 30% 上限的关系</span>
+    <p>现有 <code>globalAttackSpeedBonusCap: 0.3</code>（30%）。战鼓营 L5 给出 28%，<strong>刻意留出 2% 余量</strong>——这样「一鼓作气」这类提升上限的卡才有存在意义。若 L5 直接给到 30%，所有攻速卡都会被上限吃掉，失去价值。</p>
+  </div>
+
+  <h3>10.2 升级成本与总经济</h3>
+  <div class="tw"><table>
+    <thead><tr><th>升级目标</th><th>盾营</th><th>弓营</th><th>投石营</th><th>弩营</th><th>火油营</th><th>战鼓营</th><th>六营合计</th><th>累计投入</th></tr></thead>
+    <tbody>
+      <tr><td>建造（建 6 营）</td><td class="n">60</td><td class="n">60</td><td class="n">80</td><td class="n">80</td><td class="n">90</td><td class="n">70</td><td class="n">440</td><td class="n hi">440</td></tr>
+      <tr><td>→ L2（现有）</td><td class="n">90</td><td class="n">90</td><td class="n">120</td><td class="n">110</td><td class="n">120</td><td class="n">110</td><td class="n">640</td><td class="n hi">1,080</td></tr>
+      <tr><td>→ L3（现有）</td><td class="n">150</td><td class="n">150</td><td class="n">180</td><td class="n">170</td><td class="n">180</td><td class="n">170</td><td class="n">1,000</td><td class="n hi">2,080</td></tr>
+      <tr style="background:rgba(212,175,55,.07)"><td><strong>→ L4（新增）</strong></td><td class="n">240</td><td class="n">240</td><td class="n">290</td><td class="n">275</td><td class="n">290</td><td class="n">275</td><td class="n hi">1,610</td><td class="n hi">3,690</td></tr>
+      <tr style="background:rgba(212,175,55,.07)"><td><strong>→ L5（新增）</strong></td><td class="n">380</td><td class="n">380</td><td class="n">460</td><td class="n">430</td><td class="n">460</td><td class="n">430</td><td class="n hi">2,540</td><td class="n hi">6,230</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box key">
+    <span class="t">成本设计的三条依据</span>
+    <ul style="margin-bottom:0">
+      <li><strong>L4 成本约 L3 的 1.6 倍，L5 约 L4 的 1.6 倍</strong>。保持现有的递增斜率（现有 L2→L3 也是约 1.6 倍），玩家不会感到"突然变贵"。</li>
+      <li><strong>六营全 L5 需 6,230 军粮</strong>。而玩家的累计军粮收入在第 26 波达到 6,421 时首次超过该值（见 11.1 节）——这仅说明<strong>固定六营、全击杀、未付刷新军粮时，波26是预算首次够用的参考点</strong>；不能保证实际每局此时升满。</li>
+      <li><strong>升级与刷新竞争军粮</strong>。按全击杀参考预算可在波 26 前后升满六营，但这样会挤占当期刷牌预算。而刷牌是后期的主要军粮出口（见 11.3 节）。这个<strong>军营与卡牌的军粮竞争关系</strong>正是中期最重要的决策。</li>
+    </ul>
+  </div>
+
+  <h3>10.3 已实现的 L5 质变效果</h3>
+  <p>纯数值提升不足以让升 L5 有快感。当前每种军营在 L5 时<strong>额外获得一个被动效果</strong>（不影响现有 L1–L3 平衡）：</p>
+  <div class="tw"><table>
+    <thead><tr><th>军营</th><th>L5 质变效果</th><th>强度说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>弓营</strong></td><td>每次攻击有 15% 概率追加一箭（50% 伤害）</td><td>期望 DPS 提升约 +7.5%，体感上"经常多打一箭"，很爽</td></tr>
+      <tr><td><strong>弩营</strong></td><td>击杀精锐或首领时，立即重置攻击冷却</td><td>对高血量目标连续输出，是"斩杀链"的开端</td></tr>
+      <tr><td><strong>投石营</strong></td><td>爆炸范围内的敌人移速 −25%，持续 1.5 秒</td><td>把现有 <code>impactSlow</code>（0.8 系数）在 L5 强化为 0.75，且无需任何卡</td></tr>
+      <tr><td><strong>盾营</strong></td><td>减速的敌人受到的所有伤害 +8%</td><td>盾营从"纯控制"变成"轻量增伤"，与「拒马连环」可叠乘</td></tr>
+      <tr><td><strong>火油营</strong></td><td>火场边缘的敌人也会被点燃 1 秒</td><td>把火场半径视觉外扩一圈，解决"贴着边缘走不受伤"的观感问题</td></tr>
+      <tr><td><strong>战鼓营</strong></td><td>光环内军营的伤害 +8%</td><td>战鼓营 L5 首次提供伤害，让它从"纯辅助"变成"辅助 + 增益"</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">为什么把质变效果放在 L5 而不是 L4</span>
+    <p>L4 保持纯数值，是为了让玩家在"升 L4 还是买卡"之间有真实取舍——L4 只是更快的马，不改变玩法。而 L5 是<strong>不可逆的构筑承诺</strong>（花掉 380–460 军粮），因此必须有玩法层面的回报。这形成了"L4 性价比高、L5 才是目标"的两级节奏。</p>
+  </div>
+</section>
+<!-- ══════════ 11. 经济与消耗 ══════════ -->
+<section id="econ">
+  <h2><span class="num">11</span>军粮经济与资源消耗</h2>
+
+  <h3>11.1 军粮收入曲线</h3>
+  <p>剧情敌兵 reward 保持原值；无尽单独采用以下平均击杀预算和完成补贴，保证与脚本对齐：</p>
+
+  <div class="f">模型军粮 = (敌兵数−精锐数)×1.55 + 精锐数×4.5 + 首领数×60 + 敌兵数×0.4
+
+<span class="cm">普通/精锐平均击杀奖 1.55/4.5，首领奖 60；全波一次取整后分配整数奖励。</span>
+<span class="cm">完成补贴 round(敌兵数×.4)；漏怪不发击杀奖。表格是全击杀参考预算，非保证收入。</span></div>
+
+  <div class="tw"><table>
+    <thead><tr><th>波次</th><th>本波军粮</th><th>累计军粮</th><th>经济阶段</th><th>典型军粮去向</th></tr></thead>
+    <tbody>
+      <tr><td class="hi">1</td><td class="n">78</td><td class="n hi">78</td><td>起步</td><td>建第 2 个军营</td></tr>
+      <tr><td class="hi">5</td><td class="n">127</td><td class="n hi">511</td><td>铺开</td><td>4 个军营 + 部分 L3</td></tr>
+      <tr><td class="hi">10</td><td class="n">263</td><td class="n hi">1,437</td><td>成型</td><td>5 个军营，军营开始吃到 L4</td></tr>
+      <tr><td class="hi">15</td><td class="n">258</td><td class="n hi">2,594</td><td>饱和</td><td>6 个军营全部在 L3–L4</td></tr>
+      <tr><td class="hi">20</td><td class="n">388</td><td class="n hi">4,150</td><td>冲刺</td><td>首批 L5 冲刺（约 1–2 个军营）</td></tr>
+      <tr style="background:rgba(212,175,55,.07)"><td class="hi">26</td><td class="n">406</td><td class="n hi">6,421</td><td class="good">满级节点</td><td>六营全 L5 的全击杀参考预算点（6,230，实际还受漏怪/刷牌影响）</td></tr>
+      <tr><td class="hi">40</td><td class="n">697</td><td class="n hi">13,619</td><td>转向</td><td>参考预算转向刷牌</td></tr>
+      <tr><td class="hi">60</td><td class="n">920</td><td class="n hi">27,460</td><td>富裕</td><td>军营已满，主要用于刷新；跳过反而增加军粮</td></tr>
+      <tr><td class="hi">80</td><td class="n">1,047</td><td class="n hi">44,075</td><td>溢出</td><td>参考累计收入；仍可建营、升级和刷新，不保证溢出（设计上的合理终局）</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box key">
+    <span class="t">波 26 这个节点的意义</span>
+    <p>累计军粮 6,421 与六营全 L5 的成本 6,230 <strong>几乎相等</strong>——这不是巧合，是刻意对齐的。它意味着：</p>
+    <ul style="margin-bottom:0">
+      <li>在<strong>全击杀、固定六营、不计刷新支出</strong>的参考条件下，波26前后累计预算可支付六营全L5，获得爆发式战力提升（六营 L3→L5 场输出 ×2.04）。</li>
+      <li>玩家若<strong>专注刷牌</strong>，就会推迟 L5，但换来更早的乘区卡。两条路线在第 26 波前后形成清晰的分叉。</li>
+      <li>后期参考累计收入较高，但<strong>不保证军粮溢出</strong>：更多营位、漏兵和逐次上涨的刷新费用会改变余粮。建造、升级和刷新仍是实际用途；是否出现经济瓶颈须由真实局的支出和到达波次验证。</li>
+    </ul>
+  </div>
+
+  <h3>11.2 波数里程碑奖励</h3>
+  <p>普通无尽击杀不产出局外资源（见 8.4 规则 E），首次进入指定波数提供永久一次性里程碑奖励用于<strong>记录成就</strong>。每档只可领取一次，永久保存。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>里程碑</th><th>奖励</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="hi">首次到达波 10</td><td>铜钱 ×800，经验书 ×4</td><td>入门档，等于一章首通奖励</td></tr>
+      <tr><td class="hi">首次到达波 20</td><td>铜钱 ×1,200，精铁 ×12</td><td>—</td></tr>
+      <tr><td class="hi">首次到达波 30</td><td>铜钱 ×1,800，精铁 ×18，<strong>装备箱 ×1</strong></td><td>首次给装备</td></tr>
+      <tr><td class="hi">首次到达波 40</td><td>铜钱 ×2,600，精铁 ×26，装备箱 ×1（蓝及以上）</td><td>—</td></tr>
+      <tr><td class="hi">首次到达波 50</td><td>铜钱 ×3,600，精铁 ×36，装备箱 ×1（紫及以上）</td><td>—</td></tr>
+      <tr><td class="hi">首次到达波 60</td><td>铜钱 ×5,000，精铁 ×50，装备箱 ×1（紫及以上）</td><td>—</td></tr>
+      <tr><td class="hi">首次到达波 70</td><td>铜钱 ×7,000，精铁 ×70，装备箱 ×1（红及以上）</td><td>—</td></tr>
+      <tr style="background:rgba(212,175,55,.09)"><td class="hi">首次到达波 80</td><td>铜钱 ×10,000，精铁 ×100，<strong>装备箱 ×2（每箱金色概率 5%，非必出）</strong></td><td>最高里程碑，对应设计墙体</td></tr>
+      <tr><td class="hi">突破波 80（每 5 波）</td><td>铜钱 ×1,500 × 倍数</td><td>软上限之后的"无限档"，鼓励极限挑战</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">奖励总量不会破坏成长节奏</span>
+    <p>8 档逐项合计铜钱 <strong>32,000</strong>、精铁 <strong>312</strong>、经验书 4、装备箱 7。对照剧情模式 60 关的首通奖励（每关约 600–2800 铜钱），这<strong>大致相当于 15–20 个关卡的收益</strong>。考虑到无尽模式需要约 45 分钟且要求完整构筑，这个回报率是<strong>偏低但合理</strong>的——它的定位是"技巧展示"，不是"资源农场"。</p>
+  </div>
+
+  <h3>11.3 军粮消耗出口</h3>
+  <div class="tw"><table>
+    <thead><tr><th>出口</th><th>成本</th><th>整局经济占比</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>建造军营</strong></td><td class="n">60–90 / 个</td><td class="n">1–3%</td><td>前期一次性支出，6 营共 440</td></tr>
+      <tr><td><strong>军营升级</strong></td><td class="n">90–460 / 次</td><td class="n hi">14–20%</td><td>六营全 L5 共 6,230，是最大的确定性投资</td></tr>
+      <tr><td><strong>刷新候选</strong></td><td class="n">40 × (1+n)</td><td class="n hi">35–45%</td><td>中后期主要出口。整局刷 30 次共 40×(1+…+30) = 18,600</td></tr>
+      <tr><td><strong>跳过补偿</strong></td><td class="n">+25 收入</td><td>—</td><td>反向出口（给钱不给卡）</td></tr>
+      <tr><td>剩余</td><td>—</td><td class="n">35–50%</td><td>后期溢出，设计上接受</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box warn">
+    <span class="t">刷新成本的二次增长是有意的</span>
+    <p>刷新单价按 <code>40 × (1+n)</code> 线性增长（40/80/120/160…），累计支出形成<strong>二次曲线</strong>。若用固定价格（如 50/次），玩家会无脑刷到出传说卡，随机性完全失效。二次增长让"刷 5 次"很便宜（共 600），"刷 20 次"很贵（共 8,400），玩家必须在"这次候选够不够好"上有真实判断。</p>
+  </div>
+</section>
+
+<!-- ══════════ 12. 平衡校验 ══════════ -->
+<section id="bal">
+  <h2><span class="num">12</span>平衡依据与验证边界</h2>
+  <h3>12.1 与原有系统的接口</h3>
+  <div class="tw"><table>
+    <thead><tr><th>模块</th><th>当前规则</th><th>应保留的边界</th></tr></thead>
+    <tbody>
+      <tr><td>属性卡与科技</td><td>科技先作用于等级基础值；无尽卡牌另进入对应加法/乘区</td><td>科技自己的伤害 .25、射程 15 上限不变；属性卡不被科技上限截断</td></tr>
+      <tr><td>L4/L5</td><td>等级表扩到 5 项，科技的绝对收益随基础值增加</td><td>L1–L3 不改，剧情不开放 L4/L5</td></tr>
+      <tr><td>攻速</td><td>战鼓全局默认上限 .3；持「一鼓作气」的无尽局部规则可到 .45</td><td>「一鼓作气」为史诗，不修改全局默认；普通攻速卡按各自桶计算</td></tr>
+      <tr><td>弩营附伤</td><td>3% 最大生命为末端独立项，贯穿仅携带 35%</td><td>不受己方基础/科技/精通/普通增伤再次放大；接受敌方易伤/减免</td></tr>
+      <tr><td>投石/盾营</td><td>天崩地裂 10 目标、铁壁下限 .22 为持卡局部覆盖</td><td>原全局命中上限 6 与盾 .3 默认不改</td></tr>
+      <tr><td>火场/战鼓</td><td>同营重叠火场同跳排重；鼓角齐鸣仅翻倍该鼓源增益并刷新 5 秒</td><td>不叠出双跳或 4 倍，不翻倍曹操/孙权外部 buff</td></tr>
+      <tr><td>配队与城墙</td><td>队伍最多 3；精锐/首领 HP 人数倍率 1/1.5/1.9；基础门 HP=100</td><td>普通兵不随人数放大；城墙卡 decay=1；不更改全局基准</td></tr>
+      <tr><td>合击</td><td>真实命中、同区和战斗时间窗口；已结算源伤害只补差额</td><td>不复活死敌、不穿当前无敌、不由持续跳伤/补偿递归刷次数</td></tr>
+    </tbody>
+  </table></div>
+  <h3>12.2 模型能证明什么</h3>
+  <p><code>endless-curve.mjs</code> 可复现参考输出 219→9835 DPS（×44.9）、需求 56→10629 DPS（×189.8）、首次模型压力比大于 1 的第 80 波，以及 6230 军粮的六营 L5 参考成本和第 26 波累计预算。</p>
+  <p>这是按预设成长速度与平均目标覆盖计算的<strong>参考模型</strong>，不包含实际抽卡决策、全部专属/专精交互、锚点技能和入场压力。原设计对「无乘区第 28 波」「无属性第 17 波」「城墙流第 40 波」等推断，以及单局约 30 属性/4.4 传说/21 乘区卡的分布，没有当前真人样本可作保证；不可据此声称不存在必胜构筑或已经验证各流派等强。</p>
+  <p>伤害/候选/状态的自动化测试证明具体机制与剧情隔离；全量剧情仿真证明既有测试情景可通过。它们不替代真人平均死亡波次、卡牌犹豫时间和主观听感。</p>
+  <h3>12.3 当前待验证事项</h3>
+  <div class="tw"><table>
+    <thead><tr><th>事项</th><th>已有约束</th><th>下一步证据</th></tr></thead>
+    <tbody>
+      <tr><td>45/70/80 波长局性能</td><td>同屏活敌上限 160、队列与可视标签/粒子预算</td><td>低端真机帧时间、内存、2 倍速与持续范围伤害压力</td></tr>
+      <tr><td>构筑平衡与重复劳动</td><td>权重、递减、保底、2 倍速与整军备战；80 波仍可继续</td><td>单/双/三将、各羁绊与营地构筑的真人长局</td></tr>
+      <tr><td>城墙收益</td><td>不递减但占选卡次数；唯一失败条件保持</td><td>获取率、失败原因和回血卡实际收益，不能只累加理论回复忽略满血溢出</td></tr>
+      <tr><td>选卡阅读与触控</td><td>408 组小屏无滚动；锁触控 44×44、状态可读</td><td>真实手机安全区、系统字号缩放和更矮视口</td></tr>
+      <tr><td>音效疲劳与混音</td><td>18 声部、短脉冲、限流/抢占/ducking、底噪随 SFX 关闭</td><td>实机主观试听与后台/暂停/重试切换</td></tr>
+      <tr><td>发布</td><td>原生模块与自包含离线包均构建</td><td>实际宿主和发布平台验证；当前不声称已完成发布验收</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══════════ 13. 美术 / 音效 / 动效 ══════════ -->
+<section id="presentation">
+  <h2><span class="num">13</span>美术 · 音效 · 动效设计</h2>
+
+  <p>本设计新增 136 张卡、4 组羁绊、8 组合击、60 个武将强化与 80 波无尽流程。若为每项单独制作美术与音频，工作量会超过玩法本身。因此本节的核心是<strong>复用现有三套系统</strong>（程序化 SVG 图标、WebAudio 合成音效、CSS/Canvas 动效），用组合方式覆盖新增内容。</p>
+
+  <div class="box key">
+    <span class="t">已复用的三套程序化系统</span>
+    <ul style="margin-bottom:0">
+      <li><strong>图标</strong>：<code>equipment-art.js</code> 用<strong>本地 SVG data URI</strong> 程序化绘制，96×96，光源在左上。已有 <code>QUALITY_STYLE</code> 五档品质规范（白/蓝/紫/红/金）。</li>
+      <li><strong>音效</strong>：<code>audio-system.js</code> 全部为 <strong>WebAudio 合成</strong>（oscillator + noise），无任何音频文件。新增音效 = 新增一组参数，不需要素材。</li>
+      <li><strong>动效</strong>：CSS 关键帧 + Canvas 展示镜头/精灵；<code>combatClock.triggerImpact(durationSec,factor)</code> 负责时间冲击，不是镜头震动强度，统一由 <code>reduce-motion</code> 降级。</li>
+    </ul>
+  </div>
+
+  <h3>13.1 卡牌图标系统</h3>
+
+  <h4>问题：136 张卡不可能画 136 张图</h4>
+  <p>解法是<strong>三层合成</strong>——把图标拆成"底 + 符号 + 框"，用组合覆盖全部卡牌。</p>
+
+  <div class="f">卡面 = <span style="color:#7cc0ff">类别底</span>（4 种） + <span style="color:#e8cf7a">主题符号</span>（61 个） + <span style="color:#c4a4ff">稀有度框</span>（4 种）
+
+<span class="cm">类别底（底色 + 纹理，区分卡牌大类）</span>
+  attribute 纯属性卡  青灰石纹    camp 军营专精卡  麻布纹
+  hero 武将专属卡     织锦纹      synergy 羁绊卡    云雷纹
+
+<span class="cm">主题符号（真正区分卡牌的部分）</span>
+  26 张纯属性卡  → 26 个独立符号（见 13.1.2）
+  42 张军营专精  → 6 个营徽 × 2 变体 = 12 个符号
+  60 张武将专属  → <span style="color:#ffd24a">15 个武将纹章</span>（同一武将的 4 张卡共用纹章，用 I/II/III/IV 角标区分）
+  8 张羁绊卡    → 8 个符号
+
+<span class="cm">合计需绘制 61 个符号，而非 136 张完整插图 —— 工作量下降约 55%</span></div>
+
+  <div class="box ok">
+    <span class="t">共用纹章是可读性设计，不是偷懒</span>
+    <p>同一武将的 4 张专属强化共用纹章、只换角标，玩家一眼就能认出"这是关羽的卡"。若 4 张各画一张，反而会让玩家难以归类。这是<strong>刻意的视觉归组</strong>。</p>
+  </div>
+
+  <h4>13.1.1 稀有度视觉规范（沿用现有五档品质语言）</h4>
+  <p><code>equipment-art.js</code> 已确立一条重要原则：<strong>品质不只用颜色表达，而是「框色 + 角标数 + 框形状」三重编码</strong>（对色觉障碍友好）。卡牌稀有度直接沿用这套语言，<strong>不新造一套</strong>。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>卡牌稀有度</th><th>映射品质</th><th>框色</th><th>角标数</th><th>框形状</th><th>CSS 类</th></tr></thead>
+    <tbody>
+      <tr><td><span class="r r-c">普通</span></td><td>white</td><td><code>#d9d6c3</code></td><td class="n">0</td><td>素边直角</td><td><code>.quality-white</code></td></tr>
+      <tr><td><span class="r r-b">稀有</span></td><td>blue</td><td><code>#5fb2ff</code></td><td class="n">1</td><td>素边圆角</td><td><code>.quality-blue</code></td></tr>
+      <tr><td><span class="r r-p">史诗</span></td><td>purple</td><td><code>#b98cff</code></td><td class="n">2</td><td>双层描边</td><td><code>.quality-purple</code></td></tr>
+      <tr><td><span class="r r-g">传说</span></td><td>gold</td><td><code>#ffc940</code></td><td class="n">4</td><td>双层描边 + 流光</td><td><code>.quality-gold</code></td></tr>
+      <tr><td colspan="6" style="color:var(--txt3)"><strong>red（<code>#ff6b57</code>）保留给装备</strong>，卡牌不用——让玩家能一眼区分"这是装备还是强化卡"。</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">为什么传说用 4 个角标而不是 3 个</span>
+    <p>现有 <code>QUALITY_STYLE</code> 是 white 0 / blue 1 / purple 2 / red 3 / gold 4。传说跳到 4 个角标，正好占据 gold 的槽位，视觉上立刻与"史诗（2 个）"拉开距离。中间空出的 3 与红色品质保持映射一致。</p>
+  </div>
+
+  <h4>13.1.2 纯属性卡符号清单（26 个）</h4>
+  <p>这 26 张是无尽模式后期的主力牌，玩家会反复看到，因此值得逐个设计。符号需直白可辨（不依赖文字）。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>方向</th><th>卡名</th><th>符号</th><th>稀有度</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="8"><strong>城墙</strong><br><span class="tag">不递减</span></td><td>加筑城墙</td><td>层叠砖块</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>夯土加厚</td><td>夯锤 + 土层剖面</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>匠人修补</td><td>泥抹子 + 砖缝</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>瓮城</td><td>双重城门俯视</td><td><span class="r r-p">史诗</span></td></tr>
+      <tr><td>护城河</td><td>水波纹 + 城基</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>女墙箭垛</td><td>城垛断面 + 箭孔</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>铁水浇筑</td><td>熔铁流注 + 城门</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>背水死守</td><td>断刃 + 残旗</td><td><span class="r r-p">史诗</span></td></tr>
+      <tr><td rowspan="10"><strong>军阵</strong></td><td>兵器淬炼</td><td>铁砧 + 火花</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>锻炉精钢</td><td>熔炉 + 钢锭</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>强弓劲弩</td><td>上弦的弓臂</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>阵型操练</td><td>三排兵符</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>目力训练</td><td>眼形 + 观测杆</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>甲胄压制</td><td>破甲的长矛</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>攻坚重锤</td><td>巨锤 + 裂纹</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>连环阵</td><td>三环相扣</td><td><span class="r r-p">史诗</span></td></tr>
+      <tr><td>火油配方</td><td>陶罐 + 火苗</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>军粮征收</td><td>粮斗 + 五铢钱</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td rowspan="8"><strong>武将</strong></td><td>武艺精进</td><td>交错双刃</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>亲兵卫队</td><td>三面小盾</td><td><span class="r r-c">普通</span></td></tr>
+      <tr><td>怒气涌动</td><td>升腾气旋</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>怒气回复</td><td>回旋箭头 + 气</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>无双淬炼</td><td>星光锻打</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>破军之势</td><td>断裂的将旗</td><td><span class="r r-p">史诗</span></td></tr>
+      <tr><td>威压</td><td>下沉气压环</td><td><span class="r r-b">稀有</span></td></tr>
+      <tr><td>军心所向</td><td>三面旗指向同处</td><td><span class="r r-p">史诗</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>13.1.3 复用策略</h4>
+  <div class="tw"><table>
+    <thead><tr><th>卡类</th><th>符号策略</th><th>需绘制</th><th>区分方式</th></tr></thead>
+    <tbody>
+      <tr><td><strong>军营专精（42）</strong></td><td>每营一个营徽（沿用 <code>drawCampSprite</code> 的既有造型语言）+ 一个"强化"变体</td><td class="n hi">12</td><td>营徽 + 稀有度框</td></tr>
+      <tr><td><strong>武将专属（60）</strong></td><td><strong>每武将一个纹章</strong>，4 张卡共用</td><td class="n hi">15</td><td>纹章 + 四角 <code>I/II/III/IV</code> 品阶角标</td></tr>
+      <tr><td><strong>羁绊卡（8）</strong></td><td>每羁绊一个组合符号</td><td class="n hi">8</td><td>组合符号 + 云雷纹底</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">武将纹章的绘制参考</span>
+    <p>每名武将已有立绘（<code>hero-portraits.js</code>）与武器图标（<code>equipment-art.js</code> 的 <code>signature_*_weapon</code>，如倚天剑、麒麟牙、黄龙钩镰刀）。<strong>武将纹章可直接从既有武器图标中提取标志性轮廓</strong>作为纹章主体——既省工，又天然与装备系统形成视觉呼应。</p>
+  </div>
+
+  <h3>13.2 羁绊与合击的演出</h3>
+
+  <h4>13.2.1 四大羁绊（已更名，见附录 A）</h4>
+  <div class="tw"><table>
+    <thead><tr><th>羁绊</th><th>色彩</th><th>激活演出</th><th>常驻标识</th></tr></thead>
+    <tbody>
+      <tr><td><strong>桃园结义</strong><br>刘关张</td><td>桃红 <code>#e88b96</code></td><td>三株桃花自下方升起后收拢为环</td><td>编队界面三人头像间连线</td></tr>
+      <tr><td><strong>魏武雄风</strong><br>魏 5 选 3</td><td>玄青 <code>#3d6b8f</code></td><td>三面令旗同时立起，旗面展开</td><td>队伍框变为方直边（魏制）</td></tr>
+      <tr><td><strong>江东虎臣</strong><br>吴 5 选 2</td><td>江绿 <code>#2f8f7a</code></td><td>水波自下漫过队伍，虎纹浮现</td><td>队伍框变为波浪下沿</td></tr>
+      <tr><td><strong>卧龙冢虎</strong><br>诸葛亮 + 司马懿</td><td>墨紫 <code>#6b4a8f</code></td><td>一卦象与一雷纹对撞，中间形成菱形</td><td>两名武将间显示"谋"字印</td></tr>
+    </tbody>
+  </table></div>
+
+  <p style="font-size:.87rem;color:var(--txt3)">羁绊的常驻标识必须<strong>在编队界面就可见</strong>——玩家需要在进入战斗前知道羁绊成立，而不是打起来才发现。这四个视觉标识（连线 / 方形框 / 波浪框 / 谋字印）都不占用战斗画面。</p>
+
+  <h4>13.2.2 合击演出（8 组）</h4>
+  <p>合击是本设计中最强的"情绪峰值"，值得投入最多演出资源。设计为<strong>四层同步</strong>：</p>
+
+  <div class="flow">
+    <div class="st"><div class="n">LAYER 1</div><div class="h">定格</div><div class="d">0.25s<br>战斗时钟冻结<br>敌人转为高对比剪影</div></div>
+    <div class="st"><div class="n">LAYER 2</div><div class="h">双技叠加</div><div class="d">时间轴 .25–1.1s<br>两个无双特效同时播放<br>各保留原色</div></div>
+    <div class="st"><div class="n">LAYER 3</div><div class="h">合击名浮现</div><div class="d">时间轴 .6–1.1s<br>名号与双头像显示<br>屏幕震动 0.35</div></div>
+    <div class="st"><div class="n">LAYER 4</div><div class="h">结算</div><div class="d">时间轴 1.1–1.4s<br>本段双将实伤<br>镜头回位</div></div>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>合击</th><th>色彩对撞</th><th>标志特效</th><th>屏幕震动</th></tr></thead>
+    <tbody>
+      <tr><td><strong>借东风</strong><br>诸葛亮 → 周瑜</td><td>青 × 赤</td><td>风旋将火带拉长为贯穿全场的火线</td><td class="n">0.35</td></tr>
+      <tr><td><strong>义薄云天</strong><br>刘备 → 关羽</td><td>金 × 碧</td><td>援军与刀波呈十字掠过</td><td class="n">0.45</td></tr>
+      <tr><td><strong>长坂坡守卫</strong><br>张飞 → 赵云</td><td>赤 × 银</td><td>怒吼声波与三穿枪影交叠</td><td class="n">0.40</td></tr>
+      <tr><td><strong>雷海箭雨</strong><br>司马懿 → 甘宁</td><td>墨紫 × 青</td><td>三雷圆重构为十字，箭雨穿行其间</td><td class="n">0.40</td></tr>
+      <tr><td><strong>虎卫号令</strong><br>许褚 → 曹操</td><td>褐 × 玄青</td><td>锥形裂纹与令旗光环同心扩散</td><td class="n">0.45</td></tr>
+      <tr><td><strong>神箭突骑</strong><br>太史慈 → 张辽</td><td>银 × 铁灰</td><td>三矢光轨延长为冲锋路线</td><td class="n">0.35</td></tr>
+      <tr><td><strong>火烧赤壁</strong><br>孙权 → 周瑜</td><td>江绿 × 赤</td><td>潮壁推进中逐层转为火墙</td><td class="n">0.45</td></tr>
+      <tr><td><strong>独眼虎痴</strong><br>夏侯惇 → 许褚</td><td>土黄 × 褐</td><td>跃击落点与锥形重合处炸开</td><td class="n">0.50</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box warn">
+    <span class="t">每局最多 3 次，因此必须"贵"</span>
+    <p>合击每局限 3 次（「合击精通」卡可提到 5 次）。低频意味着资源可以集中在质量上：值得为每组合击单独做定格 + 震动 + 专属音效。<strong>不要把它做成普通的特效叠加</strong>——那样玩家不会记住。</p>
+  </div>
+
+  <h3>13.3 当前 WebAudio 音效</h3>
+  <p>音效全部由 <code>audio-system.js</code> 合成；11 类新反馈的实参集中在 <code>ROGUELIKE_AUDIO_TIMBRES</code>。以下列出当前实现，不沿用旧稿越界的 45 Hz、.5/.9 秒单声部长音或长限流。</p>
+  <div class="f">新增单声部：频率 47–1100 Hz｜时长 .05–.23s｜音量 .018–.13｜限流 .10–.30s
+<span class="cm">长反馈由可取消短脉冲组成；噪声 cutoff 为滤波色彩，不是振荡器音高。
+单声部限流与约 1.5s 合击占场窗分开，MAX_VOICES 保持 18。</span></div>
+  <h4>13.3.1 11 个事件（已接入真实流程）</h4>
+  <div class="tw"><table>
+    <thead><tr><th>事件</th><th>触发与实际合成</th><th>限流秒</th></tr></thead>
+    <tbody>
+      <tr><td><code>tacticOffer</code></td><td>候选实际揭示；520/660/780 Hz 各 .07s，triangle，.035</td><td>.30</td></tr>
+      <tr><td><code>tacticPick</code></td><td>选定；740→420 Hz .12s/.06＋.05s/.025 短噪声</td><td>.15</td></tr>
+      <tr><td><code>cardEpic</code></td><td>本次最高稀有度为史诗；660/990 Hz .22s/.07</td><td>.30</td></tr>
+      <tr><td><code>cardLegendary</code></td><td>最高为传说；523/659/784/1047 Hz 各 .09s/.08，131 Hz 三段短尾音</td><td>.30</td></tr>
+      <tr><td><code>reroll</code></td><td>刷新；cutoff 800→3200，.14s/.045 噪声扫频</td><td>.20</td></tr>
+      <tr><td><code>skip</code></td><td>整军备战；180→90 Hz，.18s/.05</td><td>.30</td></tr>
+      <tr><td><code>gateRepair</code></td><td>真实回复；330→412→494 Hz，两段 .14s，.05/.035</td><td>.30</td></tr>
+      <tr><td><code>campLevel5</code></td><td>L5；90→65→47 Hz 两段 .15s，.10/.07，叠 .18s 噪声</td><td>.30</td></tr>
+      <tr><td><code>synergy</code></td><td>羁绊激活；392/494/587 Hz 和声以 .19s 脉冲分三段衰减</td><td>.30</td></tr>
+      <tr><td><code>endlessBoss</code></td><td>实际首领预警、每波一次；70 Hz 战鼓 .42s 间隔，每鼓拆两段 .15s</td><td>.30</td></tr>
+      <tr><td><code>waveMilestone</code></td><td>首次实际领奖；261/392 Hz 五段 .18s 衰减，重复挑战不再敲领奖钟</td><td>.30</td></tr>
+    </tbody>
+  </table></div>
+  <p>候选揭示音在进入 choosing 场景后仅播放一次；锁定重绘不重放。tactic/upgrade 已拆分，无标记的剧情/原型事件仍保留旧行为。</p>
+  <h4>13.3.2 合击三段式与时序</h4>
+  <div class="f">t=0：      60 Hz 两段 .13s 定格垫底，音乐压低、取消底噪、抑制 priority&lt;5 普通音
+ t=.25/.33：首将原音色下移八度/响应将原音色，各 .20s，8 组合按实际武将映射
+ t=.60：    名号金属音＋噪声，分 .20s 短脉冲续尾
+ t=1.10/1.30：47 Hz 各 .20s 收束低频
+<span class="cm">整体占场约 1.5s，演出声部 priority=6，可抢占低优先级；仍受 18 声部总预算约束。</span></div>
+  <p>复用 <code>_duckMusic()</code>；WebAudio 自身调度未来声部，不增加独立定时器。暂停/离场/后台/SFX 关闭或音量 0/重试/销毁取消未来新声部；battle↔boss 保持同一合击及压低窗口。</p>
+  <h4>13.3.3 无尽三段听觉变化</h4>
+  <div class="tw"><table>
+    <thead><tr><th>波次</th><th>已实现处理</th></tr></thead>
+    <tbody>
+      <tr><td>1–25</td><td>标准音色，无额外底噪</td></tr>
+      <tr><td>26–50</td><td>营地攻击 ±6 Hz 交替失谐、轻底噪</td></tr>
+      <tr><td>51+</td><td>底噪略升、营地攻击桶局部收紧、首领预警提前至 3 秒（全局配置仍 2 秒）</td></tr>
+    </tbody>
+  </table></div>
+  <p>底噪挂在既有 SFX 总线，服从 sfxEnabled/sfxVolume；可保留音乐而关闭它。主循环调用 <code>setBattleContext({mode,wave})</code> 与 <code>update()</code>，未创建独立音轨开关。</p>
+
+  <h3>13.4 动效与 reduce-motion</h3>
+
+  <p>项目已有完整的减弱动态机制：<code>settings.reducedMotion</code> 或系统 <code>prefers-reduced-motion</code>，通过 <code>document.body.classList.toggle('reduce-motion', ...)</code> 全局生效，同时传入渲染器与精灵系统（<code>heroSpritePose(id, { reducedMotion })</code> 会把逐帧动画折叠为首尾两帧）。<strong>所有新动效都必须消费这个开关。</strong></p>
+
+  <div class="tw"><table>
+    <thead><tr><th>动效</th><th>常规表现</th><th>reduce-motion 降级</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>三选一卡牌弹出</strong></td>
+        <td>三张卡依次弹入（0.06s 间隔），轻微旋转，<code>--ease-spring</code></td>
+        <td>直接显示终态，无位移旋转；保留 0.01s 透明度切换以示"发生了变化"</td>
+      </tr>
+      <tr>
+        <td><strong>卡牌选定</strong></td>
+        <td>卡牌放大 → 飞向 HUD → 缩放消失</td>
+        <td>原位淡出，HUD 数字直接跳到新值</td>
+      </tr>
+      <tr>
+        <td><strong>稀有卡高光</strong></td>
+        <td>史诗：边框流光扫过一次<br>传说：持续脉冲 + 光晕</td>
+        <td>静态的稀有度边框（角标与框形状已足够表达稀有度，见 13.1.1）</td>
+      </tr>
+      <tr>
+        <td><strong>羁绊激活</strong></td>
+        <td>桃花/令旗/水波/谋印四段独立演出，约 1.2s</td>
+        <td>只显示最终标识（连线 / 方框 / 波浪框 / 谋字印），无过程动画</td>
+      </tr>
+      <tr>
+        <td><strong>合击演出</strong></td>
+        <td>四层同步：定格 0.25s → 特效叠加 → 名号弹出 → 结算</td>
+        <td><strong>保留定格与名号</strong>（信息量，非装饰），去掉屏幕震动与镜头位移；特效直接显示合并后的最终区域</td>
+      </tr>
+      <tr>
+        <td><strong>城墙受击</strong></td>
+        <td>城门震动 + 裂纹扩散 + <code>combatClock.triggerImpact()</code></td>
+        <td>只保留一次红色闪烁（0.12s），无震动无位移</td>
+      </tr>
+      <tr>
+        <td><strong>军营升至 L5</strong></td>
+        <td>地基光柱升起 + 环形冲击波向外扩散</td>
+        <td>静态描边 .12 秒 + 等级/文字提示（低帧率仍可见）</td>
+      </tr>
+      <tr>
+        <td><strong>波次推进</strong></td>
+        <td>波数计数器翻页 + 短暂节奏停顿</td>
+        <td>数字直接替换，无翻页</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="box ok">
+    <span class="t">降级不等于"什么都不要"</span>
+    <p>reduce-motion 的目标是<strong>去掉前庭负担</strong>（位移、旋转、缩放、震动），而不是去掉信息。合击的定格与名号、稀有卡的角标、城墙的红色闪烁——这些都承载信息，必须保留。<strong>判断标准：这个动效有没有告诉玩家一件他需要知道的事？</strong>有就留，只是去掉运动。</p>
+  </div>
+
+  <h4>13.4.1 复用既有动效组件</h4>
+  <p>以下既有类名与关键帧可直接复用，不必新建：</p>
+  <div class="tw"><table>
+    <thead><tr><th>用途</th><th>既有实现</th><th>用在哪里</th></tr></thead>
+    <tbody>
+      <tr><td>表单/抽屉滑入</td><td><code>v2-sheet</code> + <code>--t-sheet</code></td><td>无尽模式结算面板、里程碑奖励</td></tr>
+      <tr><td>元素切换</td><td><code>v2-swap</code></td><td>波数变化、队伍成员切换</td></tr>
+      <tr><td>脉冲光环</td><td><code>v2-ripple</code></td><td>当前波次指示、合击可用提示</td></tr>
+      <tr><td>品质边框</td><td><code>.quality-{white|blue|purple|red|gold}</code> + <code>--q-*</code></td><td>全部 136 张卡（直接套用，见 13.1.1）</td></tr>
+      <tr><td>弹性缓动</td><td><code>--ease-spring</code> / <code>--ease-out</code> / <code>--t-ui</code></td><td>所有 UI 交互，保持手感一致</td></tr>
+      <tr><td>时间冲击 / 镜头</td><td><code>combatClock.triggerImpact(durationSec,factor)</code> 为时间冲击；镜头由渲染器展示状态控制</td><td>合击冻结走独立展示时钟，reducedMotion 去除镜头运动但保留 .25s 定格</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>13.5 已完成交付清单</h3>
+  <div class="tw"><table>
+    <thead><tr><th>交付物</th><th>数量</th><th>当前文件</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>属性符号 / 营徽及变体 / 武将纹章 / 羁绊符号</td><td>26 / 12 / 15 / 8，共 61</td><td><code>tactic-art.js</code>，武器轮廓复用 equipment-art.js</td><td>已完成</td></tr>
+      <tr><td>三层卡面合成</td><td>136 卡</td><td><code>equipmentIcon()</code>；遍历 <code>TACTIC_ART_IDS</code></td><td>已完成</td></tr>
+      <tr><td>新事件音效 / 双将接力 / 听觉分层</td><td>11 / 8 / 3</td><td><code>audio-system.js</code></td><td>已完成</td></tr>
+      <tr><td>合击、羁绊、卡牌等 8 类动效</td><td>全部含静态降级</td><td><code>roguelike-presentation.js/.css</code>、<code>v1-renderer.js</code>、app 接线</td><td>已完成</td></tr>
+      <tr><td>紧凑选卡与锁状态</td><td>136 卡 × 3 尺寸检查</td><td><code>campaign-app.js</code>、<code>campaign.css</code>、附加 CSS</td><td>已完成，无滑动</td></tr>
+    </tbody>
+  </table></div>
+  <p>图标和声音承担玩法信息。当前原 34 装备×5 品质输出保持既有合同；136 卡均为实际 SVG，浏览器全部解码。音效验证覆盖节点/参数/时间与生命周期，但不将其说成已做主观听感评审。完整证据见 <a href="verification/latest.json">最新验收索引</a>。</p>
+</section>
+
+<!-- ══════════ 附录 A · 命名勘误 ══════════ -->
+<section id="errata">
+  <h2><span class="num">A</span>附录 · 命名勘误表</h2>
+
+  <p>本设计初稿存在若干史实与用语错误，已全部修正。列出修改前后便于核对。</p>
+
+  <div class="box warn">
+    <span class="t">最严重的一处：卧龙凤雏</span>
+    <p><strong>卧龙</strong>是诸葛亮，<strong>凤雏</strong>是庞统（字士元），二人并称"卧龙凤雏"。原稿把它用在<strong>诸葛亮 + 司马懿</strong>的组合上，属于张冠李戴——司马懿与庞统毫无关系。</p>
+    <p>司马懿的典故是<strong>「冢虎」</strong>（与卧龙、凤雏、幼麟并列为三国四位奇才的称号）。因此改为 <strong>「卧龙冢虎」</strong>，两人各有其号，对仗成立。</p>
+    <p style="margin-bottom:0"><em>注：若后续要加入庞统，才可使用「卧龙凤雏」这一名称。</em></p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>位置</th><th>原稿</th><th>修改为</th><th>原因</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>羁绊（诸葛亮+司马懿）<br>及配置键</td>
+        <td class="danger">卧龙凤雏<br><code>wolong_fengchu</code></td>
+        <td class="good"><strong>卧龙冢虎</strong><br><code>wolong_zhonghu</code></td>
+        <td>凤雏是庞统，非司马懿。司马懿之号为冢虎</td>
+      </tr>
+      <tr>
+        <td>羁绊（魏 5 选 3）</td>
+        <td class="danger">五子良将</td>
+        <td class="good"><strong>魏武雄风</strong></td>
+        <td><strong>五子良将</strong>是张辽、乐进、于禁、张郃、徐晃五人。原稿成员含曹操、许褚、夏侯惇、司马懿——这四人<strong>都不在五子良将之列</strong>。属史实错误</td>
+      </tr>
+      <tr>
+        <td>羁绊（吴）</td>
+        <td class="danger">江东虎将</td>
+        <td class="good"><strong>江东虎臣</strong></td>
+        <td>「<strong>江表之虎臣</strong>」是陈寿《三国志·吴书》的正式合传篇名（程普、黄盖等十二人）。"虎臣"为典出用词，优于自造的"虎将"</td>
+      </tr>
+      <tr>
+        <td>羁绊卡（魏）</td>
+        <td class="danger">先登死士</td>
+        <td class="good"><strong>虎豹骑锋</strong></td>
+        <td>「<strong>先登死士</strong>」是麴义麾下的部队（界桥之战），属袁绍阵营，与曹魏无关。曹魏精锐为<strong>虎豹骑</strong></td>
+      </tr>
+      <tr>
+        <td>合击（刘备→关羽）</td>
+        <td class="danger">三英战吕布</td>
+        <td class="good"><strong>义薄云天</strong></td>
+        <td>原文只有刘备、关羽两人参与，凑不出"三英"。且吕布属敌方阵营，用作己方合击名易生歧义</td>
+      </tr>
+      <tr>
+        <td>合击（夏侯惇→许褚）</td>
+        <td class="danger">盲夏侯双煞</td>
+        <td class="good"><strong>独眼虎痴</strong></td>
+        <td>夏侯惇是<strong>拔矢啖睛</strong>（伤一目），非全盲；且"双煞"用词偏现代俚俗，与整体古典语感不符。"虎痴"是许褚的正史绰号，与之对仗</td>
+      </tr>
+      <tr>
+        <td>弩营传说卡</td>
+        <td class="danger">辕门射戟</td>
+        <td class="good"><strong>蹶张神射</strong></td>
+        <td>「辕门射戟」是<strong>吕布</strong>的典故，用于弩营卡不当。改为「蹶张」（以脚踏张弩的古法，见《史记》），既合弩营又无归属争议</td>
+      </tr>
+      <tr>
+        <td>投石营传说卡</td>
+        <td class="danger">襄阳炮</td>
+        <td class="good"><strong>霹雳连车</strong></td>
+        <td>「襄阳炮」是<strong>宋元</strong>襄阳之战（回回炮）的产物，晚于三国近千年。<strong>霹雳车</strong>才是三国时期曹操在官渡使用的投石装置（《三国志》有载）</td>
+      </tr>
+      <tr>
+        <td>战鼓营传说卡</td>
+        <td class="danger">破阵乐</td>
+        <td class="good"><strong>鼓角齐鸣</strong></td>
+        <td>《<strong>秦王破阵乐</strong>》是唐代乐舞，晚于三国</td>
+      </tr>
+      <tr>
+        <td>火油营史诗卡</td>
+        <td class="danger">猛火油柜</td>
+        <td class="good"><strong>膏油猛火</strong></td>
+        <td>「猛火油柜」是<strong>宋代</strong>的喷火器（见《武经总要》），晚于三国。改为不涉具体朝代器物的描述性命名</td>
+      </tr>
+      <tr>
+        <td>火油营传说卡</td>
+        <td class="danger">赤壁余烬</td>
+        <td class="good"><strong>余烬燎原</strong></td>
+        <td>赤壁之战与火油营（独立于武将的兵种）无叙事关联。且「连营火势」已用于周瑜专属卡，同用"赤壁"会造成归属混乱</td>
+      </tr>
+      <tr>
+        <td>周瑜专属·传说</td>
+        <td class="danger">赤壁 · 火烧连营</td>
+        <td class="good"><strong>赤壁 · 火势滔天</strong></td>
+        <td>「火烧连营」指<strong>夷陵之战</strong>（陆逊破刘备），不是赤壁之战。挂在"赤壁"前缀下自相矛盾</td>
+      </tr>
+      <tr>
+        <td>诸葛亮专属·稀有</td>
+        <td class="danger">八阵 · 心理战</td>
+        <td class="good"><strong>八阵 · 攻心</strong></td>
+        <td>"心理战"是现代军事术语。诸葛亮南征典故为<strong>「攻心为上」</strong>（《三国志·马谡传》），更贴切且合语感</td>
+      </tr>
+      <tr>
+        <td>吕蒙专属·史诗</td>
+        <td class="danger">白衣 · 增灶</td>
+        <td class="good"><strong>白衣 · 连雷阵</strong></td>
+        <td>「增灶」是<strong>虞诩</strong>（东汉）的疑兵之计，非吕蒙。「白衣渡江」才是吕蒙典故；改后与"布雷"机制直接对应</td>
+      </tr>
+      <tr>
+        <td>吕蒙专属·稀有</td>
+        <td class="danger">白衣 · 更新</td>
+        <td class="good"><strong>白衣 · 示弱</strong></td>
+        <td>"更新"是现代词汇，且未传达含义。白衣渡江的战术本质是<strong>示弱麻痹</strong></td>
+      </tr>
+      <tr>
+        <td>甘宁专属·传说</td>
+        <td class="danger">锦帆 · 铃响铃响</td>
+        <td class="good"><strong>锦帆 · 铃震三军</strong></td>
+        <td>"铃响铃响"是口语叠词，不像技能名。甘宁「锦帆铃」为史载标志，改为四字更庄重</td>
+      </tr>
+      <tr>
+        <td>孙权专属·传说</td>
+        <td class="danger">江东 · 生子当如</td>
+        <td class="good"><strong>江东 · 仲谋之志</strong></td>
+        <td>「生子当如孙仲谋」是<strong>曹操</strong>对孙权的赞语，作孙权自身技能名视角错位。仲谋是孙权字，改成第一人称的"之志"更顺</td>
+      </tr>
+      <tr>
+        <td>孙权专属·稀有</td>
+        <td class="danger">江东 · 领导</td>
+        <td class="good"><strong>江东 · 统御</strong></td>
+        <td>"领导"是现代管理学词汇，与整体古典语感冲突</td>
+      </tr>
+      <tr>
+        <td>夏侯惇专属·史诗</td>
+        <td class="danger">独眼 · 二段跳</td>
+        <td class="good"><strong>独眼 · 连跃</strong></td>
+        <td>"二段跳"是游戏术语，出戏</td>
+      </tr>
+      <tr>
+        <td>夏侯惇专属·传说</td>
+        <td class="danger">独眼 · 拔矢无双</td>
+        <td class="good"><strong>独眼 · 残躯血战</strong></td>
+        <td>与同武将的稀有卡「拔矢啖睛」重名混淆</td>
+      </tr>
+      <tr>
+        <td>城墙卡</td>
+        <td class="danger">糯米灰浆</td>
+        <td class="good"><strong>夯土加厚</strong></td>
+        <td>「糯米灰浆」是<strong>明代</strong>才成熟普及的建筑工艺，晚于三国。夯土是三国及以前筑城的标准做法，且与「加筑城墙」形成互补</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="box info">
+    <span class="t">本次修订的两条判据</span>
+    <ol style="margin-bottom:0">
+      <li><strong>归属正确</strong>：成语、典故、军制、器物必须属于正确的人、阵营与时代。三国题材的核心吸引力来自历史感，张冠李戴会直接破坏它。</li>
+      <li><strong>语域一致</strong>：命名应与现有卡牌的语感统一。项目既有名称如「青龙展刃」「八阵风牢」「长坂怒吼」「白衣伏兵」皆为古典凝练的四字或"前缀·后缀"结构。<br><span style="color:var(--txt3)">经核对，现有 22 张卡的命名全部合规，无需修改。</span></li>
+    </ol>
+  </div>
+
+  <div class="box ok">
+    <span class="t">已确认无误、特别保留的名称</span>
+    <ul style="margin-bottom:0">
+      <li><strong>桃园结义</strong>（刘关张）— 完全正确。</li>
+      <li><strong>火烧赤壁</strong>（孙权 → 周瑜）— 两人皆为赤壁之战的直接参与方，正确。</li>
+      <li><strong>借东风</strong>（诸葛亮 → 周瑜）— 赤壁典故，正确。</li>
+      <li><strong>长坂坡守卫</strong>（张飞 → 赵云）— 二人同在长坂坡，正确。</li>
+      <li><strong>雷海箭雨</strong>（司马懿 → 甘宁）、<strong>虎卫号令</strong>（许褚 → 曹操）— 不涉具体典故，用词得体。</li>
+      <li><strong>连营火势</strong>（周瑜）、<strong>偃月破阵</strong>（关羽）、<strong>仁德援军</strong>（刘备）等既有卡 — 均为正确的武将归属。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ 14. 数据结构与实现地图 ══════════ -->
+<section id="impl">
+  <h2><span class="num">14</span>数据结构与实现地图</h2>
+  <h3>14.1 当前数据分层</h3>
+  <p>源为 <code>docs/v1/data/balance.json.v1Baseline</code>；构建器生成导出的 <code>BALANCE</code>。不直接编辑生成物，不把以下分层压平写回以破坏兼容。</p>
+  <div class="tw"><table>
+    <thead><tr><th>字段/视图</th><th>当前结构</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td><code>tactics</code></td><td>48 项对象＝原 22＋属性 26</td><td>原 ID 与原基础语义保留；卡元数据含 category/rarity/repeatable/decay</td></tr>
+      <tr><td><code>heroUpgrades</code></td><td>按 15 将分组，<code>{baseStrength, upgrades:[...]}</code>，共 60</td><td>复用原关羽/周瑜 4 卡，新增 56；effects 与 runtimeNotes 记录现行技能解释</td></tr>
+      <tr><td><code>campUpgrades</code></td><td>按 6 营分组，<code>{upgrades:[...]}</code>，共 42</td><td>原 18＋新增 24，聚合时同 ID 不重复消费</td></tr>
+      <tr><td><code>synergies / synergyUpgrades / heroCombos</code></td><td>4 羁绊对象 / 8 卡数组 / 8 合击数组</td><td>同区命中规则见 <code>comboRuntimeRules</code></td></tr>
+      <tr><td><code>endless</code></td><td>曲线、经济、L5、权重、保底、8 档里程碑与突破规则</td><td>无尽局部覆盖；<code>noMetaRewards</code> 禁止普通重复战斗发局外资源，不排斥里程碑</td></tr>
+      <tr><td><code>endlessAnchors</code></td><td>11 个锚点</td><td>编成/模板/队列覆盖，不改脚本总数、HP 增长与模型时长</td></tr>
+      <tr><td><code>game.tacticDefinitions</code></td><td>104 项兼容基础视图</td><td>不是完整抽卡池，不可误判为缺 32 卡</td></tr>
+      <tr><td><code>game.tacticCatalog</code></td><td>完整 136 项目录</td><td>实际查找/候选/选择；统一查询可用 <code>game.tacticDefinition(id)</code></td></tr>
+    </tbody>
+  </table></div>
+  <h4>卡牌元数据示例（实际字段以源 JSON 为准）</h4>
+  <div class="f">{
+  id: "...", name: "...", camp: null, hero: null,
+  category: "attribute", rarity: "common",
+  repeatable: true, decay: 0.85, effects: { ... }
+}
+<span class="cm">城墙属性卡 decay=1；一般不可重复卡 repeatable=false。
+原 tactics 对象以 id 作键；分组 upgrades 数组在条目中携带 id。</span></div>
+  <h3>14.2 当前代码接口</h3>
+  <div class="tw"><table>
+    <thead><tr><th>文件/接口</th><th>职责与约束</th></tr></thead>
+    <tbody>
+      <tr><td><code>v1-engine.js / reset()</code></td><td><code>options.mode === 'endless'</code> 建立模式状态；<code>getUpgradeCost()</code> 限无尽 5/剧情 3；<code>_campStats()</code> 按 level−1 读取科技修正后的等级表</td></tr>
+      <tr><td><code>roguelike-system.js</code></td><td>权重/保底/递减/候选过滤；<code>selectUpgrade()</code> 同时记录 Set 与次数，重复卡不能靠 Set 计算</td></tr>
+      <tr><td><code>endless-rules.js</code></td><td>程序波次、HP/数量/精锐/时长/军粮、锚点模板；51 波起仅预警局部提前至 3 秒，全局配置仍 2 秒</td></tr>
+      <tr><td><code>hero-upgrade-*.js / camp-upgrade-*.js / synergy-*.js</code></td><td>纯规则与运行效果分离，接入实际施放快照、命中、伤害、控制和计时；<code>heroCombo</code> 不同于原连斩 <code>combo</code></td></tr>
+      <tr><td><code>CampaignStore.claimEndlessMilestones(wave)</code></td><td>进入波次即奖、永久防重、箱子收据、旧 schema 3 可选字段、跨页冲突；UI 不直接加资源</td></tr>
+      <tr><td><code>endless-telemetry.js</code></td><td>本地累计指标/最近 30 局，与原 300 条事件日志分开保存，无远程上报</td></tr>
+      <tr><td><code>tactic-art.js / equipmentIcon()</code></td><td><code>TACTIC_ART_IDS</code> 136 卡、<code>TACTIC_SYMBOL_IDS</code> 61；<code>EQUIPMENT_ART_IDS</code> 保留原 34 装备合同</td></tr>
+      <tr><td><code>audio-system.js</code></td><td>事件入口、<code>setBattleContext()</code>、主循环 <code>update()</code>；新反馈用 roguelike 标记，保留旧未标记事件语义</td></tr>
+      <tr><td><code>roguelike-presentation.js / v1-renderer.js</code></td><td>独立展示时钟、只读快照；<code>advancePresentation()</code> 推进，draw 不推进；阶段在 <code>roguelikePresentation.phase</code></td></tr>
+      <tr><td><code>campaign-app.js / campaign.css / roguelike-presentation.css</code></td><td>事件桥接、当前紧凑选卡、锁图标、HUD 与降级；无尽选卡挂 battle-view，剧情恢复 field-stage 原位置</td></tr>
+      <tr><td><code>scripts/build.mjs</code></td><td>新增模块/CSS 必须同时进入原生模块分发与两个自包含离线页面</td></tr>
+    </tbody>
+  </table></div>
+  <h3>14.3 阶段交付记录</h3>
+  <div class="tw"><table>
+    <thead><tr><th>阶段</th><th>已完成内容</th><th>当阶段完整测试</th></tr></thead>
+    <tbody>
+      <tr><td>P0 骨架</td><td>L4/L5、26 属性、抽卡、递减/保底、程序波次与城墙链</td><td>291/291</td></tr>
+      <tr><td>P1 武将</td><td>15×4 专属、资格/权重/保底、实际机制与技能基准对齐</td><td>337/337</td></tr>
+      <tr><td>P2 军营</td><td>42 专精、真实群伤/弹道/火场/光环/控制与 L5 组合</td><td>365/365</td></tr>
+      <tr><td>P3 羁绊合击</td><td>4 羁绊、8 卡、8 合击，真实命中窗口与差额补偿</td><td>412/412</td></tr>
+      <tr><td>P4 打磨</td><td>11 锚点、里程碑/突破奖励、防重收据与本地调参统计</td><td>449/449</td></tr>
+      <tr><td>P5 表现</td><td>61 符号/136 卡、11 音效、8 合击与 8 类降级动效</td><td>486/486</td></tr>
+      <tr><td>选卡布局修复</td><td>右下透明开锁/金底闭锁、44×44 触控、408 小屏组合无滚动</td><td>486/486，54 已有测试文件未改</td></tr>
+    </tbody>
+  </table></div>
+  <p>以上是各阶段历史快照；后续修改必须重新验证，不能用旧通过记录代替。完整阶段说明已合并到 <a href="DEVELOPMENT-HISTORY.txt">开发记录</a>，当前证据见 <a href="verification/latest.json">最新验收索引</a>。</p>
+  <h3>14.4 本地调参与下一轮建议</h3>
+  <div class="box key">
+    <span class="t">已接入统计，目标仍待真人样本验证</span>
+    <ol style="margin-bottom:0">
+      <li><strong>平均阵亡波次</strong>：仅计实际失败，退出另记 abandoned。设计目标首次 25–35、熟练 50–65、顶尖 75+；局次 1/2–9/10+ 只作经验代理，不是真实能力评级。</li>
+      <li><strong>每次选择的犹豫时长</strong>：performance 墙钟，只计真实可见、未遮挡时段；排除 1 秒揭示/后台/弹窗/横屏，刷新属同次决策，跳过不计已选样本。目标 4–8 秒。</li>
+      <li><strong>城墙卡获取率</strong>：所选城墙卡/全部已选卡，候选占比与跳过另记。目标 15–25%。</li>
+    </ol>
+  </div>
+  <p>下一步先收集真人多编队长局和实机帧时间/触控/音频生命周期反馈，再按问题做局部修复。模型的六段 HP 增长率可用于调参，但没有样本前不据目标值自动改曲线；任何改动必须同步源 JSON、曲线依据和验证。</p>
+</section>
+
+<footer>
+  <p><strong>无双守关 · 肉鸽与无尽模式现行规格 v3.1</strong></p>
+  <p style="margin-top:8px">2026-10-20 · P0–P5 与选卡修复已完成 · 源 JSON 为配置事实，脚本为曲线依据</p>
+  <p style="margin-top:8px;font-size:.78rem">卡池 136 张 · 15 武将专属 · 6 军营 5 级 · 80 波难度曲线</p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -469,6 +469,24 @@
             "range": 163,
             "maxTargets": 3,
             "speedFactor": 0.38
+          },
+          {
+            "level": 4,
+            "damage": 7,
+            "intervalSec": 1.5,
+            "range": 172,
+            "maxTargets": 3,
+            "speedFactor": 0.35,
+            "upgradeCost": 240
+          },
+          {
+            "level": 5,
+            "damage": 9,
+            "intervalSec": 1.44,
+            "range": 182,
+            "maxTargets": 3,
+            "speedFactor": 0.32,
+            "upgradeCost": 380
           }
         ],
         "slowEffectFractionByClass": {
@@ -510,6 +528,22 @@
             "intervalSec": 0.72,
             "range": 223,
             "maxTargets": 1
+          },
+          {
+            "level": 4,
+            "damage": 35,
+            "intervalSec": 0.68,
+            "range": 232,
+            "maxTargets": 1,
+            "upgradeCost": 240
+          },
+          {
+            "level": 5,
+            "damage": 47,
+            "intervalSec": 0.64,
+            "range": 242,
+            "maxTargets": 1,
+            "upgradeCost": 380
           }
         ]
       },
@@ -542,6 +576,22 @@
             "intervalSec": 2.7,
             "range": 223,
             "blastRadius": 48
+          },
+          {
+            "level": 4,
+            "damage": 31,
+            "intervalSec": 2.55,
+            "range": 232,
+            "blastRadius": 54,
+            "upgradeCost": 290
+          },
+          {
+            "level": 5,
+            "damage": 41,
+            "intervalSec": 2.4,
+            "range": 242,
+            "blastRadius": 60,
+            "upgradeCost": 460
           }
         ],
         "impactSlow": {
@@ -590,6 +640,22 @@
             "intervalSec": 1.04,
             "range": 223,
             "maxTargets": 1
+          },
+          {
+            "level": 4,
+            "damage": 59,
+            "intervalSec": 0.98,
+            "range": 232,
+            "maxTargets": 1,
+            "upgradeCost": 275
+          },
+          {
+            "level": 5,
+            "damage": 80,
+            "intervalSec": 0.92,
+            "range": 242,
+            "maxTargets": 1,
+            "upgradeCost": 430
           }
         ]
       },
@@ -627,6 +693,24 @@
             "intervalSec": 3.2,
             "range": 193,
             "fieldRadius": 58
+          },
+          {
+            "level": 4,
+            "tickDamage": 7,
+            "intervalSec": 3,
+            "range": 202,
+            "fieldRadius": 64,
+            "fieldDurationSec": 3.5,
+            "upgradeCost": 290
+          },
+          {
+            "level": 5,
+            "tickDamage": 9,
+            "intervalSec": 2.8,
+            "range": 211,
+            "fieldRadius": 70,
+            "fieldDurationSec": 4,
+            "upgradeCost": 460
           }
         ],
         "effectiveDpsFormula": "tickDamage/tickIntervalSec*min(1,fieldDurationSec/attackIntervalSec) for a stationary continuously covered target"
@@ -658,6 +742,18 @@
             "upgradeCost": 170,
             "range": 200,
             "attackSpeedBonus": 0.2
+          },
+          {
+            "level": 4,
+            "range": 210,
+            "attackSpeedBonus": 0.24,
+            "upgradeCost": 275
+          },
+          {
+            "level": 5,
+            "range": 220,
+            "attackSpeedBonus": 0.28,
+            "upgradeCost": 430
           }
         ],
         "intervalFormula": "baseIntervalSec/(1+strongestAttackSpeedBonus)",
@@ -1700,7 +1796,11 @@
           "extraDamageMultiplier": 0.35,
           "pierceLength": 125,
           "pierceHalfWidth": 25
-        }
+        },
+        "category": "camp",
+        "rarity": "common",
+        "repeatable": false,
+        "decay": 1
       },
       "archer_volley": {
         "name": "连珠齐射",
@@ -1709,7 +1809,11 @@
           "extraProjectiles": 1,
           "extraDamageMultiplier": 0.25,
           "extraProjectileCanPierce": false
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "archer_hunt": {
         "name": "破骑劲弩",
@@ -1721,21 +1825,33 @@
             "boss"
           ],
           "damageMultiplier": 1.25
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "shield_grasp": {
         "name": "坚壁铁阵",
         "camp": "shield",
         "effects": {
           "speedFactorOverride": 0.32
-        }
+        },
+        "category": "camp",
+        "rarity": "common",
+        "repeatable": false,
+        "decay": 1
       },
       "shield_reach": {
         "name": "连营拒马",
         "camp": "shield",
         "effects": {
           "rangeAdd": 25
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "shield_break": {
         "name": "破阵反击",
@@ -1743,7 +1859,11 @@
         "effects": {
           "maxTargetsOverride": 5,
           "damageMultiplier": 1
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "catapult_blast": {
         "name": "霹雳巨石",
@@ -1751,7 +1871,11 @@
         "effects": {
           "blastRadiusAdd": 12,
           "damageMultiplier": 1
-        }
+        },
+        "category": "camp",
+        "rarity": "common",
+        "repeatable": false,
+        "decay": 1
       },
       "catapult_shock": {
         "name": "碎石封路",
@@ -1759,7 +1883,11 @@
         "effects": {
           "speedFactor": 0.65,
           "durationSec": 2.5
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "catapult_siege": {
         "name": "摧城破甲",
@@ -1770,14 +1898,22 @@
             "boss"
           ],
           "damageMultiplier": 1.25
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "guan_yu_width": {
         "name": "青龙展刃",
         "hero": "guan_yu",
         "effects": {
           "sweepWidthAdd": 24
-        }
+        },
+        "category": "hero",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "guan_yu_press": {
         "name": "偃月破阵",
@@ -1785,14 +1921,22 @@
         "effects": {
           "elitePushbackAdd": 16,
           "bossPushbackAdd": 0
-        }
+        },
+        "category": "hero",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "zhou_yu_radius": {
         "name": "连营火势",
         "hero": "zhou_yu",
         "effects": {
           "fireWidthAdd": 24
-        }
+        },
+        "category": "hero",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "zhou_yu_duration": {
         "name": "烈焰余势",
@@ -1800,7 +1944,11 @@
         "effects": {
           "fireDurationSecAdd": 1,
           "preserveMaxTicksPerEnemy": true
-        }
+        },
+        "category": "hero",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "crossbow_precision": {
         "name": "贯甲强弩",
@@ -1808,7 +1956,11 @@
         "effects": {
           "eliteAndBossDamageMultiplier": 1.25,
           "stackWithBaseCrossbowMultiplier": true
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "crossbow_pierce": {
         "name": "穿阵劲矢",
@@ -1816,28 +1968,44 @@
         "effects": {
           "extraTargets": 1,
           "extraDamageMultiplier": 0.35
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "crossbow_range": {
         "name": "瞭望校射",
         "camp": "crossbow",
         "effects": {
           "rangeAdd": 25
-        }
+        },
+        "category": "camp",
+        "rarity": "common",
+        "repeatable": false,
+        "decay": 1
       },
       "fire_oil_spread": {
         "name": "泼油成阵",
         "camp": "fire_oil",
         "effects": {
           "fieldRadiusAdd": 16
-        }
+        },
+        "category": "camp",
+        "rarity": "common",
+        "repeatable": false,
+        "decay": 1
       },
       "fire_oil_heat": {
         "name": "烈火炙甲",
         "camp": "fire_oil",
         "effects": {
           "eliteAndBossDamageMultiplier": 1.15
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "fire_oil_slow": {
         "name": "泥油阻路",
@@ -1845,14 +2013,22 @@
         "effects": {
           "speedFactor": 0.75,
           "durationSec": 1
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "war_drum_reach": {
         "name": "鼓声远传",
         "camp": "war_drum",
         "effects": {
           "rangeAdd": 30
-        }
+        },
+        "category": "camp",
+        "rarity": "common",
+        "repeatable": false,
+        "decay": 1
       },
       "war_drum_vigor": {
         "name": "振军奋勇",
@@ -1860,7 +2036,11 @@
         "effects": {
           "attackSpeedBonusAdd": 0.05,
           "respectGlobalCap": true
-        }
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
       },
       "war_drum_ward": {
         "name": "整军固守",
@@ -1868,6 +2048,382 @@
         "effects": {
           "campResilience": 0.25,
           "respectResilienceCap": true
+        },
+        "category": "camp",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1
+      },
+      "attr_gate_build": {
+        "name": "加筑城墙",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "城墙耐久上限 +12",
+        "effects": {
+          "gateHpAdd": 12
+        }
+      },
+      "attr_gate_earth": {
+        "name": "夯土加厚",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "城墙耐久上限 +9%",
+        "effects": {
+          "gateHpPercentAdd": 0.09
+        }
+      },
+      "attr_gate_repair": {
+        "name": "匠人修补",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "每波开始时回复 4 点城墙耐久",
+        "effects": {
+          "gateHealPerWave": 4
+        }
+      },
+      "attr_gate_outer": {
+        "name": "瓮城",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "epic",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "每波首次漏怪伤害降低 60%",
+        "effects": {
+          "firstLeakReduction": 0.6
+        }
+      },
+      "attr_gate_moat": {
+        "name": "护城河",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "城墙脚下 100 范围内敌兵移速降低 15%",
+        "effects": {
+          "gateSlowFraction": 0.15,
+          "gateSlowRange": 100
+        }
+      },
+      "attr_gate_parapet": {
+        "name": "女墙箭垛",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "每次漏怪伤害 -2，最低 1",
+        "effects": {
+          "gateLeakReduction": 2
+        }
+      },
+      "attr_gate_iron": {
+        "name": "铁水浇筑",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "城墙耐久上限 +25%，立即失去 20 点当前耐久",
+        "effects": {
+          "gateHpRiskPercentAdd": 0.25,
+          "gateImmediateHpLoss": 20
+        }
+      },
+      "attr_gate_laststand": {
+        "name": "背水死守",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "epic",
+        "repeatable": true,
+        "decay": 1,
+        "attributeGroup": "gate",
+        "description": "城墙耐久低于 35% 时，全军伤害 +30%",
+        "effects": {
+          "lowHpDamageBonus": 0.3,
+          "lowHpThreshold": 0.35
+        }
+      },
+      "attr_camp_temper": {
+        "name": "兵器淬炼",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营伤害 +10%",
+        "effects": {
+          "campDamageBonus": 0.1
+        }
+      },
+      "attr_camp_steel": {
+        "name": "锻炉精钢",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营伤害 +7%，对重甲兵额外 +5%",
+        "effects": {
+          "campDamageBonus": 0.07,
+          "campArmorDamageBonus": 0.05
+        }
+      },
+      "attr_camp_haste": {
+        "name": "强弓劲弩",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营攻击间隔缩短 7%，与战鼓攻速乘算",
+        "effects": {
+          "campIntervalReduction": 0.07
+        }
+      },
+      "attr_camp_drill": {
+        "name": "阵型操练",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营攻速 +6%，与战鼓共用 30% 上限",
+        "effects": {
+          "campAttackSpeedBonus": 0.06
+        }
+      },
+      "attr_camp_sight": {
+        "name": "目力训练",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营射程 +14",
+        "effects": {
+          "campRangeAdd": 14
+        }
+      },
+      "attr_camp_elite": {
+        "name": "甲胄压制",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营对精锐伤害 +18%",
+        "effects": {
+          "campEliteDamageBonus": 0.18
+        }
+      },
+      "attr_camp_boss": {
+        "name": "攻坚重锤",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "军营对首领伤害 +25%",
+        "effects": {
+          "campBossDamageBonus": 0.25
+        }
+      },
+      "attr_camp_overlap": {
+        "name": "连环阵",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "epic",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "每有一个军营射程覆盖目标，其受到伤害 +4%，最多 5 层",
+        "effects": {
+          "overlapDamageBonus": 0.04,
+          "overlapMaxStacks": 5
+        }
+      },
+      "attr_dot_formula": {
+        "name": "火油配方",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "所有持续伤害效果 +30%",
+        "effects": {
+          "dotDamageBonus": 0.3
+        }
+      },
+      "attr_food_levy": {
+        "name": "军粮征收",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "camp",
+        "description": "每波结束额外获得 18 军粮",
+        "effects": {
+          "foodPerWave": 18
+        }
+      },
+      "attr_hero_martial": {
+        "name": "武艺精进",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "武将普攻伤害 +12%",
+        "effects": {
+          "heroBasicDamageBonus": 0.12
+        }
+      },
+      "attr_hero_guard": {
+        "name": "亲兵卫队",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "common",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "武将普攻攻速 +10%",
+        "effects": {
+          "heroAttackSpeedBonus": 0.1
+        }
+      },
+      "attr_rage_flow": {
+        "name": "怒气涌动",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "怒气获取速度 +12%",
+        "effects": {
+          "rageGainBonus": 0.12
+        }
+      },
+      "attr_rage_recovery": {
+        "name": "怒气回复",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "无双释放后 4 秒内怒气获取 +60%",
+        "effects": {
+          "postUltimateRageBonus": 0.6,
+          "postUltimateRageDurationSec": 4
+        }
+      },
+      "attr_ultimate_temper": {
+        "name": "无双淬炼",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "无双伤害 +15%",
+        "effects": {
+          "ultimateDamageBonus": 0.15
+        }
+      },
+      "attr_ultimate_break": {
+        "name": "破军之势",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "epic",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "无双伤害 +22%，怒气消耗 +8%",
+        "effects": {
+          "ultimateDamageBonus": 0.22,
+          "rageCostBonus": 0.08
+        }
+      },
+      "attr_hero_dread": {
+        "name": "威压",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "rare",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "被无双命中的敌人受到伤害 +10%，持续 5 秒",
+        "effects": {
+          "ultimateVulnerabilityBonus": 0.1,
+          "ultimateVulnerabilityDurationSec": 5
+        }
+      },
+      "attr_army_resolve": {
+        "name": "军心所向",
+        "camp": null,
+        "hero": null,
+        "category": "attribute",
+        "rarity": "epic",
+        "repeatable": true,
+        "decay": 0.85,
+        "attributeGroup": "hero",
+        "description": "队伍每有一名武将，全军伤害 +6%",
+        "effects": {
+          "partyDamageBonus": 0.06
         }
       }
     },
@@ -4072,6 +4628,2512 @@
       "revealDoesNotRoll": true,
       "fullInventoryPolicy": "salvage_newly_rolled_item_and_show_result",
       "randomSource": "independent_from_combat_seed"
+    },
+    "endless": {
+      "campLevelMax": 5,
+      "choiceEveryWave": true,
+      "targetWaveCount": 80,
+      "startingFood": 120,
+      "noMetaRewards": true,
+      "mapId": "wei_gate",
+      "seed": 2026101701,
+      "freeCamps": [],
+      "hpGrowthSegments": [
+        {
+          "fromWave": 1,
+          "toWave": 10,
+          "perWaveGrowth": 0.07
+        },
+        {
+          "fromWave": 11,
+          "toWave": 20,
+          "perWaveGrowth": 0.052
+        },
+        {
+          "fromWave": 21,
+          "toWave": 30,
+          "perWaveGrowth": 0.048
+        },
+        {
+          "fromWave": 31,
+          "toWave": 45,
+          "perWaveGrowth": 0.042
+        },
+        {
+          "fromWave": 46,
+          "toWave": 60,
+          "perWaveGrowth": 0.038
+        },
+        {
+          "fromWave": 61,
+          "toWave": 80,
+          "perWaveGrowth": 0.034
+        }
+      ],
+      "countSegments": [
+        {
+          "fromWave": 1,
+          "toWave": 10,
+          "startValue": 40,
+          "perWaveAdd": 6.2
+        },
+        {
+          "fromWave": 11,
+          "toWave": 25,
+          "startValue": 96,
+          "perWaveAdd": 5.3
+        },
+        {
+          "fromWave": 26,
+          "toWave": 45,
+          "startValue": 170,
+          "perWaveAdd": 3.6
+        },
+        {
+          "fromWave": 46,
+          "toWave": null,
+          "startValue": 238,
+          "perWaveAdd": 1
+        }
+      ],
+      "eliteFractionSegments": [
+        {
+          "fromWave": 1,
+          "toWave": 5,
+          "startValue": 0,
+          "perWaveAdd": 0
+        },
+        {
+          "fromWave": 6,
+          "toWave": 15,
+          "startValue": 0.03,
+          "perWaveAdd": 0.00625
+        },
+        {
+          "fromWave": 16,
+          "toWave": 30,
+          "startValue": 0.0875,
+          "perWaveAdd": 0.00617
+        },
+        {
+          "fromWave": 31,
+          "toWave": 45,
+          "startValue": 0.18,
+          "perWaveAdd": 0.00533
+        },
+        {
+          "fromWave": 46,
+          "toWave": null,
+          "startValue": 0.26,
+          "perWaveAdd": 0.00533
+        }
+      ],
+      "eliteFractionCap": 0.42,
+      "speedMultiplierCap": 1.25,
+      "speedGrowthPerWave": 0.005,
+      "waveDurationCapSec": 40,
+      "waveDurationBaseSec": 20,
+      "waveDurationGrowthSec": 0.3,
+      "enemyCountCap": 272,
+      "bossEveryWaves": 10,
+      "bossCountByWave": {
+        "10": 1,
+        "20": 1,
+        "30": 2,
+        "40": 2,
+        "50": 3
+      },
+      "bossBaseHp": 1200,
+      "bossHpGrowthPerWave": 0.048,
+      "bossTemplateOrder": [
+        "rammer",
+        "charger",
+        "banner_lord",
+        "guardian",
+        "siege_lord"
+      ],
+      "bossSpawnFraction": 0.65,
+      "bossSpawnGapSec": 2,
+      "bossWarningSec": 2,
+      "enemyIntroductionWaves": {
+        "infantry": 1,
+        "cavalry": 4,
+        "ranged": 6,
+        "armor": 8,
+        "banner": 15,
+        "siege": 25
+      },
+      "eliteComposition": {
+        "armor": 2,
+        "ranged": 2,
+        "banner": 1,
+        "siege": 1
+      },
+      "cavalryFraction": 0.15,
+      "packsPerWave": 3,
+      "packFractions": [
+        0.42,
+        0.33,
+        0.25
+      ],
+      "packWindowFraction": 0.8,
+      "food": {
+        "ordinaryAverageReward": 1.55,
+        "eliteAverageReward": 4.5,
+        "bossReward": 60,
+        "completionPerEnemy": 0.4,
+        "rewardRounding": "round_total_once_then_distribute_integer_kill_rewards; completion=round(count*0.4); leaks_grant_no_kill_reward"
+      },
+      "rarityWeights": {
+        "common": 5000,
+        "rare": 3000,
+        "epic": 1650,
+        "legendary": 350
+      },
+      "categoryWeights": {
+        "attribute": 1,
+        "camp": 4,
+        "hero": 3,
+        "synergy": 6
+      },
+      "lateAttributeWeightWave": 40,
+      "lateAttributeWeightMultiplier": 1.5,
+      "rerollCostBase": 40,
+      "skipCompensationFood": 25,
+      "lockCountPerRun": 3,
+      "pity": {
+        "epicEvery": 4,
+        "legendaryEvery": 12,
+        "heroUpgradeEvery": 3
+      },
+      "level5Effects": {
+        "archer": {
+          "extraArrowChance": 0.15,
+          "extraArrowDamageMultiplier": 0.5
+        },
+        "crossbow": {
+          "resetCooldownOnEliteOrBossKill": true
+        },
+        "catapult": {
+          "impactSpeedFactor": 0.75,
+          "impactSlowDurationSec": 1.5
+        },
+        "shield": {
+          "incomingDamageBonus": 0.08
+        },
+        "fire_oil": {
+          "edgeBurnDurationSec": 1,
+          "edgeRadiusAdd": 12
+        },
+        "war_drum": {
+          "campDamageBonus": 0.08
+        }
+      },
+      "referenceOutput": {
+        "camps": [
+          {
+            "type": "archer",
+            "count": 2
+          },
+          {
+            "type": "crossbow",
+            "count": 1
+          },
+          {
+            "type": "catapult",
+            "count": 1
+          },
+          {
+            "type": "fire_oil",
+            "count": 1
+          },
+          {
+            "type": "war_drum",
+            "count": 1
+          }
+        ],
+        "catapultExpectedTargets": 2.2,
+        "oilTicksPerAttack": 4,
+        "oilCoverageFraction": 0.35,
+        "campGrowthCap": 1.98,
+        "campGrowthAdd": 0.98,
+        "campGrowthEndWave": 22,
+        "ultimateBase": 1.538,
+        "ultimatePerWave": 0.011,
+        "ultimateCap": 1.95,
+        "additivePerWave": 0.03,
+        "multiplicativePerWave": 0.022
+      },
+      "heroUpgradeRuntime": {
+        "taishiCiBaseShotIntervalSec": 0.15
+      },
+      "milestones": [
+        {
+          "wave": 10,
+          "rewards": {
+            "experience_book": 4,
+            "copper_coin": 800,
+            "refined_iron": 0
+          },
+          "chests": 0
+        },
+        {
+          "wave": 20,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 1200,
+            "refined_iron": 12
+          },
+          "chests": 0
+        },
+        {
+          "wave": 30,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 1800,
+            "refined_iron": 18
+          },
+          "chests": 1,
+          "minimumQuality": "white"
+        },
+        {
+          "wave": 40,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 2600,
+            "refined_iron": 26
+          },
+          "chests": 1,
+          "minimumQuality": "blue"
+        },
+        {
+          "wave": 50,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 3600,
+            "refined_iron": 36
+          },
+          "chests": 1,
+          "minimumQuality": "purple"
+        },
+        {
+          "wave": 60,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 5000,
+            "refined_iron": 50
+          },
+          "chests": 1,
+          "minimumQuality": "purple"
+        },
+        {
+          "wave": 70,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 7000,
+            "refined_iron": 70
+          },
+          "chests": 1,
+          "minimumQuality": "red"
+        },
+        {
+          "wave": 80,
+          "rewards": {
+            "experience_book": 0,
+            "copper_coin": 10000,
+            "refined_iron": 100
+          },
+          "chests": 2,
+          "minimumQuality": "white",
+          "goldProbability": 0.05
+        }
+      ],
+      "milestoneBreakthrough": {
+        "fromWave": 85,
+        "everyWaves": 5,
+        "copperPerStep": 1500,
+        "maxReachedWave": 1000000
+      }
+    },
+    "heroUpgrades": {
+      "cao_cao": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "cao_cao_banner_heal",
+            "name": "魏武·令旗驻留",
+            "hero": "cao_cao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "令旗驻留期间每秒回复城墙3点耐久，驻留时间延长2秒",
+            "effects": {
+              "bannerHealPerSec": 3,
+              "bannerLingerSecAdd": 2
+            }
+          },
+          {
+            "id": "cao_cao_command_echo",
+            "name": "魏武·号令延音",
+            "hero": "cao_cao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "号令攻速增益持续9秒，增益调整为20%",
+            "effects": {
+              "commandAttackSpeedBonusOverride": 0.2,
+              "commandBuffDurationSecOverride": 9
+            }
+          },
+          {
+            "id": "cao_cao_imperial_order",
+            "name": "魏武·挟天子令",
+            "hero": "cao_cao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "令旗落点范围内的友军军营射程增加25%，持续6秒",
+            "effects": {
+              "bannerCampRangeBonus": 0.25,
+              "bannerCampRangeDurationSec": 6
+            }
+          },
+          {
+            "id": "cao_cao_unify",
+            "name": "魏武·天下归心",
+            "hero": "cao_cao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "令旗范围内每击杀一名敌人，曹操怒气回复速度永久增加0.5%，本局最多50%",
+            "effects": {
+              "bannerKillRageGainAdd": 0.005,
+              "bannerKillRageGainCap": 0.5
+            }
+          }
+        ]
+      },
+      "xiahou_dun": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "xiahou_dun_gaze",
+            "name": "独眼·怒目",
+            "hero": "xiahou_dun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "落地时处决血量低于50%且无斩杀免疫的步兵，可穿透无敌与减伤",
+            "effects": {
+              "infantryExecuteBelowHpFraction": 0.5,
+              "infantryExecuteIgnoresInvulnerability": true
+            },
+            "runtimeNotes": "保留基础无双对普通步兵的斩杀；额外阈值处决可穿透其他无敌与减伤，仍尊重executeImmune。"
+          },
+          {
+            "id": "xiahou_dun_eye",
+            "name": "独眼·拔矢啖睛",
+            "hero": "xiahou_dun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "跃击半径扩大至195，精锐击退距离增加至45",
+            "effects": {
+              "ultimateRadiusOverride": 195,
+              "elitePushbackOverride": 45
+            }
+          },
+          {
+            "id": "xiahou_dun_double_leap",
+            "name": "独眼·连跃",
+            "hero": "xiahou_dun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "落地0.3秒后追加一次半径75的跃击，造成60%伤害",
+            "effects": {
+              "secondLeapDelaySec": 0.3,
+              "secondLeapRadius": 75,
+              "secondLeapDamageMultiplier": 0.6
+            }
+          },
+          {
+            "id": "xiahou_dun_blood_counter",
+            "name": "独眼·残躯血战",
+            "hero": "xiahou_dun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "城墙每次实际受伤后，夏侯惇下一次无双伤害增加60%，半径增加30",
+            "effects": {
+              "leakCounterDamageBonus": 0.6,
+              "leakCounterRadiusAdd": 30
+            }
+          }
+        ]
+      },
+      "zhang_liao": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "zhang_liao_mist",
+            "name": "突阵·旋风",
+            "hero": "zhang_liao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "冲锋推开敌人后，在路线留下1秒减速雾，敌人移速降低40%",
+            "effects": {
+              "chargeMistSpeedFactor": 0.6,
+              "chargeMistDurationSec": 1
+            }
+          },
+          {
+            "id": "zhang_liao_vanguard",
+            "name": "突阵·先登陷阵",
+            "hero": "zhang_liao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "冲锋精锐眩晕延长至2秒，击退距离增加至55",
+            "effects": {
+              "eliteStunSecOverride": 2,
+              "elitePushbackOverride": 55
+            }
+          },
+          {
+            "id": "zhang_liao_double_lane",
+            "name": "突阵·八百破十万",
+            "hero": "zhang_liao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "冲锋宽度扩大至150，同时覆盖两条路线，伤害不衰减",
+            "effects": {
+              "ultimateWidthOverride": 150,
+              "chargeLaneCount": 2
+            }
+          },
+          {
+            "id": "zhang_liao_silence",
+            "name": "突阵·止啼",
+            "hero": "zhang_liao",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "命中敌人的移速在本波内永久降低20%，且无法被军旗手加速",
+            "effects": {
+              "permanentHitSpeedFactor": 0.8,
+              "disableBannerHaste": true
+            }
+          }
+        ]
+      },
+      "xu_chu": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "xu_chu_crush",
+            "name": "虎痴·碾压",
+            "hero": "xu_chu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "撼地命中的重甲兵额外减速40%，持续2秒",
+            "effects": {
+              "armorHitSpeedFactor": 0.6,
+              "armorHitSlowSec": 2
+            }
+          },
+          {
+            "id": "xu_chu_bare",
+            "name": "虎痴·裸衣血战",
+            "hero": "xu_chu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "撼地锥形角度扩大至110度，距离增加至420",
+            "effects": {
+              "coneAngleDegreesOverride": 110,
+              "coneRangeOverride": 420
+            }
+          },
+          {
+            "id": "xu_chu_chain",
+            "name": "虎痴·连锁粉碎",
+            "hero": "xu_chu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "命中首领时，对其周围100范围内的其他敌人造成50%溅射伤害",
+            "effects": {
+              "bossSplashRadius": 100,
+              "bossSplashDamageMultiplier": 0.5
+            }
+          },
+          {
+            "id": "xu_chu_guard",
+            "name": "虎痴·虎卫之躯",
+            "hero": "xu_chu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "释放无双时，为城墙抵挡接下来3秒内的全部漏怪伤害",
+            "effects": {
+              "gateInvulnerabilitySec": 3
+            }
+          }
+        ]
+      },
+      "sima_yi": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "sima_yi_chain",
+            "name": "幽雷·连环",
+            "hero": "sima_yi",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "幽雷命中已被减速的敌人时，减速系数变为0.5并延长2秒",
+            "effects": {
+              "repeatedSlowFactor": 0.5,
+              "repeatedSlowDurationSecAdd": 2
+            }
+          },
+          {
+            "id": "sima_yi_punishment",
+            "name": "幽雷·天罚",
+            "hero": "sima_yi",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "雷圆半径扩大至120，落雷延迟缩短至0.6秒",
+            "effects": {
+              "ultimateRadiusOverride": 120,
+              "ultimateDelaySecOverride": 0.6
+            }
+          },
+          {
+            "id": "sima_yi_scheme",
+            "name": "幽雷·诡算",
+            "hero": "sima_yi",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "若两个雷圆所选敌人间距不足140，第三个圆改为瞄准最远处敌人",
+            "effects": {
+              "retargetFarCircleIfClustered": true,
+              "retargetClusterDistance": 140
+            }
+          },
+          {
+            "id": "sima_yi_chain_death",
+            "name": "幽雷·鹰视狼顾",
+            "hero": "sima_yi",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "被幽雷命中的敌人死亡时引发半径70、伤害80的雷爆，并可连锁触发",
+            "effects": {
+              "deathChainRadius": 70,
+              "deathChainDamage": 80,
+              "deathChainPropagates": true
+            }
+          }
+        ]
+      },
+      "liu_bei": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "liu_bei_recruits",
+            "name": "仁德·兵源",
+            "hero": "liu_bei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "每次释放无双后，援军宽度永久增加8，本局最多增加48",
+            "effects": {
+              "surgeWidthPerCastAdd": 8,
+              "surgeWidthGrowthCap": 48
+            }
+          },
+          {
+            "id": "liu_bei_ferry",
+            "name": "仁德·携民渡江",
+            "hero": "liu_bei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "城墙回复比例提高至12%，回复比例上限提高至18%",
+            "effects": {
+              "healMaxGateHpFractionOverride": 0.12,
+              "healFractionCapOverride": 0.18
+            }
+          },
+          {
+            "id": "liu_bei_shield_wall",
+            "name": "仁德·盾墙",
+            "hero": "liu_bei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "援军推进尽头留下盾墙，阻挡敌人前进2秒",
+            "effects": {
+              "surgeBarrierDurationSec": 2
+            }
+          },
+          {
+            "id": "liu_bei_virtue",
+            "name": "仁德·惟贤惟德",
+            "hero": "liu_bei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "无双改为回复城墙已损失耐久的25%，满血时无效",
+            "effects": {
+              "healLostHpFraction": 0.25
+            }
+          }
+        ]
+      },
+      "guan_yu": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "guan_yu_press",
+            "name": "偃月破阵",
+            "hero": "guan_yu",
+            "effects": {
+              "elitePushbackAdd": 16,
+              "bossPushbackAdd": 0
+            },
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "tier": 1,
+            "description": "精锐击退距离增加16"
+          },
+          {
+            "id": "guan_yu_width",
+            "name": "青龙展刃",
+            "hero": "guan_yu",
+            "effects": {
+              "sweepWidthAdd": 24
+            },
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "tier": 2,
+            "description": "青龙横扫宽度增加24"
+          },
+          {
+            "id": "guan_yu_blade_wind",
+            "name": "青龙·刀风",
+            "hero": "guan_yu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "连续两次无双的间隔区域内，敌人额外受到15%伤害，持续3秒",
+            "effects": {
+              "betweenCastDamageBonus": 0.15,
+              "betweenCastDurationSec": 3
+            }
+          },
+          {
+            "id": "guan_yu_solo",
+            "name": "青龙·单骑绝尘",
+            "hero": "guan_yu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "仅关羽一人上阵时，无双伤害乘以1.8，整个蓄怒与恢复循环缩短30%",
+            "effects": {
+              "soloUltimateDamageMultiplier": 1.8,
+              "soloRageCycleReduction": 0.3
+            },
+            "runtimeNotes": "仅单将编队可进入候选；恢复期乘0.7、怒气获取率除0.7，使完整无双循环缩短30%。",
+            "requiredPartySize": 1
+          }
+        ]
+      },
+      "zhang_fei": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "zhang_fei_echo",
+            "name": "长坂·怒吼延音",
+            "hero": "zhang_fei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "怒吼持续1.5秒，范围增加15%",
+            "effects": {
+              "roarDurationSec": 1.5,
+              "ultimateRangeMultiplier": 1.15
+            }
+          },
+          {
+            "id": "zhang_fei_rearguard",
+            "name": "长坂·断后",
+            "hero": "zhang_fei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "无双后的3秒内，怒吼范围内敌人受到伤害增加10%",
+            "effects": {
+              "afterHitVulnerabilityBonus": 0.1,
+              "afterHitVulnerabilitySec": 3
+            }
+          },
+          {
+            "id": "zhang_fei_bridge",
+            "name": "长坂·据水断桥",
+            "hero": "zhang_fei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "怒吼横向宽度扩大至520，纵向长度保持不变",
+            "effects": {
+              "ultimateWidthOverride": 520
+            }
+          },
+          {
+            "id": "zhang_fei_roar",
+            "name": "长坂·燕人咆哮",
+            "hero": "zhang_fei",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "怒吼命中的精锐与首领减速60%，持续4秒，且无法被军旗手加速",
+            "effects": {
+              "eliteBossHitSpeedFactor": 0.4,
+              "eliteBossSlowSec": 4,
+              "disableBannerHaste": true
+            }
+          }
+        ]
+      },
+      "zhao_yun": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "zhao_yun_haste",
+            "name": "龙胆·加速",
+            "hero": "zhao_yun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "三穿间隔由0.25秒缩短至0.15秒",
+            "effects": {
+              "passIntervalSecOverride": 0.15
+            }
+          },
+          {
+            "id": "zhao_yun_connect",
+            "name": "龙胆·连贯",
+            "hero": "zhao_yun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "第二、第三穿命中范围各增加10%",
+            "effects": {
+              "laterPassRangeMultiplier": 1.1
+            }
+          },
+          {
+            "id": "zhao_yun_five_passes",
+            "name": "龙胆·七进七出",
+            "hero": "zhao_yun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "穿刺段数由3段增加至5段，每段伤害不衰减",
+            "effects": {
+              "passCountOverride": 5
+            }
+          },
+          {
+            "id": "zhao_yun_courage",
+            "name": "龙胆·一身是胆",
+            "hero": "zhao_yun",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "无双未击杀任何敌人时返还35%怒气，并使下次伤害增加25%，最多积蓄3层",
+            "effects": {
+              "emptyCastRageRefundFraction": 0.35,
+              "emptyCastDamageBonus": 0.25,
+              "emptyCastMaxStacks": 3
+            }
+          }
+        ]
+      },
+      "zhuge_liang": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "zhuge_liang_wind",
+            "name": "八阵·风势",
+            "hero": "zhuge_liang",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "风牢额外施加50%减速并保留控制抗性，无双伤害降低10%",
+            "effects": {
+              "ultimateDamageMultiplier": 0.9,
+              "hitSpeedFactorOverride": 0.5,
+              "hitSlowSecOverride": 3
+            },
+            "runtimeNotes": "当前风牢基础控制是牵引；本卡额外施加0.5移速系数，继续沿用控制抗性。"
+          },
+          {
+            "id": "zhuge_liang_mind",
+            "name": "八阵·攻心",
+            "hero": "zhuge_liang",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "阵内敌人移速越低，受到伤害越高，最多额外增加25%",
+            "effects": {
+              "slowVulnerabilityMaximumBonus": 0.25
+            }
+          },
+          {
+            "id": "zhuge_liang_empty_city",
+            "name": "八阵·空城计",
+            "hero": "zhuge_liang",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "阵内敌人无法被军旗手加速，后退速度与后退距离上限翻倍",
+            "effects": {
+              "disableBannerHaste": true,
+              "backwardProgressMultiplier": 2
+            }
+          },
+          {
+            "id": "zhuge_liang_memorial",
+            "name": "八阵·出师表",
+            "hero": "zhuge_liang",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "风牢易伤倍率提高至1.5，易伤持续时间延长至5秒",
+            "effects": {
+              "incomingDamageMultiplierOverride": 1.5,
+              "vulnerabilityDurationSecOverride": 5
+            }
+          }
+        ]
+      },
+      "sun_quan": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "sun_quan_command",
+            "name": "江东·统御",
+            "hero": "sun_quan",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "潮浪经过的军营在4秒内下次攻击射程增加20%",
+            "effects": {
+              "campNextAttackRangeBonus": 0.2,
+              "campRangeBuffDurationSec": 4
+            }
+          },
+          {
+            "id": "sun_quan_tide",
+            "name": "江东·潮势",
+            "hero": "sun_quan",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "潮浪半径增加25%，推进时间由0.4秒按1.8/2.2比例缩短至约0.327秒",
+            "effects": {
+              "ultimateRadiusMultiplier": 1.25,
+              "waveDurationMultiplier": 0.8181818181818181
+            },
+            "runtimeNotes": "正文2.2秒为旧稿；以现行waveSec=0.4按1.8/2.2比例加速，不将其改成1.8秒。"
+          },
+          {
+            "id": "sun_quan_fort",
+            "name": "江东·濡须坞",
+            "hero": "sun_quan",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "城门受伤系数降低至0.55，保护持续时间延长至10秒",
+            "effects": {
+              "gateIncomingDamageFactorOverride": 0.55,
+              "gateBuffDurationSecOverride": 10
+            }
+          },
+          {
+            "id": "sun_quan_ambition",
+            "name": "江东·仲谋之志",
+            "hero": "sun_quan",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "孙权在队期间，每波首次漏怪伤害完全免疫，并获得30军粮",
+            "effects": {
+              "firstLeakImmune": true,
+              "firstLeakFoodRefund": 30
+            }
+          }
+        ]
+      },
+      "zhou_yu": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "zhou_yu_duration",
+            "name": "烈焰余势",
+            "hero": "zhou_yu",
+            "effects": {
+              "fireDurationSecAdd": 1,
+              "preserveMaxTicksPerEnemy": true
+            },
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "tier": 1,
+            "description": "火场持续增加1秒，命中次数上限保持"
+          },
+          {
+            "id": "zhou_yu_radius",
+            "name": "连营火势",
+            "hero": "zhou_yu",
+            "effects": {
+              "fireWidthAdd": 24
+            },
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "tier": 2,
+            "description": "赤壁火船的火带宽度增加24"
+          },
+          {
+            "id": "zhou_yu_flame",
+            "name": "赤壁·烈火",
+            "hero": "zhou_yu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "火带每跳伤害增加20%，基础宽度缩窄至90",
+            "effects": {
+              "fireTickDamageMultiplier": 1.2,
+              "fireBaseWidthOverride": 90
+            }
+          },
+          {
+            "id": "zhou_yu_inferno",
+            "name": "赤壁·火势滔天",
+            "hero": "zhou_yu",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "火带范围内每有一个军营，火带长度与宽度增加15%，最多增加45%",
+            "effects": {
+              "fireRangeBonusPerCamp": 0.15,
+              "fireRangeBonusCap": 0.45
+            }
+          }
+        ]
+      },
+      "lv_meng": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "lv_meng_setup",
+            "name": "白衣·布置",
+            "hero": "lv_meng",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "伏兵触发时，使周围80范围内的敌人减速30%，持续2秒",
+            "effects": {
+              "mineTriggerSlowRadius": 80,
+              "mineTriggerSlowFactor": 0.7,
+              "mineTriggerSlowSec": 2
+            }
+          },
+          {
+            "id": "lv_meng_feign",
+            "name": "白衣·示弱",
+            "hero": "lv_meng",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "每次无双的首次伏兵触发时，个人无双恢复期缩短2秒，每次施放仅生效一次",
+            "effects": {
+              "mineFirstTriggerRecoveryReductionSec": 2
+            },
+            "runtimeNotes": "当前地雷一次触发、没有独立冷却；减少本次无双的个人恢复期，一次施放只触发一次。"
+          },
+          {
+            "id": "lv_meng_mine_array",
+            "name": "白衣·连雷阵",
+            "hero": "lv_meng",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "两路各布置4雷，共8雷，爆炸半径扩大至85",
+            "effects": {
+              "minesPerLaneOverride": 4,
+              "mineCountOverride": 8,
+              "mineBlastRadiusOverride": 85
+            }
+          },
+          {
+            "id": "lv_meng_three_days",
+            "name": "白衣·士别三日",
+            "hero": "lv_meng",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "伏兵最多驻留24秒；未触发的地雷每4秒伤害增加30%，最多增加150%",
+            "effects": {
+              "mineChargeIntervalSec": 4,
+              "mineChargeDamageBonus": 0.3,
+              "mineChargeDamageCap": 1.5,
+              "durationMinSec": 24
+            },
+            "runtimeNotes": "普通伏兵仍驻留8秒；本卡将驻留时间下限设为24秒，容纳20秒满蓄力与4秒触发窗口。"
+          }
+        ]
+      },
+      "gan_ning": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "gan_ning_rain",
+            "name": "锦帆·箭雨",
+            "hero": "gan_ning",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "箭雨宽度扩大至180，易伤倍率提高至1.35",
+            "effects": {
+              "ultimateWidthOverride": 180,
+              "incomingDamageMultiplierOverride": 1.35
+            }
+          },
+          {
+            "id": "gan_ning_raid",
+            "name": "锦帆·夜袭",
+            "hero": "gan_ning",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "箭雨再次命中已经易伤的敌人时，使其失明1.5秒，期间无法使用攻击能力",
+            "effects": {
+              "vulnerableTargetBlindSec": 1.5
+            }
+          },
+          {
+            "id": "gan_ning_hundred_riders",
+            "name": "锦帆·百骑劫营",
+            "hero": "gan_ning",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "箭雨同时覆盖地图全部路线，每路宽度120",
+            "effects": {
+              "volleyAllLanes": true,
+              "volleyLaneWidthOverride": 120
+            }
+          },
+          {
+            "id": "gan_ning_bells",
+            "name": "锦帆·铃震三军",
+            "hero": "gan_ning",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "箭雨易伤在本波内永久保留，最多叠加两层；基础1.2倍率叠为1.44",
+            "effects": {
+              "permanentVulnerability": true,
+              "vulnerabilityMaxStacks": 2
+            }
+          }
+        ]
+      },
+      "taishi_ci": {
+        "baseStrength": 100,
+        "upgrades": [
+          {
+            "id": "taishi_ci_pierce",
+            "name": "三矢·穿透",
+            "hero": "taishi_ci",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 1,
+            "description": "本次无双任意一矢命中首领后，其余箭矢伤害增加30%",
+            "effects": {
+              "bossHitOtherArrowsDamageBonus": 0.3
+            }
+          },
+          {
+            "id": "taishi_ci_rapid",
+            "name": "三矢·速射",
+            "hero": "taishi_ci",
+            "camp": null,
+            "category": "hero",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 2,
+            "description": "无尽模式的逐矢间隔由0.15秒缩短至0.1秒",
+            "effects": {
+              "snipeIntervalSecOverride": 0.1
+            },
+            "runtimeNotes": "仅无尽模式将三矢基准分解为0.15秒间隔；速射改为0.1秒，剧情仍保留原瞬时三目标结算。"
+          },
+          {
+            "id": "taishi_ci_shenting",
+            "name": "三矢·神亭酣战",
+            "hero": "taishi_ci",
+            "camp": null,
+            "category": "hero",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 3,
+            "description": "无双箭矢增加至5矢，并允许重复射击同一目标",
+            "effects": {
+              "snipeCountOverride": 5,
+              "snipeCanRepeatTargets": true
+            }
+          },
+          {
+            "id": "taishi_ci_faith",
+            "name": "三矢·笃烈信义",
+            "hero": "taishi_ci",
+            "camp": null,
+            "category": "hero",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "tier": 4,
+            "description": "无双无视伤害减免，且对首领伤害增加50%；不改变敌人的控制抗性",
+            "effects": {
+              "ignoreDamageReduction": true,
+              "bossUltimateDamageBonus": 0.5
+            }
+          }
+        ]
+      }
+    },
+    "campUpgrades": {
+      "archer": {
+        "upgrades": [
+          {
+            "id": "archer_pierce",
+            "name": "穿云箭",
+            "camp": "archer",
+            "effects": {
+              "extraTargets": 1,
+              "extraDamageMultiplier": 0.35,
+              "pierceLength": 125,
+              "pierceHalfWidth": 25
+            },
+            "category": "camp",
+            "rarity": "common",
+            "repeatable": false,
+            "decay": 1,
+            "description": "主箭贯穿一名敌军，造成35%伤害"
+          },
+          {
+            "id": "archer_volley",
+            "name": "连珠齐射",
+            "camp": "archer",
+            "effects": {
+              "extraProjectiles": 1,
+              "extraDamageMultiplier": 0.25,
+              "extraProjectileCanPierce": false
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "追加一箭，造成25%伤害"
+          },
+          {
+            "id": "archer_hunt",
+            "name": "破骑劲弩",
+            "camp": "archer",
+            "effects": {
+              "enemyTypes": [
+                "cavalry",
+                "armor",
+                "boss"
+              ],
+              "damageMultiplier": 1.25
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "对骑兵、重甲与首领伤害增加25%"
+          },
+          {
+            "id": "archer_multishot",
+            "name": "万箭齐发",
+            "camp": "archer",
+            "hero": null,
+            "category": "camp",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "每次攻击额外命中两名敌人，追加目标造成60%伤害；每次攻击最多命中三个不同目标",
+            "effects": {
+              "extraAttackTargets": 2,
+              "extraAttackTargetDamageMultiplier": 0.6,
+              "attackUniqueTargetCap": 3
+            },
+            "runtimeNotes": "每次攻击共享最多三个唯一敌人的目标预算；穿云箭不能额外引入第四个目标，连珠与5级追加箭可继续命中已计入预算的目标。"
+          },
+          {
+            "id": "archer_rain",
+            "name": "箭雨覆盖",
+            "camp": "archer",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弓营攻击间隔缩短15%，达到5级时额外缩短5%",
+            "effects": {
+              "intervalReduction": 0.15,
+              "level5IntervalReduction": 0.05
+            }
+          },
+          {
+            "id": "archer_whistle",
+            "name": "鸣镝示警",
+            "camp": "archer",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弓营命中的目标减速18%，持续1.5秒",
+            "effects": {
+              "hitSlowFactor": 0.82,
+              "hitSlowDurationSec": 1.5
+            }
+          },
+          {
+            "id": "archer_yangyouji",
+            "name": "养由基之弓",
+            "camp": "archer",
+            "hero": null,
+            "category": "camp",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弓营射程增加40，每击杀一名敌人，本营本波伤害增加1%，最多增加40%",
+            "effects": {
+              "rangeAdd": 40,
+              "killWaveDamageBonus": 0.01,
+              "killWaveDamageCap": 0.4
+            },
+            "runtimeNotes": "本卡为传说军营专精，每个弓营独立记录本波击杀；每次击杀线性增加1%，最多40%，构成独立1.00至1.40倍乘区，下一波重置。"
+          }
+        ]
+      },
+      "shield": {
+        "upgrades": [
+          {
+            "id": "shield_grasp",
+            "name": "坚壁铁阵",
+            "camp": "shield",
+            "effects": {
+              "speedFactorOverride": 0.32
+            },
+            "category": "camp",
+            "rarity": "common",
+            "repeatable": false,
+            "decay": 1,
+            "description": "盾营减速强化至0.32，仍受控制抗性影响"
+          },
+          {
+            "id": "shield_reach",
+            "name": "连营拒马",
+            "camp": "shield",
+            "effects": {
+              "rangeAdd": 25
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "盾营控制范围增加25"
+          },
+          {
+            "id": "shield_break",
+            "name": "破阵反击",
+            "camp": "shield",
+            "effects": {
+              "maxTargetsOverride": 5,
+              "damageMultiplier": 1
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "盾营每次攻击最多命中5名敌人"
+          },
+          {
+            "id": "shield_chain",
+            "name": "拒马连环",
+            "camp": "shield",
+            "hero": null,
+            "category": "camp",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "盾营减速范围内的敌人，受到其他军营的伤害增加15%",
+            "effects": {
+              "otherCampIncomingDamageBonus": 0.15
+            }
+          },
+          {
+            "id": "shield_resolve",
+            "name": "陷阵之志",
+            "camp": "shield",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "盾营范围内每有10名敌人，本营伤害增加8%，最多增加80%",
+            "effects": {
+              "crowdDamagePerEnemies": 10,
+              "crowdDamageBonus": 0.08,
+              "crowdDamageCap": 0.8
+            },
+            "runtimeNotes": "本卡为稀有军营专精，每10名范围内敌人提供8%伤害、最多80%；该增益与普通和稀有属性卡的军营伤害加法池相加。"
+          },
+          {
+            "id": "shield_iron_order",
+            "name": "铁壁军令",
+            "camp": "shield",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "盾营减速下限降低至0.22，对精锐的减速效果额外增加15%",
+            "effects": {
+              "shieldMinimumSpeedFactor": 0.22,
+              "eliteSlowEffectBonus": 0.15
+            }
+          },
+          {
+            "id": "shield_eight_gates",
+            "name": "八门金锁阵",
+            "camp": "shield",
+            "hero": null,
+            "category": "camp",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "进入盾营范围的敌人定身1秒，每名敌人每6秒最多触发一次",
+            "effects": {
+              "rootDurationSec": 1,
+              "rootCooldownPerEnemySec": 6
+            }
+          }
+        ]
+      },
+      "catapult": {
+        "upgrades": [
+          {
+            "id": "catapult_blast",
+            "name": "霹雳巨石",
+            "camp": "catapult",
+            "effects": {
+              "blastRadiusAdd": 12,
+              "damageMultiplier": 1
+            },
+            "category": "camp",
+            "rarity": "common",
+            "repeatable": false,
+            "decay": 1,
+            "description": "投石爆炸半径增加12"
+          },
+          {
+            "id": "catapult_shock",
+            "name": "碎石封路",
+            "camp": "catapult",
+            "effects": {
+              "speedFactor": 0.65,
+              "durationSec": 2.5
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "投石落点附加35%减速，持续2.5秒"
+          },
+          {
+            "id": "catapult_siege",
+            "name": "摧城破甲",
+            "camp": "catapult",
+            "effects": {
+              "enemyTypes": [
+                "armor",
+                "boss"
+              ],
+              "damageMultiplier": 1.25
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "投石对重甲与首领伤害增加25%"
+          },
+          {
+            "id": "catapult_oil_shell",
+            "name": "火油弹",
+            "camp": "catapult",
+            "hero": null,
+            "category": "camp",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "投石爆炸区域留下火场，每秒造成12点伤害，持续3秒",
+            "effects": {
+              "impactFireDamagePerSec": 12,
+              "impactFireDurationSec": 3,
+              "impactFireTickSec": 1
+            }
+          },
+          {
+            "id": "catapult_collapse",
+            "name": "天崩地裂",
+            "camp": "catapult",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "无尽模式投石爆炸伤害最多命中的目标由6名增加至10名",
+            "effects": {
+              "damageTargetCapOverride": 10
+            }
+          },
+          {
+            "id": "catapult_repeat",
+            "name": "连发投石",
+            "camp": "catapult",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "投石营攻击间隔缩短18%",
+            "effects": {
+              "intervalReduction": 0.18
+            }
+          },
+          {
+            "id": "catapult_thunder_cart",
+            "name": "霹雳连车",
+            "camp": "catapult",
+            "hero": null,
+            "category": "camp",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "每次投石追加一枚70%伤害的石弹，瞄准随机另一目标；爆炸半径增加10",
+            "effects": {
+              "extraProjectiles": 1,
+              "extraProjectileDamageMultiplier": 0.7,
+              "extraProjectileDifferentTarget": true,
+              "blastRadiusAdd": 10
+            }
+          }
+        ]
+      },
+      "crossbow": {
+        "upgrades": [
+          {
+            "id": "crossbow_precision",
+            "name": "贯甲强弩",
+            "camp": "crossbow",
+            "effects": {
+              "eliteAndBossDamageMultiplier": 1.25,
+              "stackWithBaseCrossbowMultiplier": true
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "弩营对精锐与首领额外增伤25%，与基础精锐增伤乘算"
+          },
+          {
+            "id": "crossbow_pierce",
+            "name": "穿阵劲矢",
+            "camp": "crossbow",
+            "effects": {
+              "extraTargets": 1,
+              "extraDamageMultiplier": 0.35
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "弩矢贯穿一名敌军，造成35%伤害"
+          },
+          {
+            "id": "crossbow_range",
+            "name": "瞭望校射",
+            "camp": "crossbow",
+            "effects": {
+              "rangeAdd": 25
+            },
+            "category": "camp",
+            "rarity": "common",
+            "repeatable": false,
+            "decay": 1,
+            "description": "弩营射程增加25"
+          },
+          {
+            "id": "crossbow_armor_cone",
+            "name": "破甲锥",
+            "camp": "crossbow",
+            "hero": null,
+            "category": "camp",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弩矢命中攻城车或首领时，额外造成其最大生命值3%的伤害",
+            "effects": {
+              "maxHpBonusDamageFraction": 0.03,
+              "maxHpBonusEnemyTypes": [
+                "siege",
+                "boss"
+              ]
+            },
+            "runtimeNotes": "最大生命3%作为独立附伤，不被弩营基础精锐倍率、科技或贯甲强弩放大；穿阵劲矢的35%伤害分支只携带35%的该附伤，附伤继续受敌方易伤与减免影响。"
+          },
+          {
+            "id": "crossbow_machine",
+            "name": "连弩机关",
+            "camp": "crossbow",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弩营攻击间隔缩短20%，达到5级时额外缩短5%",
+            "effects": {
+              "intervalReduction": 0.2,
+              "level5IntervalReduction": 0.05
+            }
+          },
+          {
+            "id": "crossbow_marksmen",
+            "name": "神射营",
+            "camp": "crossbow",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弩营每击杀一名敌人，下次攻击伤害增加80%，最多积蓄三层",
+            "effects": {
+              "killNextAttackDamageBonus": 0.8,
+              "killNextAttackMaxStacks": 3
+            },
+            "runtimeNotes": "本卡为稀有军营专精，发射时快照并消耗本营积蓄层数，每层增加80%伤害、最多三层；该增益与普通和稀有属性卡的军营伤害加法池相加。"
+          },
+          {
+            "id": "crossbow_divine",
+            "name": "蹶张神射",
+            "camp": "crossbow",
+            "hero": null,
+            "category": "camp",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "弩营优先命中当前血量最高的敌人，并使其受到的所有伤害增加18%",
+            "effects": {
+              "targetHighestCurrentHp": true,
+              "hitIncomingDamageBonus": 0.18
+            }
+          }
+        ]
+      },
+      "fire_oil": {
+        "upgrades": [
+          {
+            "id": "fire_oil_spread",
+            "name": "泼油成阵",
+            "camp": "fire_oil",
+            "effects": {
+              "fieldRadiusAdd": 16
+            },
+            "category": "camp",
+            "rarity": "common",
+            "repeatable": false,
+            "decay": 1,
+            "description": "火油营的火场半径增加16"
+          },
+          {
+            "id": "fire_oil_heat",
+            "name": "烈火炙甲",
+            "camp": "fire_oil",
+            "effects": {
+              "eliteAndBossDamageMultiplier": 1.15
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "对精锐与首领灼烧伤害增加15%"
+          },
+          {
+            "id": "fire_oil_slow",
+            "name": "泥油阻路",
+            "camp": "fire_oil",
+            "effects": {
+              "speedFactor": 0.75,
+              "durationSec": 1
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "火油命中附加25%减速，持续1秒"
+          },
+          {
+            "id": "fire_oil_fierce",
+            "name": "膏油猛火",
+            "camp": "fire_oil",
+            "hero": null,
+            "category": "camp",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "火油营火场半径增加25，每跳伤害增加25%",
+            "effects": {
+              "fieldRadiusAdd": 25,
+              "tickDamageBonus": 0.25
+            },
+            "runtimeNotes": "本卡为史诗军营专精，每跳伤害提高25%形成独立乘区倍率1.25，与普通和稀有属性卡的伤害加法池分开结算。"
+          },
+          {
+            "id": "fire_oil_spread_time",
+            "name": "火势蔓延",
+            "camp": "fire_oil",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "火油营火场持续时间延长1.5秒",
+            "effects": {
+              "fieldDurationSecAdd": 1.5
+            }
+          },
+          {
+            "id": "fire_oil_scorch",
+            "name": "焦土",
+            "camp": "fire_oil",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "敌人离开火场后持续燃烧2秒，每秒受到火油每跳伤害50%的伤害",
+            "effects": {
+              "exitBurnDurationSec": 2,
+              "exitBurnTickSec": 1,
+              "exitBurnTickDamageMultiplier": 0.5
+            }
+          },
+          {
+            "id": "fire_oil_embers",
+            "name": "余烬燎原",
+            "camp": "fire_oil",
+            "hero": null,
+            "category": "camp",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "火场内敌人受到的所有伤害增加20%，同一火油营可同时维持两个火场",
+            "effects": {
+              "fieldIncomingDamageBonus": 0.2,
+              "maxFieldsPerCampOverride": 2
+            }
+          }
+        ]
+      },
+      "war_drum": {
+        "upgrades": [
+          {
+            "id": "war_drum_reach",
+            "name": "鼓声远传",
+            "camp": "war_drum",
+            "effects": {
+              "rangeAdd": 30
+            },
+            "category": "camp",
+            "rarity": "common",
+            "repeatable": false,
+            "decay": 1,
+            "description": "战鼓光环范围增加30"
+          },
+          {
+            "id": "war_drum_vigor",
+            "name": "振军奋勇",
+            "camp": "war_drum",
+            "effects": {
+              "attackSpeedBonusAdd": 0.05,
+              "respectGlobalCap": true
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "战鼓攻速增益增加5%，受当前攻速上限约束"
+          },
+          {
+            "id": "war_drum_ward",
+            "name": "整军固守",
+            "camp": "war_drum",
+            "effects": {
+              "campResilience": 0.25,
+              "respectResilienceCap": true
+            },
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "description": "鼓声范围内军营获得25%扰阵抗性"
+          },
+          {
+            "id": "war_drum_first",
+            "name": "一鼓作气",
+            "camp": "war_drum",
+            "hero": null,
+            "category": "camp",
+            "rarity": "epic",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "无尽模式战鼓攻速加成上限由30%提高至45%",
+            "effects": {
+              "globalAttackSpeedBonusCapOverride": 0.45
+            }
+          },
+          {
+            "id": "war_drum_three",
+            "name": "三通鼓",
+            "camp": "war_drum",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "战鼓光环内每有一个军营，攻速增益额外增加2%，最多增加12%",
+            "effects": {
+              "auraAttackSpeedPerCamp": 0.02,
+              "auraAttackSpeedExtraCap": 0.12
+            }
+          },
+          {
+            "id": "war_drum_morale",
+            "name": "战意昂扬",
+            "camp": "war_drum",
+            "hero": null,
+            "category": "camp",
+            "rarity": "rare",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "战鼓光环内武将的普攻攻速增加12%",
+            "effects": {
+              "heroBasicAttackSpeedAuraBonus": 0.12
+            }
+          },
+          {
+            "id": "war_drum_resound",
+            "name": "鼓角齐鸣",
+            "camp": "war_drum",
+            "hero": null,
+            "category": "camp",
+            "rarity": "legendary",
+            "repeatable": false,
+            "decay": 1,
+            "endlessOnly": true,
+            "description": "光环内军营伤害增加15%；每次无双释放时，光环增益翻倍并持续5秒",
+            "effects": {
+              "campDamageAuraBonus": 0.15,
+              "ultimateAuraMultiplier": 2,
+              "ultimateAuraDurationSec": 5
+            },
+            "runtimeNotes": "翻倍鼓源的攻速、伤害及武将普攻光环加成，包括5级、科技与振军奋勇；不翻倍范围或持续时间，仍受当前无尽局部30%或45%上限约束；其他武将提供的加速与射程效果不属于鼓源。"
+          }
+        ]
+      }
+    },
+    "synergies": {
+      "taoyuan": {
+        "name": "桃园结义",
+        "members": [
+          "liu_bei",
+          "guan_yu",
+          "zhang_fei"
+        ],
+        "requireAll": true,
+        "effects": {
+          "ultimateCooldownMultiplier": 0.85
+        },
+        "bonusUpgradeId": "synergy_taoyuan",
+        "runtimeNotes": "三人全部上阵时激活。完整无双怒气循环缩短15%：个人恢复期乘0.85，普通怒气获取率除0.85，不修改剧情默认值。"
+      },
+      "weiwu_xiongfeng": {
+        "name": "魏武雄风",
+        "members": [
+          "zhang_liao",
+          "xu_chu",
+          "xiahou_dun",
+          "sima_yi",
+          "cao_cao"
+        ],
+        "requireAll": false,
+        "minMembers": 3,
+        "effects": {
+          "eliteAndBossDamageBonus": 0.15
+        },
+        "bonusUpgradeId": "synergy_weiwu_xiongfeng",
+        "runtimeNotes": "五名魏将任选三名。增伤按敌方精锐或首领条件判定，也作用于破甲锥独立百分比附伤；不会更改敌兵基础或人数倍率。"
+      },
+      "jiangdong_huchen": {
+        "name": "江东虎臣",
+        "members": [
+          "sun_quan",
+          "zhou_yu",
+          "lv_meng",
+          "gan_ning",
+          "taishi_ci"
+        ],
+        "requireAll": false,
+        "minMembers": 2,
+        "effects": {
+          "fireArrowUltimateRangeMultiplier": 1.12,
+          "affectedHeroIds": [
+            "zhou_yu",
+            "gan_ning",
+            "taishi_ci"
+          ]
+        },
+        "bonusUpgradeId": "synergy_jiangdong_huchen",
+        "runtimeNotes": "五名吴将任选两名。火与箭类无双的范围增益只作用于周瑜、甘宁和太史慈；江东之力还要求周瑜与甘宁同时上阵。"
+      },
+      "wolong_zhonghu": {
+        "name": "卧龙冢虎",
+        "members": [
+          "zhuge_liang",
+          "sima_yi"
+        ],
+        "requireAll": true,
+        "effects": {
+          "slowedEnemyIncomingDamageBonus": 0.2
+        },
+        "bonusUpgradeId": "synergy_wolong_zhonghu",
+        "runtimeNotes": "诸葛亮与司马懿均在队时激活；对减速目标的1.2倍增伤与谋定天下的风、雷两个易伤来源独立结算。可与三势力四方来朝同时成立。"
+      }
+    },
+    "synergyUpgrades": [
+      {
+        "id": "synergy_taoyuan",
+        "name": "义结金兰",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "epic",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredSynergy": "taoyuan",
+        "description": "桃园三人中任一人释放无双时，另外两人各获得15点怒气",
+        "effects": {
+          "allyRageOnUltimate": 15
+        },
+        "runtimeNotes": "只奖励该羁绊的另外两名成员；怒气遵守各自当前怒气上限。"
+      },
+      {
+        "id": "synergy_weiwu_xiongfeng",
+        "name": "虎豹骑锋",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "epic",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredSynergy": "weiwu_xiongfeng",
+        "description": "魏武雄风成员的无双可以斩杀血量低于60%的步兵",
+        "effects": {
+          "infantryExecuteBelowHpFraction": 0.6
+        },
+        "runtimeNotes": "仅针对步兵且保留executeImmune规则，不削弱原有无双已经具备的步兵斩杀；不更改其他兵种。"
+      },
+      {
+        "id": "synergy_jiangdong_huchen",
+        "name": "江东之力",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "epic",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredSynergy": "jiangdong_huchen",
+        "requiredHeroes": [
+          "zhou_yu",
+          "gan_ning"
+        ],
+        "description": "周瑜火带内的敌人受到甘宁箭雨伤害增加30%",
+        "effects": {
+          "arrowRainInFireDamageBonus": 0.3
+        },
+        "runtimeNotes": "除江东虎臣外还要求周瑜与甘宁同时在队，避免没有对应技能时出现无效牌。只对真实处于周瑜火带内的甘宁箭雨命中生效。"
+      },
+      {
+        "id": "synergy_wolong_zhonghu",
+        "name": "谋定天下",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "epic",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredSynergy": "wolong_zhonghu",
+        "description": "幽雷命中附加持续3秒的1.2倍易伤，并可与风牢易伤相乘",
+        "effects": {
+          "thunderVulnerabilityMultiplier": 1.2,
+          "thunderVulnerabilityDurationSec": 3,
+          "stackWindThunderVulnerability": true
+        },
+        "runtimeNotes": "现行司马懿本体没有易伤，本卡补上雷击1.2倍、3秒来源。风雷两来源为1.2乘1.2等于1.44；出师表的风1.5时为1.8。卧龙冢虎本身对减速目标的1.2倍仍另行乘算。"
+      },
+      {
+        "id": "synergy_three_hearts",
+        "name": "三人同心",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredPartySize": 3,
+        "description": "三人满编时，全军伤害增加12%",
+        "effects": {
+          "armyDamageBonus": 0.12
+        },
+        "runtimeNotes": "本卡为稀有强化，12%并入现有全军伤害加法池；属于己方普通伤害成长，不放大破甲锥独立百分比附伤。"
+      },
+      {
+        "id": "synergy_combo_mastery",
+        "name": "合击精通",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "description": "合击窗口由2秒延长至4秒，每局合击上限由3次提高至5次",
+        "effects": {
+          "comboWindowSecOverride": 4,
+          "comboMaxPerRunOverride": 5
+        },
+        "runtimeNotes": "依正文可在任意编队进入候选；窗口使用战斗时间，每局总上限由所有八组合击共享。"
+      },
+      {
+        "id": "synergy_comrades",
+        "name": "同袍之谊",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "rare",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredSameFactionCount": 2,
+        "description": "至少两名同势力武将在队时，该势力武将怒气获取速度增加10%",
+        "effects": {
+          "sameFactionRageGainBonus": 0.1
+        },
+        "runtimeNotes": "只增益属于已满足两人成组势力的武将，队伍中单独来自其他势力的成员不获得该增益。"
+      },
+      {
+        "id": "synergy_four_corners",
+        "name": "四方来朝",
+        "camp": null,
+        "hero": null,
+        "category": "synergy",
+        "rarity": "legendary",
+        "repeatable": false,
+        "decay": 1,
+        "endlessOnly": true,
+        "requiredPartySize": 3,
+        "requiredDistinctFactions": 3,
+        "description": "三人分属魏蜀吴时，每种势力使全军伤害增加15%，共45%",
+        "effects": {
+          "armyDamageBonusPerFaction": 0.15
+        },
+        "runtimeNotes": "本卡为传说强化，按势力数形成独立乘区1加3乘0.15等于1.45，不并入普通伤害加法池。可与诸葛亮、司马懿及一名吴将组成的卧龙冢虎并存；不放大破甲锥独立百分比附伤。"
+      }
+    ],
+    "heroCombos": [
+      {
+        "id": "combo_east_wind",
+        "name": "借东风",
+        "from": "zhuge_liang",
+        "to": "zhou_yu",
+        "effects": {
+          "responderLengthMultiplier": 1.5,
+          "rangeBoostDurationSec": 2
+        },
+        "description": "风牢与火带同区衔接，火带长度乘以1.5，持续2秒",
+        "runtimeNotes": "仅放大响应火带的长度，不同时放大宽度；两秒后回到本次无双快照的原范围，避免面积被误放大至2.25倍。"
+      },
+      {
+        "id": "combo_righteous_sky",
+        "name": "义薄云天",
+        "from": "liu_bei",
+        "to": "guan_yu",
+        "effects": {
+          "combinedDamageMultiplier": 1.4
+        },
+        "description": "援军与刀波同区扫过，总伤害提高40%",
+        "runtimeNotes": "对发起援军已造成伤害的存活目标补发0.4倍实际伤害快照；响应刀波当前与后续伤害乘1.4。补偿不重新计算已经包含的易伤或减免。"
+      },
+      {
+        "id": "combo_changban_guard",
+        "name": "长坂坡守卫",
+        "from": "zhang_fei",
+        "to": "zhao_yun",
+        "effects": {
+          "initiatorPushbackMultiplier": 1.8,
+          "responderPassCount": 5,
+          "guaranteeAllPassesHit": true
+        },
+        "description": "长坂怒吼击退提高至1.8倍，龙胆五穿锁定共同区域内目标",
+        "runtimeNotes": "发起怒吼已完成的实际击退补发0.8倍，后续击退乘1.8；响应穿刺至少五段并锁定共同区域内存活目标，逐段遵守同一施放命中次数上限。"
+      },
+      {
+        "id": "combo_thunder_rain",
+        "name": "雷海箭雨",
+        "from": "sima_yi",
+        "to": "gan_ning",
+        "effects": {
+          "thunderCrossShape": true,
+          "coverageMultiplier": 1.4
+        },
+        "description": "三个幽雷落点重构为十字雷海，每圆覆盖面积提高40%",
+        "runtimeNotes": "以发起幽雷的三个真实落点建立每圆面积为原1.4倍的十字并集，只补命中扩大部分；沿用发起无双原命中记录与每敌最多一次的上限，不重复打击原已命中敌人。"
+      },
+      {
+        "id": "combo_tiger_command",
+        "name": "虎卫号令",
+        "from": "xu_chu",
+        "to": "cao_cao",
+        "effects": {
+          "campRangeMultiplier": 1.5,
+          "campRangeDurationSec": 2
+        },
+        "description": "令旗圈内军营射程提高50%，持续2秒",
+        "runtimeNotes": "以响应令旗圈建立两秒射程效果；同类射程增益取最强值，不与其他射程光环重复叠乘。"
+      },
+      {
+        "id": "combo_divine_cavalry",
+        "name": "神箭突骑",
+        "from": "taishi_ci",
+        "to": "zhang_liao",
+        "effects": {
+          "responderDamageMultiplier": 1.6,
+          "guaranteeMarkedBossHit": true
+        },
+        "description": "合肥冲锋伤害乘以1.6，并必定命中已被三矢标记的首领",
+        "runtimeNotes": "仅保证命中发起三矢真实命中过且仍存活的首领；普通冲锋的其他目标仍遵守当前施放形状与命中上限。"
+      },
+      {
+        "id": "combo_chibi_fire",
+        "name": "火烧赤壁",
+        "from": "sun_quan",
+        "to": "zhou_yu",
+        "effects": {
+          "initiatorDamageMultiplier": 2,
+          "burnDurationSec": 4
+        },
+        "description": "江东潮波伤害翻倍，真实潮波命中的目标再燃烧4秒",
+        "runtimeNotes": "对发起潮波真实命中过的存活目标补发一倍实际伤害快照；四秒燃烧使用响应周瑜本次P1快照的每跳伤害表、跳间隔与其武将伤害倍率，伤害归属发起孙权。"
+      },
+      {
+        "id": "combo_one_eye_tiger",
+        "name": "独眼虎痴",
+        "from": "xiahou_dun",
+        "to": "xu_chu",
+        "effects": {
+          "overlapDamageMultiplier": 1.5
+        },
+        "description": "跃击与锥形重叠区域内的伤害提高50%",
+        "runtimeNotes": "在两技能实际重叠区域，对发起跃击已造成伤害的存活目标补发0.5倍实际伤害，响应锥形在重叠区域内乘1.5；区域外不获得该倍率。"
+      }
+    ],
+    "comboRuntimeRules": {
+      "windowSec": 2,
+      "maxPerRun": 3,
+      "masterWindowSec": 4,
+      "masterMaxPerRun": 5,
+      "clock": "combat",
+      "runtimeNotes": "有向发起技能真实命中后，在战斗时间窗口内响应技能真实命中同一区域才触发。全部八组共享每局总次数；补偿不重吃快照中已有的易伤与减免，不补伤已死亡目标，不穿透当前无敌，也不生成新的合击触发记录。"
+    },
+    "endlessAnchors": {
+      "10": {
+        "id": "first_boss",
+        "name": "首位首领",
+        "description": "第10波迎来首位攻城首领，检验火力与城墙投资。",
+        "bossTemplates": [
+          "siege_lord"
+        ]
+      },
+      "20": {
+        "id": "charger_trial",
+        "name": "疾行督骑",
+        "description": "疾行督骑在既有时机发动冲阵，加快对城门的压力。",
+        "bossTemplates": [
+          "charger"
+        ],
+        "runtimeNotes": "按权威曲线保留本波一名首领，替代旧稿双首领；复用既有每16秒触发4秒、速度乘1.4的技能，不提前添加新疾行。"
+      },
+      "25": {
+        "id": "banner_tide",
+        "name": "军旗潮",
+        "description": "军旗手成群出现，为步兵推进提供加速。",
+        "eliteUnitFractions": {
+          "banner": 0.06
+        },
+        "runtimeNotes": "指定军旗数量只在本波脚本精锐名额中重分配，不增加总人数、精锐总数或军粮预算。"
+      },
+      "30": {
+        "id": "siege_column",
+        "name": "攻城车阵",
+        "description": "八台攻城车混入精锐，考验控制抗性与定向伤害。",
+        "eliteUnitCounts": {
+          "siege": 8
+        },
+        "runtimeNotes": "八台攻城车占用已有精锐名额，其余精锐重新分配；首领数和基础曲线保持脚本结果。"
+      },
+      "35": {
+        "id": "ranged_disruption",
+        "name": "扰阵弓手群",
+        "description": "扰阵弓手密集出现，营地需要应对连续干扰。",
+        "eliteUnitFractions": {
+          "ranged": 0.1
+        },
+        "runtimeNotes": "弓手数量只在脚本精锐预算中重分配，不增加总人数、血量倍率或奖励。"
+      },
+      "40": {
+        "id": "double_guardians",
+        "name": "双坚壁守将",
+        "description": "两名坚壁守将全波保持四分之一减伤，考验攻坚能力。",
+        "bossTemplates": [
+          "guardian",
+          "guardian"
+        ],
+        "bossDamageTakenMultiplier": 0.75,
+        "runtimeNotes": "0.75为本波首领局部常驻减伤，与原技能减伤取最强而不相乘，不修改全局首领模板。"
+      },
+      "45": {
+        "id": "enemy_sea",
+        "name": "兵海",
+        "description": "敌军集中涌入，待出兵队列保留所有溢出敌人。",
+        "massArrival": true,
+        "runtimeNotes": "本波非首领出兵时刻统一为0.3秒；spawnWindowSec仍为脚本33.2秒，存活上限仍为160，溢出队列不丢弃敌人。"
+      },
+      "50": {
+        "id": "three_commanders",
+        "name": "三首领",
+        "description": "号令统领、坚壁守将与攻城统帅共同来袭。",
+        "bossTemplates": [
+          "banner_lord",
+          "guardian",
+          "siege_lord"
+        ]
+      },
+      "60": {
+        "id": "mixed_army",
+        "name": "全兵种混编",
+        "description": "六类敌军与三名首领混编，检验完整构筑。",
+        "runtimeNotes": "所有数量、精锐占比、血量与首领数均继续由脚本公式推导。"
+      },
+      "70": {
+        "id": "elite_tide",
+        "name": "精锐潮",
+        "description": "精锐持续占据阵线，定向伤害与联动成为关键。",
+        "runtimeNotes": "严格使用脚本精锐比例0.38792；262名敌兵四舍五入为102名精锐，不把比例手改成0.39。"
+      },
+      "80": {
+        "id": "target_wave",
+        "name": "目标终点",
+        "description": "三名首领与最终兵海到达设计目标，之后仍可继续挑战。",
+        "runtimeNotes": "第80波是目标软上限，突破后仍程序化生成新波，不在此处强行结束。"
+      }
     }
   },
   "analysisModels": {

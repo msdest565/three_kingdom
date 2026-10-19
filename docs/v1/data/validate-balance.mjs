@@ -63,9 +63,9 @@ for (const hero of Object.values(v.heroes)) {
   if (hero.ultimate.ordinaryExecute) assert.deepEqual(hero.ultimate.executeEnemyTypes, ['infantry']);
 }
 for (const [id, camp] of Object.entries(v.camps)) {
-  assert.equal(camp.levels.length, 3);
+  assert.equal(camp.levels.length, v.endless.campLevelMax);
   assert.ok(Number.isInteger(camp.buildCost) && camp.buildCost > 0);
-  assert.deepEqual(camp.levels.map(level => level.level), [1, 2, 3]);
+  assert.deepEqual(camp.levels.map(level => level.level), [1, 2, 3, 4, 5]);
   for (const level of camp.levels) {
     assert.ok(level.range > 0);
     assert.ok(Number.isInteger(level.upgradeCost) && level.upgradeCost >= 0);
@@ -80,6 +80,129 @@ for (const [id, enemy] of Object.entries(v.enemies)) {
 for (const tactic of Object.values(v.tactics)) {
   if (tactic.camp) assert.ok(v.camps[tactic.camp]);
   if (tactic.hero) assert.ok(v.heroes[tactic.hero]);
+}
+assert.equal(v.endless.campLevelMax, 5);
+assert.equal(v.endless.targetWaveCount, 80);
+assert.equal(v.endless.noMetaRewards, true);
+assert.equal(v.endless.choiceEveryWave, true);
+assert.deepEqual(v.endless.rarityWeights, { common: 5000, rare: 3000, epic: 1650, legendary: 350 });
+const attributes = Object.values(v.tactics).filter(tactic => tactic.category === 'attribute');
+assert.equal(attributes.length, 26);
+assert.equal(attributes.filter(tactic => tactic.attributeGroup === 'gate').length, 8);
+for (const tactic of Object.values(v.tactics)) {
+  assert.ok(['attribute', 'camp', 'hero', 'synergy'].includes(tactic.category));
+  assert.ok(['common', 'rare', 'epic', 'legendary'].includes(tactic.rarity));
+  assert.equal(tactic.repeatable, tactic.category === 'attribute');
+  assert.equal(tactic.decay, tactic.category === 'attribute' && tactic.attributeGroup !== 'gate' ? .85 : 1);
+}
+assert.deepEqual(Object.keys(v.heroUpgrades).sort(), expectedHeroes.sort());
+const heroCards = Object.values(v.heroUpgrades).flatMap(group => group.upgrades);
+assert.equal(heroCards.length, 60);
+assert.equal(new Set(heroCards.map(card => card.id)).size, 60);
+assert.equal(heroCards.filter(card => !v.tactics[card.id]).length, 56);
+assert.equal(new Set([...Object.keys(v.tactics), ...heroCards.map(card => card.id)]).size, 104);
+for (const [heroId, group] of Object.entries(v.heroUpgrades)) {
+  assert.equal(group.baseStrength, 100);
+  assert.equal(group.upgrades.length, 4);
+  assert.deepEqual(group.upgrades.map(card => card.tier).sort(), [1, 2, 3, 4]);
+  assert.deepEqual(group.upgrades.map(card => card.rarity).sort(), ['epic', 'legendary', 'rare', 'rare']);
+  for (const card of group.upgrades) {
+    assert.equal(card.hero, heroId);
+    assert.equal(card.category, 'hero');
+    assert.equal(card.repeatable, false);
+    assert.equal(card.decay, 1);
+    assert.ok(card.description && card.name);
+    assert.ok(card.effects && Object.keys(card.effects).length);
+    const legacy = v.tactics[card.id];
+    if (legacy) assert.deepEqual(Object.fromEntries(Object.keys(legacy).map(key => [key, card[key]])), legacy);
+    else {
+      assert.equal(card.endlessOnly, true);
+      assert.equal(card.camp, null);
+    }
+  }
+}
+assert.deepEqual(Object.keys(v.campUpgrades).sort(), expectedCamps.sort());
+const campCards = Object.values(v.campUpgrades).flatMap(group => group.upgrades);
+assert.equal(campCards.length, 42);
+assert.equal(new Set(campCards.map(card => card.id)).size, 42);
+assert.equal(campCards.filter(card => !v.tactics[card.id]).length, 24);
+assert.equal(new Set([...Object.keys(v.tactics), ...heroCards.map(card => card.id), ...campCards.map(card => card.id)]).size, 128);
+for (const [campId, group] of Object.entries(v.campUpgrades)) {
+  assert.equal(group.upgrades.length, 7);
+  assert.equal(group.upgrades.filter(card => !v.tactics[card.id]).length, 4);
+  for (const card of group.upgrades) {
+    assert.equal(card.camp, campId);
+    assert.equal(card.category, 'camp');
+    assert.equal(card.repeatable, false);
+    assert.equal(card.decay, 1);
+    assert.ok(card.description && card.name && card.effects && Object.keys(card.effects).length);
+    const legacy = v.tactics[card.id];
+    if (legacy) assert.deepEqual(Object.fromEntries(Object.keys(legacy).map(key => [key, card[key]])), legacy);
+    else {
+      assert.equal(card.endlessOnly, true);
+      assert.equal(card.hero, null);
+    }
+  }
+  assert.deepEqual(group.upgrades.filter(card => !v.tactics[card.id]).map(card => card.rarity).sort(), ['epic', 'legendary', 'rare', 'rare']);
+}
+assert.deepEqual(Object.keys(v.synergies).sort(), ['taoyuan', 'weiwu_xiongfeng', 'jiangdong_huchen', 'wolong_zhonghu'].sort());
+assert.equal(v.synergyUpgrades.length, 8);
+assert.equal(new Set(v.synergyUpgrades.map(card => card.id)).size, 8);
+assert.deepEqual(v.synergyUpgrades.map(card => card.rarity).sort(), ['epic', 'epic', 'epic', 'epic', 'legendary', 'rare', 'rare', 'rare']);
+const synergyCardById = Object.fromEntries(v.synergyUpgrades.map(card => [card.id, card]));
+for (const [id, synergy] of Object.entries(v.synergies)) {
+  assert.ok(synergy.name && synergy.runtimeNotes);
+  assert.equal(new Set(synergy.members).size, synergy.members.length);
+  assert.ok(synergy.members.every(heroId => v.heroes[heroId]));
+  assert.equal(typeof synergy.requireAll, 'boolean');
+  if (!synergy.requireAll) assert.ok(synergy.minMembers > 0 && synergy.minMembers <= synergy.members.length);
+  assert.equal(synergyCardById[synergy.bonusUpgradeId]?.requiredSynergy, id);
+}
+for (const card of v.synergyUpgrades) {
+  assert.equal(card.category, 'synergy');
+  assert.equal(card.repeatable, false);
+  assert.equal(card.decay, 1);
+  assert.equal(card.endlessOnly, true);
+  assert.equal(card.camp, null);
+  assert.equal(card.hero, null);
+  assert.ok(card.name && card.description && card.runtimeNotes && Object.keys(card.effects).length);
+  if (card.requiredSynergy) assert.ok(v.synergies[card.requiredSynergy]);
+  if (card.requiredHeroes) assert.ok(card.requiredHeroes.every(heroId => v.heroes[heroId]));
+}
+assert.equal(new Set([...Object.keys(v.tactics), ...heroCards.map(card => card.id), ...campCards.map(card => card.id), ...v.synergyUpgrades.map(card => card.id)]).size, 136);
+assert.equal(v.heroCombos.length, 8);
+assert.equal(new Set(v.heroCombos.map(combo => combo.id)).size, 8);
+assert.equal(new Set(v.heroCombos.map(combo => combo.from + '/' + combo.to)).size, 8);
+for (const combo of v.heroCombos) {
+  assert.ok(v.heroes[combo.from] && v.heroes[combo.to] && combo.from !== combo.to);
+  assert.ok(combo.name && combo.description && combo.runtimeNotes && Object.keys(combo.effects).length);
+}
+assert.deepEqual([v.comboRuntimeRules.windowSec, v.comboRuntimeRules.maxPerRun, v.comboRuntimeRules.masterWindowSec, v.comboRuntimeRules.masterMaxPerRun], [2, 3, 4, 5]);
+assert.equal(v.comboRuntimeRules.clock, 'combat');
+assert.deepEqual(v.endless.milestones.map(row => row.wave), [10, 20, 30, 40, 50, 60, 70, 80]);
+const milestoneTotals = v.endless.milestones.reduce((totals, row) => ({
+  copper_coin: totals.copper_coin + row.rewards.copper_coin,
+  refined_iron: totals.refined_iron + row.rewards.refined_iron,
+  experience_book: totals.experience_book + row.rewards.experience_book,
+  chests: totals.chests + row.chests
+}), { copper_coin: 0, refined_iron: 0, experience_book: 0, chests: 0 });
+assert.deepEqual(milestoneTotals, { copper_coin: 32000, refined_iron: 312, experience_book: 4, chests: 7 });
+for (const row of v.endless.milestones) {
+  for (const value of Object.values(row.rewards)) assert.ok(Number.isInteger(value) && value >= 0);
+  assert.ok(Number.isInteger(row.chests) && row.chests >= 0);
+  if (row.chests) assert.ok(v.metaProgression.equipment.qualityIds.includes(row.minimumQuality));
+}
+assert.equal(v.endless.milestones.find(row => row.wave === 40).minimumQuality, 'blue');
+assert.equal(v.endless.milestones.find(row => row.wave === 50).minimumQuality, 'purple');
+assert.equal(v.endless.milestones.find(row => row.wave === 60).minimumQuality, 'purple');
+assert.equal(v.endless.milestones.find(row => row.wave === 70).minimumQuality, 'red');
+assert.ok(v.endless.milestones.find(row => row.wave === 80).goldProbability >= .05);
+assert.deepEqual(v.endless.milestoneBreakthrough, { fromWave: 85, everyWaves: 5, copperPerStep: 1500, maxReachedWave: 1000000 });
+assert.deepEqual(Object.keys(v.endlessAnchors).map(Number), [10, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80]);
+for (const anchor of Object.values(v.endlessAnchors)) {
+  assert.ok(anchor.id && anchor.name && anchor.description);
+  for (const id of anchor.bossTemplates || []) assert.ok(v.bossTemplates[id]);
+  for (const dictionary of [anchor.eliteUnitCounts || {}, anchor.eliteUnitFractions || {}]) for (const [id, value] of Object.entries(dictionary)) assert.ok(v.enemies[id]?.class === 'elite' && value >= 0);
 }
 for (const [i, tier] of v.stageGrowthTiers.entries()) {
   assert.equal(tier.id, `S${String(i + 1).padStart(2, '0')}`);
@@ -113,7 +236,8 @@ prototypeCounts.boss = 1;
 const referenceBeforeDensity = v.economy.referenceEnemyCompositionBeforeDensity;
 const referenceCounts = Object.fromEntries(Object.entries(referenceBeforeDensity).map(([id, count]) => [id, id === 'boss' ? count : Math.round(count * v.economy.referenceCountMultiplier)]));
 const referenceReward = sum(Object.entries(referenceCounts).map(([id, count]) => count * v.enemies[id].reward));
-const campDps = Object.fromEntries(Object.entries(v.camps).map(([id, camp]) => [id, camp.levels.map(level => {
+// These legacy examples describe the sixty-level campaign, whose cap stays L3.
+const campDps = Object.fromEntries(Object.entries(v.camps).map(([id, camp]) => [id, camp.levels.slice(0, 3).map(level => {
   let singleTarget = 0;
   if (id === 'fire_oil') singleTarget = level.tickDamage / camp.tickIntervalSec * Math.min(1, camp.fieldDurationSec / level.intervalSec);
   else if (id !== 'war_drum') singleTarget = level.damage / level.intervalSec;
@@ -123,8 +247,8 @@ const campDps = Object.fromEntries(Object.entries(v.camps).map(([id, camp]) => [
 })]));
 const freeCampIds = v.economy.referenceFreeCamps.map(camp => camp.type);
 const buildCostForOneEach = sum(Object.entries(v.camps).filter(([id]) => !freeCampIds.includes(id)).map(([, camp]) => camp.buildCost));
-const upgradeCostForOneEach = sum(Object.values(v.camps).map(camp => sum(camp.levels.map(level => level.upgradeCost))));
-const mainThreeCosts = ['archer', 'catapult', 'crossbow'].map(id => sum(v.camps[id].levels.map(level => level.upgradeCost)));
+const upgradeCostForOneEach = sum(Object.values(v.camps).map(camp => sum(camp.levels.slice(0, 3).map(level => level.upgradeCost))));
+const mainThreeCosts = ['archer', 'catapult', 'crossbow'].map(id => sum(v.camps[id].levels.slice(0, 3).map(level => level.upgradeCost)));
 const referenceBudget = v.economy.startingFood + referenceReward;
 const xpFormula = v.metaProgression.heroLevel.xpNextLevelCoefficients;
 const coinFormula = v.metaProgression.heroLevel.coinNextLevelCoefficients;

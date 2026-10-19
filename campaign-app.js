@@ -1,6 +1,7 @@
 import { BALANCE, CONTENT } from './runtime-data.js';
 import { CampaignStore } from './campaign-state.js';
 import { V1Game } from './v1-engine.js';
+import { detectSynergies } from './synergy-rules.js';
 import { V1Renderer } from './v1-renderer.js';
 import { heroPortrait, heroSilhouette, HERO_ART, PORTRAIT } from './hero-portraits.js';
 import { HeroNameCards } from './hero-name-cards.js';
@@ -12,8 +13,12 @@ import { Telemetry, ComboTracker, battleHighlight, defeatAdvice, nextObjective, 
 import { renderShareCard, canvasBlob } from './share-card.js';
 import { displayHeroPower, heroCombatStats, equipmentPreparation, runEquipmentPreparation } from './hero-presentation.js';
 import { HERO_SKILL_COPY, skillPreviewSvg } from './hero-skill-copy.js';
+import { EndlessRunTelemetry } from './endless-telemetry.js';
+import { equipmentIcon, tacticArtMetadata } from './equipment-art.js';
+import { ROGUELIKE_COMBO_STYLES } from './roguelike-presentation.js';
 
 const $ = id => document.getElementById(id);
+const campaignChoiceHost = $('choice-overlay').parentElement;
 const make = (tag, text = '', className = '') => { const node = document.createElement(tag); node.textContent = text; if (className) node.className = className; return node; };
 const button = (text, className, action) => { const node = make('button', text, className); node.type = 'button'; node.addEventListener('click', action); return node; };
 const portrait = (id, className = '') => { const node = make('img', '', className); node.src = heroPortrait(id); node.alt = BALANCE.heroes[id]?.name || '武将'; return node; };
@@ -65,8 +70,9 @@ const itemCopy = item => `${itemName(item)} · ${qualityNames[item.quality]}色 
 const lootRatesCopy = Object.entries(BALANCE.loot.qualityWeights).map(([quality,weight]) => `${qualityNames[quality]} ${weight / BALANCE.loot.weightScale * 100}%`).join(' · ');
 const campGlyphs = { shield:'盾', archer:'弓', crossbow:'弩', catapult:'石', fire_oil:'火', war_drum:'鼓' };
 const campCopy = { shield:'减速聚敌', archer:'连续迎击', crossbow:'破甲收尾', catapult:'低频碎石减速', fire_oil:'持续灼烧留敌', war_drum:'范围军阵增益' };
+const campLevel5Copy = {shield:'受减速敌人受到所有伤害 +8%',archer:'15% 概率追加一支半伤箭',crossbow:'击杀精锐或首领后立即重置冷却',catapult:'爆炸命中减速 25%，持续 1.5 秒',fire_oil:'火场边缘引燃敌人 1 秒',war_drum:'光环内军营伤害 +8%'};
 const gearCopy = { weapon:'增强本人普攻与无双伤害', armor:'提高全队城关最大耐久', command_token:'增强全队军营伤害', horse:'扩大本人普攻射程' };
-const reasons = { insufficient_resources:'培养资源不足', hero_level_required:'请先提升武将等级', tier_required:'推进主线后开放', progress_required:'推进主线后开放科技', camp_locked:'先通过主线开放此军营', max_technology_level:'科技已满级', equipped_item:'请先将装备卸下或换装', equipment_equipped:'已穿戴装备不可分解', inventory_full:'装备背包已满，请手动分解闲置行装', gold_forge_forbidden:'金色专属武器仅由胜利装备箱掉落', max_level:'武将已达等级上限', max_skill_level:'技能已满级', max_equipment_level:'装备已满级', max_equipment_quality:'装备已达最高可升品质', hero_not_owned:'先通过主线解锁这名武将', level_locked:'先通关上一阵', save_read_only:'存档版本较新，请使用更新版本打开', invalid_json:'存档文本格式不正确', import_too_large:'存档文件过大', already_settled:'本局奖励已经领取', invalid_party:'编队必须使用已拥有且不重复的武将' };
+const reasons = { stale_save_revision:'存档已在另一页面更新，请刷新后继续领取', storage_read_failed:'暂时无法读取存档，请恢复浏览器存储后重试', invalid_endless_wave:'波次超出里程碑支持范围', insufficient_resources:'培养资源不足', hero_level_required:'请先提升武将等级', tier_required:'推进主线后开放', progress_required:'推进主线后开放科技', camp_locked:'先通过主线开放此军营', max_technology_level:'科技已满级', equipped_item:'请先将装备卸下或换装', equipment_equipped:'已穿戴装备不可分解', inventory_full:'装备背包已满，请手动分解闲置行装', gold_forge_forbidden:'金色专属武器仅由胜利装备箱掉落', max_level:'武将已达等级上限', max_skill_level:'技能已满级', max_equipment_level:'装备已满级', max_equipment_quality:'装备已达最高可升品质', hero_not_owned:'先通过主线解锁这名武将', level_locked:'先通关上一阵', save_read_only:'存档版本较新，请使用更新版本打开', invalid_json:'存档文本格式不正确', import_too_large:'存档文件过大', already_settled:'本局奖励已经领取', invalid_party:'编队必须使用已拥有且不重复的武将' };
 function reason(result) { return reasons[result?.reason] || (/\p{Script=Han}/u.test(result?.reason || '') ? result.reason : '操作未完成，请检查条件后重试'); }
 const resourcesCopy = value => [value?.experience_book ? `${value.experience_book} 册` : '', value?.copper_coin ? `${value.copper_coin} 铜` : '', value?.refined_iron ? `${value.refined_iron} 铁` : ''].filter(Boolean).join(' · ') || '无额外资源';
 const starsCopy = n => '★'.repeat(n) + '☆'.repeat(3 - n);
@@ -85,6 +91,7 @@ const WEAPON_TIMBRES = {
 const safeStorage = (() => { try { return globalThis.localStorage ?? null; } catch { return null; } })();
 const heroNameCards = new HeroNameCards({storage:safeStorage});
 const telemetry = new Telemetry({ storage: safeStorage });
+const endlessTelemetry = new EndlessRunTelemetry({ telemetry, clock: () => performance.now() });
 const combo = new ComboTracker();
 const store = new CampaignStore();
 const sound = new AudioSystem({ ...store.state.settings, timbres: {
@@ -101,6 +108,7 @@ const combatClock = new CombatClock();
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const renderer = new V1Renderer($('battle-canvas'),{ reducedMotion:store.state.settings.reducedMotion || motionPreference.matches });
 renderer.releaseLabel = false; // the DOM cut-in names the hero and skill; the canvas keeps the battlefield clear
+renderer.roguelikeTitles = false; // the DOM names the combo; the canvas keeps its real regions and damage receipt
 $('battle-canvas').setAttribute('aria-label','敌军沿可见道路进攻。点击营位布阵，点按武将查看姓名，使用下方无双按钮施放技能。');
 const heroNameKeys=make('div','','battle-hero-keys');
 $('battle-canvas').parentElement?.append(heroNameKeys);
@@ -132,13 +140,46 @@ let toastTimer, bannerTimer, burstTimer;
 let modalFocus = null;
 const commandNodes = new Map();
 let challenge = null;          // decoded friend challenge for the current battle, or null for campaign play
+let endlessLevelId = null;
+let endlessAnchor = null, endlessClaims = [];
+let draftPresentationId = 0, renderedDraftId = -1, lastBossSoundWave = 0, previewBondIds = new Set(), bondPresentationKey = '', comboPresentationFrame = null;
+const rogueFeedbackTimers = new Set();
+let rogueNoticeSequence = 0;
+let gateFlashTimer = null;
 let battleWallStart = 0, battleFrozenMs = 0, unusedRageSec = 0, battleDeployed = false, battleCast = false;
-let previousRecord = null, lastCutin = -Infinity, cutinTimer = null, tutorialDismissTimer = null;
+let previousRecord = null, lastCutin = -Infinity, cutinTimer = null, tutorialDismissTimer = null, heroComboTimer = null;
 let frameSamples = [], frameWindow = 0;
 let detailLevelId = null, pauseIcon = null, pipsKey = '', lastHp = null, resultSessions = 0, resultTimers = [], intelReturn = null, suppressClick = false, heroFx = null, forgeFx = null, techFx = null, lootJustOpened = false;
 const firstRun = { deploy: false, ultimate: false };
 
 function toast(text) { $('toast').textContent = text; $('toast').classList.add('is-visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('is-visible'),2000); }
+function afterRogueFeedback(callback, delay) { const timer = setTimeout(() => { rogueFeedbackTimers.delete(timer); callback(); },delay); rogueFeedbackTimers.add(timer); return timer; }
+function clearRogueFeedback() {
+  rogueNoticeSequence++;
+  for (const timer of rogueFeedbackTimers) clearTimeout(timer); rogueFeedbackTimers.clear();
+  for (const cue of document.querySelectorAll('.roguelike-pick-cue')) cue.remove();
+  $('roguelike-notice').hidden = true;
+  clearTimeout(gateFlashTimer); gateFlashTimer = null; $('gate-flash').classList.remove('is-on');
+  document.querySelector('.castle-stat')?.classList.remove('is-hit');
+}
+function rogueSound(type, data = {}) { sound.handleEvent({ ...data, type, mode:'endless', wave:game?.wave || 0, presentation:'roguelike' }); }
+function showRogueNotice(text) {
+  const sequence = ++rogueNoticeSequence;
+  const node = $('roguelike-notice'); node.textContent = text; node.hidden = false;
+  afterRogueFeedback(() => { if (sequence === rogueNoticeSequence) node.hidden = true; },2200);
+}
+function playTacticPick(choice, source) {
+  const cue = make('div','','roguelike-pick-cue'), icon = make('img');
+  icon.src = equipmentIcon(choice.id); icon.alt = ''; cue.append(icon,make('strong',choice.name));
+  cue.setAttribute('aria-hidden','true');
+  const from = rectOf(source), to = rectOf($('tactic-total'));
+  if (from && to) {
+    cue.style.left = from.left + from.width / 2 + 'px'; cue.style.top = from.top + from.height / 2 + 'px';
+    cue.style.setProperty('--pick-x',to.left + to.width / 2 - from.left - from.width / 2 + 'px');
+    cue.style.setProperty('--pick-y',to.top + to.height / 2 - from.top - from.height / 2 + 'px');
+  }
+  document.body.append(cue); afterRogueFeedback(() => cue.remove(),500);
+}
 function banner(text, boss = false) { $('wave-banner').textContent = text; $('wave-banner').classList.toggle('is-boss',boss); $('wave-banner').classList.remove('is-visible'); void $('wave-banner').offsetWidth; $('wave-banner').classList.add('is-visible'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('wave-banner').classList.remove('is-visible'),1800); }
 function resetClock() { combatClock.resetAccumulator(); last = performance.now(); }
 function notify(result, success) { if (result?.ok) { if (success) toast(success); if (result.persisted === false) toast(store.persistenceWarning); } else toast(reason(result)); return result?.ok; }
@@ -322,6 +363,7 @@ function renderLevelDetail() {
   $('guest-option').hidden = !level.storyGuest || !unlocked;
   if (level.storyGuest) { $('guest-copy').textContent = `借将：${heroName(level.storyGuest.heroId)} Lv${level.storyGuest.level}（占一个阵位）`; $('guest-checkbox').checked = Boolean(store.state.guestSelections[level.id]); }
   $('campaign-start').disabled = !unlocked || store.readOnly;
+  $('endless-start').disabled = store.readOnly;
   $('start-label').textContent = !unlocked ? '未开放' : progress?.cleared ? '再战' : '出阵';
   $('start-sub').textContent = unlocked ? `${party.map(h => heroName(h.heroId) + (h.guest ? '（借）' : '')).join(' · ')} 出战` : `${factionNames[level.chapterId]}篇第 ${level.order} 阵`;
   renderFocus(level);
@@ -370,6 +412,11 @@ function renderFocus(level) {
 
 function renderCampaign() {
   syncResources(); renderParty();
+  const endlessIds = [store.state.party.lead,...store.state.party.supports];
+  const synergies = detectSynergies(BALANCE,endlessIds), combos = availableHeroCombos(endlessIds);
+  $('endless-synergies').textContent = `${synergies.length ? '羁绊：' + synergies.map(entry => entry.name).join('、') : '当前编队未激活羁绊'} · ${combos.length ? '可合击：' + combos.map(entry => entry.name).join('、') : '当前编队无合击组合'}`;
+  renderEndlessBondMarks(synergies,endlessIds);
+  renderEndlessProgress();
   const cleared = Object.values(store.state.levels).filter(l => l.cleared).length;
   $('campaign-progress').textContent = `${cleared} / ${CONTENT.levels.length} 阵`;
   $('lobby-view').classList.toggle('is-fresh',cleared === 0);
@@ -792,10 +839,80 @@ function showTelemetry() {
   const summary = telemetry.summary();
   body.append(make('p','记录只保存在本浏览器，不会上传。用于试玩观察首屏、首次布阵、首次无双、结算与分享按钮。系统分享完成只表示分享面板返回成功，无法得知好友是否打开。','modal-note'));
   body.append(make('p',`本次会话：进入战斗 ${summary.toBattleEntryMs ?? '—'} ms · 首次布阵 ${summary.toFirstDeployMs ?? '—'} ms · 首次无双 ${summary.toFirstUltimateMs ?? '—'} ms（均自首屏可交互起算，含阅读与引导停留）\n战斗 ${summary.battles} · 重试 ${summary.retries} · 点击分享 ${summary.shareClicks} · 分享完成 ${summary.shareCompleted}`,'import-preview'));
+  const tuning = endlessTelemetry.summary();
+  const decimal = value => value == null ? '暂无样本' : Number(value.toFixed(2));
+  const percent = value => value == null ? '暂无样本' : `${(value * 100).toFixed(1)}%`;
+  body.append(make('h3','无尽调参观察'));
+  body.append(make('p',`阵亡 ${tuning.runs.deaths} 局 · 平均阵亡波次 ${decimal(tuning.runs.averageDeathWave)}\n首次 ${decimal(tuning.cohorts.first.averageDeathWave)}（目标 25–35） · 熟练 ${decimal(tuning.cohorts.practiced.averageDeathWave)}（目标 50–65）\n已选 ${tuning.choices.selected} 张 · 平均犹豫 ${decimal(tuning.choices.averageHesitationSec)} 秒（目标 4–8）\n城墙卡获取率 ${percent(tuning.choices.gateAcquisitionRate)}（目标 15–25%）`,'import-preview'));
+  body.append(make('p','犹豫时长只计算选牌界面可见的时间，刷新前后累计，排除揭示等待和后台停留。城墙卡获取率＝已选城墙卡 / 全部已选卡；跳过不计入分母。首次指本地第 1 局，熟练指本地第 10 局起，仅作为试玩分组。','modal-note'));
   const log = make('textarea','','save-text'); log.readOnly = true; log.value = telemetry.events.slice(-60).map(e => JSON.stringify(e)).join('\n'); log.setAttribute('aria-label','事件记录'); body.append(log);
   const actions = make('div','','modal-actions');
   actions.append(button('下载记录','',() => { const blob = new Blob([JSON.stringify(telemetry.events,null,1)],{type:'application/json'}); const href = URL.createObjectURL(blob); const link = make('a'); link.href = href; link.download = 'wushuang-telemetry.json'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(href),1000); }),button('清空','',() => { telemetry.clear(); showTelemetry(); }));
+  actions.append(button('下载调参汇总','',() => { const blob = new Blob([JSON.stringify(endlessTelemetry.summary(),null,2)],{type:'application/json'}); const href = URL.createObjectURL(blob); const link = make('a'); link.href = href; link.download = 'wushuang-endless-tuning.json'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(href),1000); }));
   body.append(actions);
+}
+
+function milestoneCopy(milestone) {
+  const chests = milestone.chests ? ` · 装备箱 ×${milestone.chests}${milestone.minimumQuality ? `（${qualityNames[milestone.minimumQuality]}及以上）` : ''}${milestone.goldProbability ? ` · 每箱金色 ${(milestone.goldProbability * 100).toFixed(0)}%` : ''}` : '';
+  return resourcesCopy(milestone.rewards) + chests;
+}
+const BOND_MARKS = {
+  taoyuan:'<path d="M5 25h26M10 25v-8m8 8V9m8 16v-8"/><g fill="#e88b96"><circle cx="10" cy="14" r="5"/><circle cx="18" cy="7" r="5"/><circle cx="26" cy="14" r="5"/></g>',
+  weiwu_xiongfeng:'<path d="M6 29V5m12 24V3m12 26V5M6 5h9l-3 5 3 5H6M18 3h9l-3 5 3 5h-9M30 5h5l-2 5 2 5h-5"/>',
+  jiangdong_huchen:'<path d="M2 25q4-4 8 0t8 0t8 0t8 0M2 30q4-4 8 0t8 0t8 0t8 0M9 20V8l5 3h8l5-3v12l-9 4ZM14 16h2m4 0h2M18 13v8"/>',
+  wolong_zhonghu:'<path d="M18 2 34 18 18 34 2 18ZM10 12h16M10 17h6m4 0h6M10 22h16"/>',
+};
+function renderEndlessBondMarks(synergies, ids) {
+  const active = new Set(synergies.map(entry => entry.id)), section = $('party-section');
+  for (const id of Object.keys(BOND_MARKS)) section.classList.toggle('bond-' + id,active.has(id));
+  for (const stamp of section.querySelectorAll('.bond-strategy-stamp')) stamp.remove();
+  if (active.has('wolong_zhonghu')) {
+    const members = ['zhuge_liang','sima_yi'].map(id => ids.indexOf(id));
+    const stamp = make('span','谋','bond-strategy-stamp'); stamp.setAttribute('aria-label','卧龙冢虎谋印');
+    stamp.style.setProperty('--bond-position',String((members[0] + members[1]) / 2)); $('party-slots').append(stamp);
+  }
+  const key = ids.join('/') + ':' + [...active].join('/');
+  if (key === bondPresentationKey) return; bondPresentationKey = key;
+  const marks = $('endless-bond-marks'); marks.replaceChildren(); marks.hidden = !synergies.length;
+  for (const synergy of synergies) {
+    const fresh = !previewBondIds.has(synergy.id), mark = make('span','',`bond-mark bond-${synergy.id}${fresh ? ' is-activating' : ''}`);
+    const icon = make('span','','bond-symbol'); icon.innerHTML = `<svg viewBox="0 0 36 36" aria-hidden="true">${BOND_MARKS[synergy.id] || ''}</svg>`;
+    mark.append(icon,make('span',synergy.name)); mark.setAttribute('aria-label',`${synergy.name}已激活`);
+    marks.append(mark);
+    if (fresh && mode === 'lobby') rogueSound('synergy',{synergyId:synergy.id});
+  }
+  previewBondIds = active;
+}
+function renderEndlessProgress() {
+  const progress = store.getEndlessProgress();
+  const next = BALANCE.endless.milestones.find(row => !progress.claimedWaves.includes(row.wave));
+  $('endless-progress').textContent = `里程碑已领 ${progress.claimedWaves.length}/8${next ? ` · 首次到达第 ${next.wave} 波可领下一档` : progress.highestBreakthroughWave ? ` · 突破已领至 ${progress.highestBreakthroughWave} 波` : ' · 下一档：突破第 85 波'}`;
+}
+function showEndlessMilestones() {
+  const body = openModal('无尽里程碑');
+  const progress = store.getEndlessProgress();
+  body.append(make('p','首次进入对应波次时自动发放，每档永久限领一次。装备箱即时开启，装备进入背包；背包满时折为材料。重复挑战没有常规资源产出。','modal-note'));
+  const list = make('div','','endless-milestone-list');
+  for (const milestone of BALANCE.endless.milestones) {
+    const claimed = progress.claimedWaves.includes(milestone.wave), row = make('section','',claimed ? 'is-claimed' : '');
+    row.append(make('strong',`第 ${milestone.wave} 波 · ${claimed ? '已领取' : '未达成'}`),make('p',milestoneCopy(milestone)));
+    const receipt = store.state.endlessMilestones?.receipts?.find(entry => entry.wave === milestone.wave);
+    for (const loot of receipt?.loot || []) row.append(make('small',`${loot.name} · ${qualityNames[loot.quality]}${loot.salvaged ? ' · 背包已满，折为材料' : ' · 已入背包'}`));
+    list.append(row);
+  }
+  body.append(list,make('p',`突破 80 波后，每 5 波仍有一次性奖励：85 波 1500 铜、90 波 3000 铜，依次递增。${progress.highestBreakthroughWave ? `已领至第 ${progress.highestBreakthroughWave} 波。` : ''}`,'modal-note'));
+}
+function claimEndlessWave(wave) {
+  const result = store.claimEndlessMilestones(wave);
+  if (!result.ok) { toast(reason(result)); return; }
+  if (!result.claims.length) return;
+  endlessClaims.push(...result.claims);
+  const copy = `第 ${wave} 波里程碑已自动领取${result.persisted === false ? ' · 本页保存，暂未写入存档' : ''}`;
+  toast(result.persisted === false ? store.persistenceWarning : copy);
+  $('battle-announcer').textContent = copy;
+  telemetry.log('endless_milestone',{wave,claimedWaves:result.claims.map(claim => claim.wave),persisted:result.persisted !== false});
+  rogueSound('waveMilestone',{wave,claims:result.claims.length});
+  showRogueNotice(copy);
 }
 
 // ===== Adaptive visual budget: decorations go first, gameplay readability never changes =====
@@ -812,7 +929,17 @@ function samplePerformance(realDt) {
 const diagnostics = { fps: null, quality: 'high', samples: [] };
 
 function handleBattleEvent(event) {
-  tutorial.handleEvent(event); sound.handleEvent(event);
+  const endless = game?.mode === 'endless';
+  const feedback = endless ? { ...event, mode:'endless', wave:game.wave, presentation:'roguelike' } : event;
+  const audioType = endless ? {tactic:'tacticPick',tacticReroll:'reroll',tacticSkip:'skip',heal:'gateRepair'}[event.type] : null;
+  tutorial.handleEvent(event);
+  if (event.type !== 'choice' || !endless) sound.handleEvent(audioType ? {...feedback,type:audioType} : endless && event.type === 'upgrade' && event.camp?.level === 5 ? {...feedback,type:'campLevel5'} : feedback);
+  if (endless && mode === 'battle' && ['heroCombo','heal','upgrade'].includes(event.type)) renderer.handleEvent(feedback);
+  if (endless && event.type === 'upgrade' && event.camp?.level === 5) {
+    showRogueNotice(`${BALANCE.camps[event.camp.type].name}升至五级 · ${campLevel5Copy[event.camp.type]}`);
+    $('battle-announcer').textContent = `${BALANCE.camps[event.camp.type].name}五级质变`;
+  }
+  endlessTelemetry.handleEvent(event,game);
   if (event.type === 'kill' && mode === 'battle') bumpCombo(event.time);
   if (['build','upgrade'].includes(event.type) && !battleDeployed) { battleDeployed = true; telemetry.log('first_deploy',{levelId:game?.level.id,combatSec:+(event.time ?? 0).toFixed(1),wallMs:Math.round(performance.now() - battleWallStart),accountFirst:!firstRun.deploy}); firstRun.deploy = true; }
   if (event.type === 'ultimate' && mode === 'battle') { showCutin(event); if (!battleCast) { battleCast = true; telemetry.log('first_ultimate',{levelId:game?.level.id,heroId:event.heroId,combatSec:+(event.time ?? 0).toFixed(1),wallMs:Math.round(performance.now() - battleWallStart),accountFirst:!firstRun.ultimate}); firstRun.ultimate = true; } }
@@ -820,20 +947,49 @@ function handleBattleEvent(event) {
     if (renderer.handleEvent) renderer.handleEvent(event);
     else if (['ultimate','burst'].includes(event.type)) renderer.flashUltimate(event.type === 'burst' ? {...event,type:'burst'} : event);
   }
-  if (event.type === 'wave') banner(event.boss ? '敌将压境' : `第 ${event.wave} 波 · 敌军来袭`,Boolean(event.boss));
-  else if (event.type === 'bossWarning') banner(event.name ? `${event.name}即将入阵` : '敌将将至 · 准备无双',true);
+  if (event.type === 'wave') {
+    banner(event.boss ? '敌将压境' : `第 ${event.wave} 波 · 敌军来袭`,Boolean(event.boss));
+    if (game?.mode === 'endless') { endlessAnchor = null; claimEndlessWave(event.wave); }
+  }
+  else if (event.type === 'endlessAnchor' && game?.mode === 'endless') {
+    endlessAnchor = event;
+    banner(`第 ${event.wave} 波 · ${event.name}`,event.bossCount > 0);
+    $('battle-announcer').textContent = `${event.name}：${event.description}`;
+  }
+  else if (event.type === 'bossWarning') {
+    banner(event.name ? `${event.name}即将入阵` : '敌将将至 · 准备无双',true);
+    if (endless && lastBossSoundWave !== game.wave) { lastBossSoundWave = game.wave; rogueSound('endlessBoss',{seconds:event.seconds}); }
+  }
   else if (event.type === 'reinforcementWarning') banner(`${event.name} · ${event.seconds}秒后入阵`);
-  else if (event.type === 'choice') { choiceRevealRemaining = 1; choiceRevealFrame = last; choicesKey = ''; $('upgrade-choices').replaceChildren(); }
+  else if (event.type === 'choice') { draftPresentationId++; choiceRevealRemaining = 1; choiceRevealFrame = last; choicesKey = ''; $('upgrade-choices').replaceChildren(); }
+  else if (event.type === 'heroCombo' && game?.mode === 'endless' && mode === 'battle') {
+    const node = $('hero-combo-cue');
+    $('hero-combo-name').textContent = event.name;
+    $('hero-combo-detail').textContent = `${heroName(event.fromHeroId)} → ${heroName(event.toHeroId)} · 本局合击 ${event.count}/${event.limit}`;
+    $('hero-combo-portraits').replaceChildren(portrait(event.fromHeroId),portrait(event.toHeroId));
+    const style = ROGUELIKE_COMBO_STYLES[event.comboId];
+    node.style.setProperty('--combo-from',style?.fromColor || '#eed287'); node.style.setProperty('--combo-to',style?.toColor || '#aee1c2');
+    node.dataset.phase = 'hold'; comboPresentationFrame = last;
+    node.hidden = false; clearTimeout(heroComboTimer);
+    $('battle-announcer').textContent = `${event.name}合击，剩余${event.remaining}次`;
+  }
   else if (event.type === 'ultimate') { if (!renderer.reducedMotion && mode === 'battle' && !document.hidden && !pageSuspended) combatClock.triggerImpact(0.35,0.25); }
   else if (event.type === 'burst') { const kills = Math.max(0,Math.floor(Number(event.burstKills ?? event.kills) || 0)); const skillName = BALANCE.heroes[event.heroId]?.ultimate.name || '无双破阵'; $('burst-label').textContent = kills ? `${skillName} · ${heroName(event.heroId)} 击破 ` : skillName; $('burst-kills').textContent = kills ? String(kills) : ''; $('burst-kills').hidden = kills === 0; $('burst-number').classList.add('is-visible'); clearTimeout(burstTimer); burstTimer = setTimeout(() => $('burst-number').classList.remove('is-visible'),1300); }
   else if (event.type === 'skillQueued' && event.queuePosition > 1) toast(`${event.name}已待命 · 技能依次施放`);
   else if (event.type === 'tactic') toast(event.upgrade?.name || event.name || '战术已强化');
-  else if (['win','lose'].includes(event.type) && game && !settlement && !challenge) { previousRecord = store.state.levels[game.level.id] ? { ...store.state.levels[game.level.id] } : null; settlement = store.settleBattle({ battleId,levelId:game.level.id,won:event.type === 'win',hp:Math.max(0,game.hp),maxHp:game.maxHp,kills:game.kills,bestBurst:game.bestBurst,time:game.time,casts:game.stats.ultimateCasts }); if (!settlement.ok) toast(reason(settlement)); }
+  else if (['win','lose'].includes(event.type) && game && game.mode !== 'endless' && !settlement && !challenge) { previousRecord = store.state.levels[game.level.id] ? { ...store.state.levels[game.level.id] } : null; settlement = store.settleBattle({ battleId,levelId:game.level.id,won:event.type === 'win',hp:Math.max(0,game.hp),maxHp:game.maxHp,kills:game.kills,bestBurst:game.bestBurst,time:game.time,casts:game.stats.ultimateCasts }); if (!settlement.ok) toast(reason(settlement)); }
 }
 
-function enterBattle(levelId = selectedLevelId, guide = false, { friend = null, retry = false } = {}) {
+function enterBattle(levelId = selectedLevelId, guide = false, { friend = null, retry = false, endless = false } = {}) {
   // A friend challenge uses a normalised loadout and never touches the save or rewards.
-  if (friend) {
+  if (endless) {
+    if (store.readOnly) { toast('当前存档无法开始战斗'); return; }
+    const ids = [store.state.party.lead,...store.state.party.supports];
+    const party = ids.map(heroId => ({...store.getHero(heroId),auto:!!store.state.party.autoSkills[heroId],guest:false}));
+    if (!party.length) { toast('请先编队再挑战'); return; }
+    resetBattleState(levelId); challenge = null; battleId = null; endlessLevelId = levelId;
+    game = new V1Game({mode:'endless',levelId,party,unlockedCamps:store.state.unlockedCamps,campTech:store.getBattleTechnology(),onEvent:handleBattleEvent});
+  } else if (friend) {
     const setup = challengeSetup(friend.levelId, friend.heroes);
     resetBattleState(levelId = friend.levelId); challenge = friend; battleId = null;
     game = new V1Game({levelId,party:setup.party,unlockedCamps:setup.unlockedCamps,campTech:setup.campTech,onEvent:handleBattleEvent});
@@ -844,26 +1000,34 @@ function enterBattle(levelId = selectedLevelId, guide = false, { friend = null, 
     resetBattleState(levelId); challenge = null; selectedChapter = store.getLevel(levelId).chapterId;
     game = new V1Game({levelId,party,unlockedCamps:store.state.unlockedCamps,campTech:store.getBattleTechnology(),onEvent:handleBattleEvent});
   }
-  telemetry.log(retry ? 'retry' : 'battle_entry',{levelId,challenge:Boolean(friend),guide:Boolean(guide || store.state.settings.tutorialVersion < 1)});
-  mode = 'battle'; forceGuide = !friend && (guide || store.state.settings.tutorialVersion < 1); tutorial.reset(false); storyVisible = Boolean(friend) || !store.state.levels[levelId]?.cleared; renderer.resetFeedback?.(); combatClock.clearImpact();
-  $('lobby-view').hidden = true; $('battle-view').hidden = false; $('battle-level-title').textContent = `${factionNames[game.level.chapterId]} ${game.level.order} · ${game.level.name}`; $('battle-seal').textContent = factionNames[game.level.chapterId];
+  telemetry.log(retry ? 'retry' : 'battle_entry',{levelId,mode:endless ? 'endless' : 'campaign',challenge:Boolean(friend),guide:!endless && Boolean(guide || store.state.settings.tutorialVersion < 1)});
+  mode = 'battle'; forceGuide = !endless && !friend && (guide || store.state.settings.tutorialVersion < 1); tutorial.reset(false); storyVisible = endless || Boolean(friend) || !store.state.levels[levelId]?.cleared; renderer.resetFeedback?.(); combatClock.clearImpact();
+  $('lobby-view').hidden = true; $('battle-view').hidden = false; $('battle-level-title').textContent = endless ? '无尽演武 · 向八十波进军' : `${factionNames[game.level.chapterId]} ${game.level.order} · ${game.level.name}`; $('battle-seal').textContent = endless ? '∞' : factionNames[game.level.chapterId];
+  $('battle-view').classList.toggle('is-endless',endless);
+  const choiceHost = endless ? $('battle-view') : campaignChoiceHost;
+  if ($('choice-overlay').parentElement !== choiceHost) { const overlay = $('choice-overlay'); overlay.remove(); choiceHost.append(overlay); }
   renderer.flash = null; renderer.bladeTrails = []; renderer.setMap(game.map); renderer.resize(); previousState = ''; choicesKey = ''; commandsKey = ''; tutorialKey = ''; commandNodes.clear();
   $('burst-number').classList.remove('is-visible'); clearTimeout(burstTimer); $('wave-banner').classList.remove('is-visible');
-  $('story-title').textContent = game.level.name; $('story-kicker').textContent = friend ? '好友挑战 · 同阵同配置' : `${factionNames[game.level.chapterId]}篇 · 第${game.level.act}幕`;
+  $('story-title').textContent = endless ? '无尽演武' : game.level.name; $('story-kicker').textContent = endless ? '每波选卡 · 城关不破，挑战不止' : friend ? '好友挑战 · 同阵同配置' : `${factionNames[game.level.chapterId]}篇 · 第${game.level.act}幕`;
   $('story-lines').replaceChildren();
-  const lines = friend ? challengeLines(friend) : game.level.story.opening;
+  const lines = endless ? [{speaker:'军令',text:`${game.heroes.map(h => h.name).join('、')}出战。每波结束选择一张强化，军营可升至五级。`},{speaker:'军师',text:'属性卡可重复获得。刷新消耗军粮，跳过获得补给；每局可锁定三次，将一张牌留到下一轮。'},{speaker:'目标',text:'以八十波为目标，过关后仍可继续。首次到达里程碑自动领赏，每档限领一次；重复挑战无资源产出。城关耐久归零即结束。'}] : friend ? challengeLines(friend) : game.level.story.opening;
   // On a first run the story sheet doubles as the tutorial's "what am I defending" step: one tap, not two.
   if (forceGuide && !friend) lines.push({speaker:'军令',text:`守住下方城关。敌军沿道路压来，先布军阵聚敌，再用${game.heroes[0].name}一刀横扫。`});
   for (const line of lines) { const p = make('p'); p.append(make('strong',line.speaker),make('span',line.text)); $('story-lines').append(p); }
-  $('story-start').textContent = friend ? '开始挑战' : forceGuide ? '布阵迎敌' : '迎敌守关'; $('story-skip').hidden = Boolean(friend);
+  $('story-start').textContent = endless || friend ? '开始挑战' : forceGuide ? '布阵迎敌' : '迎敌守关'; $('story-skip').hidden = endless || Boolean(friend);
   $('story-overlay').classList.toggle('is-sheet',true);
   resetClock(); void sound.unlock(); sound.setScene('battle'); if (!storyVisible) beginCombat(); syncBattle(true);
 }
 function resetBattleState(levelId) {
+  clearRogueFeedback(); sound.setBattleContext({mode:'campaign',wave:0});
+  draftPresentationId = 0; renderedDraftId = -1; lastBossSoundWave = 0; comboPresentationFrame = null;
+  endlessTelemetry.finish(game,{outcome:game?.state === 'lost' ? 'lost' : game?.state === 'won' ? 'won' : 'abandoned'});
+  endlessAnchor = null; endlessClaims = [];
   heroNameCards.clear();
   resetCombo(); selectedLevelId = levelId; settlement = null; lootRevealed = false; selectedSlot = -1; formationCursor = -1; choiceRevealRemaining = 0; choiceRevealFrame = null;
   battleWallStart = performance.now(); battleFrozenMs = 0; unusedRageSec = 0; battleDeployed = false; battleCast = false; previousRecord = null; lastCutin = -Infinity;
   clearTimeout(cutinTimer); clearTimeout(tutorialDismissTimer); $('skill-cutin').classList.remove('is-visible');
+  clearTimeout(heroComboTimer); $('hero-combo-cue').hidden = true;
   pauseIcon = null; pipsKey = ''; lastHp = null; for (const t of resultTimers.splice(0)) clearTimeout(t); finishCounters(); $('result-overlay').classList.remove('is-seq'); renderer.consumeUiEvents?.();
 }
 function challengeLines(friend) {
@@ -874,14 +1038,22 @@ function challengeLines(friend) {
 }
 function beginCombat() {
   if (!game || game.state !== 'ready') return;
+  endlessTelemetry.onBattleStart(game);
+  sound.setBattleContext({mode:game.mode,wave:1});
   storyVisible = false; $('story-skip').hidden = false;
   // A first run already read the goal on the story sheet, so the guide opens directly on the real slot.
   tutorial.reset(forceGuide, { startAt: forceGuide && !store.state.levels[game.level.id]?.cleared ? 'deploy' : 'intro' });
-  game.start(); resetClock(); syncBattle(true);
+  game.start();
+  if (game.mode === 'endless' && game.activeSynergies.length) rogueSound('synergy',{synergyIds:game.activeSynergies.map(entry => entry.id)});
+  resetClock(); syncBattle(true);
 }
 function returnHome() {
+  clearRogueFeedback(); sound.setBattleContext({mode:'campaign',wave:0});
+  endlessTelemetry.finish(game,{outcome:game?.state === 'lost' ? 'lost' : game?.state === 'won' ? 'won' : 'abandoned'});
+  endlessTelemetry.setChoiceVisible(false);
   mode = 'lobby'; selectedSlot = -1; tutorial.skip(); storyVisible = false; choiceRevealRemaining = 0; choiceRevealFrame = null; renderer.resetFeedback?.(); combatClock.clearImpact(); resetCombo();
   clearTimeout(cutinTimer); clearTimeout(tutorialDismissTimer); $('skill-cutin').classList.remove('is-visible'); $('burst-number').classList.remove('is-visible');
+  clearTimeout(heroComboTimer); $('hero-combo-cue').hidden = true;
   if (challenge) { challenge = null; try { if (globalThis.location?.hash?.includes('challenge=')) history.replaceState(null,'',location.pathname + location.search); } catch { /* file:// may refuse */ } }
   $('battle-view').hidden = true; $('lobby-view').hidden = false; closeModal(); sound.setScene('menu'); resetClock(); renderCampaign();
 }
@@ -907,6 +1079,13 @@ function openCamp(slot) {
   selectedSlot = slot; formationCursor = slot; resetClock(); $('camp-panel').hidden = false; anchorCamp(slot);
   const camp = game.camps.find(c => c.slot === slot); $('camp-index-label').textContent = `第 ${slot + 1} 营位`; $('camp-title').textContent = camp ? `${BALANCE.camps[camp.type].name} · ${camp.level}级` : '部署军阵'; $('camp-options').replaceChildren();
   const modifier = game.map.rule.campModifier; $('camp-note').textContent = `布阵时战斗暂停${modifier?.slot === slot ? ' · ' + game.map.rule.copy : ''}`;
+  if (game.mode === 'endless' && camp && camp.level >= 4) $('camp-note').textContent += ` · 五级${camp.level === 5 ? '已解锁' : '解锁'}：${campLevel5Copy[camp.type]}`;
+  if (game.mode === 'endless' && camp) {
+    const owned = acquiredCampUpgrades(camp.type);
+    const summary = make('div','', 'camp-upgrade-summary');
+    summary.append(make('strong',`本局专精 ${owned.length}/7`),make('small',owned.length ? owned.map(card => card.name).join(' · ') : '建造后，对应军营专精卡进入三选一'));
+    $('camp-options').append(summary);
+  }
   if (camp) { const cost = game.getUpgradeCost(slot); if (cost === null) $('camp-options').append(make('div','军阵已满级','max-level')); else { const node = button('','camp-option upgrade-camp',() => { if (notify(game.upgrade(slot),'军阵已升级')) closeCamp(); }); node.append(make('strong',`升级至 ${camp.level + 1} 级`),make('small',`${cost} 军粮 · 强化${campCopy[camp.type]}`)); node.disabled = game.food < cost; $('camp-options').append(node); } }
   else for (const type of game.availableCamps) { const def = BALANCE.camps[type]; const node = button('','camp-option',() => { if (notify(game.build(slot,type),`${def.name}已部署`)) closeCamp(); }); node.append(make('span',campGlyphs[type],'camp-glyph'),make('strong',def.name),make('small',campCopy[type]),make('span',`${def.buildCost} 军粮`,'camp-cost')); node.disabled = game.food < def.buildCost; $('camp-options').append(node); }
   syncBattle();
@@ -942,8 +1121,88 @@ function renderCommands() {
     copy.append(name,sub); node.append(fill,portrait(hero.id),copy,state); (lead ? $('lead-command') : $('hero-commands')).append(node); commandNodes.set(hero.id,{node,fill,sub,state});
   }
 }
-function renderChoices() { const key = game.upgrades.map(t => t.id).join('|'); if (key === choicesKey) return; choicesKey = key; $('upgrade-choices').replaceChildren(); for (const choice of game.upgrades) { const node = button('','upgrade-choice',() => { if (choiceRevealRemaining > 0 || $('choice-overlay').hidden) return; notify(game.selectUpgrade(choice.id),'战术已整备'); resetClock(); syncBattle(true); }); node.append(make('strong',choice.name),make('span',choice.description || tacticCopy(choice.id))); $('upgrade-choices').append(node); } }
-function tacticCopy(id) { const def = BALANCE.tactics[id]; if (def?.camp) return `${BALANCE.camps[def.camp].name} · 强化${campCopy[def.camp]}`; if (def?.hero) return `${heroName(def.hero)} · 强化无双`; return '强化阵势'; }
+const TACTIC_RARITIES = {common:{name:'普通',quality:'white',corners:0},rare:{name:'稀有',quality:'blue',corners:1},epic:{name:'史诗',quality:'purple',corners:2},legendary:{name:'传说',quality:'gold',corners:4}};
+const HERO_UPGRADE_TIERS = {1:['Ⅰ','数值强化'],2:['Ⅱ','形态扩展'],3:['Ⅲ','机制改变'],4:['Ⅳ','玩法重塑']};
+function availableHeroCombos(ids) { return (BALANCE.heroCombos || []).filter(entry => ids.includes(entry.from) && ids.includes(entry.to)); }
+function heroUpgradeCards(heroId) { return BALANCE.heroUpgrades?.[heroId]?.upgrades || []; }
+function acquiredHeroUpgrades(heroId) { return heroUpgradeCards(heroId).filter(card => game.tactics.has(card.id)); }
+function acquiredCampUpgrades(type) { return (BALANCE.campUpgrades?.[type]?.upgrades || []).filter(card => game.tactics.has(card.id)); }
+const ATTRIBUTE_EFFECT_COPY = {
+  gateHpAdd:['耐久上限',false],gateHpPercentAdd:['耐久上限',true],gateHealPerWave:['每波回复',false],firstLeakReduction:['首次漏怪减伤',true],gateSlowFraction:['城关附近减速',true],gateLeakReduction:['每次漏怪减伤',false],gateHpRiskPercentAdd:['耐久上限',true],lowHpDamageBonus:['残血全军伤害',true],
+  campDamageBonus:['军营伤害',true],campArmorDamageBonus:['军营对重甲伤害',true],campIntervalReduction:['军营攻击间隔减少',true],campAttackSpeedBonus:['军营攻速',true],campRangeAdd:['军营射程',false],campEliteDamageBonus:['军营对精锐伤害',true],campBossDamageBonus:['军营对首领伤害',true],overlapDamageBonus:['每层覆盖增伤',true],dotDamageBonus:['持续伤害',true],foodPerWave:['每波军粮',false],
+  heroBasicDamageBonus:['武将普攻伤害',true],heroAttackSpeedBonus:['武将普攻攻速',true],rageGainBonus:['怒气获取',true],postUltimateRageBonus:['无双后怒气获取',true],ultimateDamageBonus:['无双伤害',true],rageCostBonus:['无双怒气消耗',true],ultimateVulnerabilityBonus:['无双命中易伤',true],partyDamageBonus:['每名武将全军增伤',true],
+};
+function attributeGainCopy(choice) {
+  const stacks = game.tacticCounts?.[choice.id] ?? choice.stacks ?? 0;
+  const scale = Math.pow(choice.decay ?? 1,stacks);
+  const effects = choice.nextEffects || Object.fromEntries(Object.entries(choice.effects || {}).map(([key,value]) => [key,typeof value === 'number' ? value * scale : value]));
+  const gains = Object.entries(effects).filter(([key,value]) => ATTRIBUTE_EFFECT_COPY[key] && Number.isFinite(value)).map(([key,value]) => {
+    const [label,percent] = ATTRIBUTE_EFFECT_COPY[key], amount = Number((value * (percent ? 100 : 1)).toFixed(2));
+    return `${label} +${amount}${percent ? '%' : ''}`;
+  });
+  return `本次：${gains.join(' · ') || choice.description || tacticCopy(choice.id)}`;
+}
+function renderChoices() {
+  const endless = game.mode === 'endless';
+  const key = game.upgrades.map(t => `${t.id}:${game.tacticCounts?.[t.id] ?? 0}`).join('|') + (endless ? `/${game.rerollCount}/${game.locksRemaining}/${game.lockedTacticId}/${game.food}` : '');
+  $('choice-tools').hidden = !endless;
+  $('choice-copy').textContent = endless ? `战斗已暂停 · 强化仅在本局有效${BALANCE.heroUpgrades ? ' · ' + game.heroes.map(hero => `${hero.name}专属 ${acquiredHeroUpgrades(hero.id).length}/4`).join(' · ') : ''}` : '本局有效';
+  if (key === choicesKey) return; choicesKey = key; $('upgrade-choices').replaceChildren();
+  const freshDraft = endless && renderedDraftId !== draftPresentationId;
+  if (freshDraft) {
+    renderedDraftId = draftPresentationId; syncAudio(); rogueSound('tacticOffer');
+    const rank = Math.max(...game.upgrades.map(card => ({common:0,rare:1,epic:2,legendary:3}[card.rarity] || 0)));
+    if (rank >= 2) rogueSound(rank === 3 ? 'cardLegendary' : 'cardEpic');
+  }
+  for (const [index,choice] of game.upgrades.entries()) {
+    const node = button('','upgrade-choice',() => { if (choiceRevealRemaining > 0 || $('choice-overlay').hidden) return; const result = game.selectUpgrade(choice.id); if (notify(result,'战术已整备') && endless) playTacticPick(choice,node); resetClock(); syncBattle(true); });
+    if (!endless) { node.append(make('strong',choice.name),make('span',choice.description || tacticCopy(choice.id))); $('upgrade-choices').append(node); continue; }
+    const rarity = TACTIC_RARITIES[choice.rarity] || TACTIC_RARITIES.common;
+    const card = make('div','',`tactic-card quality-${rarity.quality} rarity-${choice.rarity || 'common'}`);
+    if (freshDraft) card.classList.add('is-entering'); card.style.setProperty('--card-delay',index * .06 + 's');
+    card.dataset.tacticId = choice.id; card.classList.toggle('is-locked',game.lockedTacticId === choice.id);
+    const category = choice.category === 'attribute' ? '纯属性' : choice.camp ? `${BALANCE.camps[choice.camp].name}专精` : choice.hero ? `${heroName(choice.hero)}专属` : '羁绊';
+    const meta = make('span','','tactic-meta'); meta.append(make('span',category),make('b',rarity.name));
+    const icon = make('img','','tactic-icon'), art = tacticArtMetadata(choice.id);
+    icon.src = equipmentIcon(choice.id); icon.alt = `${choice.name} · ${category}${art?.tier ? ` · 专属第 ${art.tier} 阶` : ''}`; icon.width = 56; icon.height = 56;
+    node.append(icon,meta,make('strong',choice.name),make('span',choice.description || tacticCopy(choice.id),'tactic-description'));
+    if (choice.category === 'hero') {
+      const tier = choice.tier || heroUpgradeCards(choice.hero).find(card => card.id === choice.id)?.tier;
+      const label = HERO_UPGRADE_TIERS[tier];
+      if (label) { const badge = make('small',`${label[0]} · ${label[1]} · 每局限获一次`,'hero-upgrade-tier'); badge.setAttribute('aria-label',`专属第${tier}阶，${label[1]}，每局限获一次`); node.append(badge); }
+      if (choice.requiredPartySize === 1) node.append(make('small','单将构筑 · 仅关羽独自出战时生效','hero-upgrade-condition'));
+    }
+    if (choice.category === 'camp') node.append(make('small',`本营专精 ${acquiredCampUpgrades(choice.camp).length}/7 · 每局限获一次`,'camp-upgrade-copy'));
+    if (choice.category === 'synergy') node.append(make('small','编队强化 · 每局限获一次','synergy-upgrade-copy'));
+    if (choice.repeatable) {
+      const stacks = game.tacticCounts?.[choice.id] ?? choice.stacks ?? 0;
+      node.append(make('small',`已获 ${stacks} 次 · ${choice.decay === 1 ? '收益不递减' : `本次效力 ${Number((Math.pow(choice.decay ?? 1,stacks) * 100).toFixed(1))}%`}`,'tactic-stacks'),make('small',attributeGainCopy(choice),'tactic-gain'));
+    }
+    const locked = game.lockedTacticId === choice.id;
+    const lock = button('','tactic-lock',() => {
+      if (choiceRevealRemaining > 0 || $('choice-overlay').hidden) return;
+      if (notify(game.lockTactic(choice.id),'已锁定，选其他牌后仍保留')) { choicesKey = ''; renderChoices(); }
+    });
+    lock.dataset.tacticId = choice.id; lock.disabled = locked || game.locksRemaining <= 0;
+    lock.setAttribute('aria-label',locked ? `${choice.name}已锁定` : `锁定${choice.name}，留到下一轮`);
+    lock.setAttribute('aria-pressed',String(locked));
+    lock.title = locked ? '已锁定，选其他卡后留到下一轮' : game.locksRemaining > 0 ? '锁定，留到下一轮' : '锁定次数已用完';
+    const lockIcon = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    lockIcon.setAttribute('viewBox','0 0 24 24'); lockIcon.setAttribute('aria-hidden','true');
+    const lockPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+    lockPath.setAttribute('d',`${locked ? 'M7 10V7a5 5 0 0 1 10 0v3' : 'M7 10V7a5 5 0 0 1 9.6-2'} M6 10h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z M12 14v3`);
+    lockIcon.append(lockPath); lock.append(lockIcon);
+    card.append(node,lock);
+    for (let corner = 0; corner < rarity.corners; corner++) { const mark = make('i','',`tactic-corner corner-${corner}`); mark.setAttribute('aria-hidden','true'); card.append(mark); }
+    $('upgrade-choices').append(card);
+  }
+  if (endless) {
+    const cost = game.getRerollCost(); $('choice-reroll').textContent = `刷新 · ${cost} 军粮`; $('choice-reroll').disabled = game.food < cost;
+    $('choice-skip').textContent = `跳过 · 军粮 +${BALANCE.endless.skipCompensationFood}`;
+    $('choice-status').textContent = `锁定剩余 ${game.locksRemaining} 次${game.lockedTacticId ? ' · 已保留一张牌' : ' · 可将一张牌留到下一轮'}`;
+  }
+}
+function tacticCopy(id) { const def = game?.tacticDefinition?.(id) || BALANCE.tactics[id]; if (def?.description) return def.description; if (def?.category === 'attribute') return '全局属性强化 · 可重复获取'; if (def?.camp) return `${BALANCE.camps[def.camp].name} · 强化${campCopy[def.camp]}`; if (def?.hero) return `${heroName(def.hero)} · 强化无双`; return '强化阵势'; }
 const ADVICE_ROUTE = { training:['heroes','养','去培养'], rage:['heroes','怒','去培养'], cast:['heroes','技','去培养'], boss:['heroes','帅','去培养'], armor:['workshop','弩','去工坊'], cavalry:['workshop','盾','去工坊'], upgrade:['workshop','营','去工坊'], food:['retry','粮','再战'], general:['retry','阵','再战'] };
 function renderLootResult() {
   const loot = settlement?.ok && game.state === 'won' ? settlement.loot : null;
@@ -958,7 +1217,27 @@ function renderLootResult() {
   }
 }
 function currentHighlight() { return battleHighlight(game,{bestCombo:combo.best,previous:challenge ? null : previousRecord}); }
+function renderEndlessResult() {
+  for (const timer of resultTimers.splice(0)) clearTimeout(timer); finishCounters();
+  const completed = Math.max(0,game.wave - (game.state === 'won' ? 0 : 1)), target = BALANCE.endless.targetWaveCount;
+  $('result-overlay').classList.remove('is-seq','is-quick'); $('result-overlay').classList.toggle('is-lost',game.state !== 'won');
+  $('result-res').hidden = true; $('result-loot').hidden = true; $('result-stars').replaceChildren(); $('result-stars').setAttribute('aria-label','');
+  $('result-kicker').textContent = '无尽演武 · 本局战报'; $('result-title').textContent = completed >= target ? '突破八十波' : '无尽演武结束';
+  $('result-highlight-label').textContent = '守住'; $('result-highlight-value').textContent = completed; $('result-highlight-unit').textContent = '波'; $('result-highlight-record').hidden = true;
+  $('result-advice').hidden = true; $('result-advice').replaceChildren(); $('result-challenge').hidden = true;
+  for (const [id,value] of [['result-kills',game.kills],['result-burst',game.bestBurst],['result-casts',game.stats.ultimateCasts],['result-combo',combo.best]]) $(id).textContent = value;
+  const rewards = endlessClaims.reduce((total,claim) => { for (const [key,value] of Object.entries(claim.rewards)) total[key] = (total[key] || 0) + value; return total; },{});
+  $('result-rewards').textContent = endlessClaims.length ? `本局里程碑已领取：${resourcesCopy(rewards)}` : '本局没有新里程碑奖励 · 重复挑战无资源产出';
+  for (const loot of endlessClaims.flatMap(claim => claim.loot || [])) $('result-rewards').append(make('span',`${loot.name} · ${qualityNames[loot.quality]} · ${loot.salvaged ? '背包已满，已折为材料' : '已入背包'}`,'endless-loot-receipt'));
+  $('result-unlocks').textContent = `战至第 ${game.wave} 波 · 用时 ${formatTime(game.time)}${endlessClaims.length ? ' · 奖励已在到达时发放' : ''}`;
+  $('result-next').hidden = false; $('result-next').textContent = completed >= target ? '已达成八十波目标，城关未破时可一直继续。' : `八十波目标 · 本局获得 ${Object.values(game.tacticCounts || {}).reduce((sum,n) => sum + n,0)} 次强化`;
+  $('result-share').hidden = true; $('retry-button').hidden = true;
+  $('next-level').hidden = false; $('next-level').textContent = '再战无尽'; $('next-level').dataset.action = 'endless-retry';
+  telemetry.log('battle_result',{mode:'endless',wave:game.wave,completedWaves:completed,kills:game.kills,bestBurst:game.bestBurst,casts:game.stats.ultimateCasts,combatSec:+game.time.toFixed(1)});
+}
 function renderResult() {
+  if (game.mode === 'endless') { renderEndlessResult(); return; }
+  $('result-res').hidden = false;
   renderLootResult(); const won = game.state === 'won'; const stars = settlement?.stars || game.stars;
   const quick = resultSessions++ > 0, k = calm() ? 0 : quick ? .48 : 1; for (const t of resultTimers.splice(0)) clearTimeout(t);
   $('result-overlay').classList.toggle('is-lost',!won);
@@ -1031,18 +1310,39 @@ function syncBattle(force = false) {
   const ended = ['won','lost'].includes(game.state); $('battle-view').classList.toggle('is-result',ended);
   if (pauseIcon !== (game.state === 'paused')) { pauseIcon = game.state === 'paused'; $('pause-button').innerHTML = pauseIcon ? PLAY_ICON : PAUSE_ICON; $('pause-button').setAttribute('aria-label',pauseIcon ? '继续战斗' : '暂停战斗'); }
   $('hp-lag').style.width = `${Math.max(0,game.hp / game.maxHp * 100)}%`;
-  const pips = `${game.wave}/${game.waveCount}`; if (pips !== pipsKey) { pipsKey = pips; $('wave-pips').replaceChildren(...game.level.waves.map((w,i) => make('i','',`${i + 1 < game.wave ? 'is-done' : i + 1 === game.wave ? 'is-now' : ''} ${w.bossSpawn ? 'is-boss' : ''}`))); }
+  const endless = game.mode === 'endless';
+  const status = $('synergy-status'); status.hidden = !endless;
+  if (endless) {
+    const info = game.heroComboStatus(), names = game.activeSynergies.map(entry => entry.name).join('、') || '无已激活羁绊';
+    const pairs = availableHeroCombos(game.heroes.map(hero => hero.id));
+    const copy = `${names} · ${pairs.length ? `合击剩余 ${info.remaining}/${info.limit} · ${info.windowSec}秒同区命中` : '当前编队无合击组合'}`;
+    if ($('synergy-copy').textContent !== copy) $('synergy-copy').textContent = copy;
+    $('tactic-total').textContent = String(Object.values(game.tacticCounts || {}).reduce((sum,value) => sum + value,0));
+  }
+  const waveStatus = $('endless-wave-status');
+  waveStatus.hidden = !endless || !(endlessAnchor || endlessClaims.length);
+  $('endless-anchor-name').textContent = endless && endlessAnchor ? `第 ${game.wave} 波 · ${endlessAnchor.name}` : '';
+  $('endless-anchor-copy').textContent = endless && endlessAnchor ? endlessAnchor.description : '';
+  $('endless-reward-status').textContent = endless && endlessClaims.length ? `本局已领 ${endlessClaims.length} 档里程碑 · 奖励已入账` : '';
+  const pips = `${endless}/${game.wave}/${game.waveCount}`;
+  if (pips !== pipsKey) {
+    if (endless && pipsKey) replayClass($('wave-label'),'is-wave-flip');
+    pipsKey = pips;
+    const waves = endless ? Array.from({length:8},(_,i) => ({number:Math.max(10,Math.floor(game.wave / 10) * 10 - 60) + i * 10,boss:true})) : game.level.waves.map((w,i) => ({number:i + 1,boss:!!w.bossSpawn}));
+    $('wave-pips').replaceChildren(...waves.map(w => { const pip = make('i','',`${w.number < game.wave ? 'is-done' : w.number === game.wave ? 'is-now' : ''} ${w.boss ? 'is-boss' : ''}`); if (endless) pip.setAttribute('title',`第 ${w.number} 波首领`); return pip; }));
+  }
   $('pause-button').disabled = !['playing','paused'].includes(game.state); $('formation-button').disabled = game.state !== 'playing'; $('hp-value').textContent = `${Math.ceil(game.hp)} / ${game.maxHp}`; $('hp-fill').style.width = `${Math.max(0,game.hp / game.maxHp * 100)}%`; $('hp-fill').parentElement.setAttribute('aria-valuenow',String(Math.ceil(game.hp))); $('hp-fill').parentElement.setAttribute('aria-valuemax',String(game.maxHp)); $('battle-view').classList.toggle('is-critical',game.hp / game.maxHp < .3);
   $('food-value').textContent = Math.floor(game.food); $('enemy-count').textContent = game.activeEnemyCount; $('pending-count').textContent = `待入 ${game.pendingEnemyCount}`; $('enemy-pressure').setAttribute('aria-label',`在场敌军${game.activeEnemyCount}人，本波待入场${game.pendingEnemyCount}人`); $('enemy-pressure').classList.toggle('is-dense',game.activeEnemyCount >= 35);
-  $('wave-label').textContent = `第 ${Math.max(1,game.wave)} / ${game.waveCount} 波`; $('time-value').textContent = formatTime(game.time); $('field-hint').textContent = `${game.map.name} · ${game.map.rule.copy}`; $('field-hint').classList.toggle('is-quiet',game.time > 6);
+  $('wave-label').textContent = endless ? `第 ${Math.max(1,game.wave)} 波 · ${game.wave > BALANCE.endless.targetWaveCount ? '突破八十' : '目标 80'}` : `第 ${Math.max(1,game.wave)} / ${game.waveCount} 波`; $('time-value').textContent = formatTime(game.time); $('field-hint').textContent = `${game.map.name} · ${game.map.rule.copy}`; $('field-hint').classList.toggle('is-quiet',game.time > 6);
+  if (endless && game.wave > BALANCE.endless.targetWaveCount) $('battle-level-title').textContent = '无尽演武 · 八十波之后';
   const speed = tutorial.active ? 1 : store.state.settings.speed; $('speed-button').textContent = speed + '×'; $('speed-button').disabled = tutorial.active || ended; $('speed-button').setAttribute('aria-label',tutorial.active ? '教学期间固定一倍速' : `当前${speed}倍速，点按切换`);
   $('threat-indicator').hidden = game.activeEnemyCount < 35 || tutorial.active || selectedSlot >= 0 || game.state !== 'playing'; $('threat-indicator').textContent = game.activeEnemyCount >= 70 ? '大军压境 · 准备无双' : '敌潮汇聚';
   for (const [id,key] of [['music-button','musicEnabled'],['sound-button','sfxEnabled']]) { $(id).classList.toggle('is-muted',!store.state.settings[key]); $(id).textContent = (key === 'musicEnabled' ? '音乐 ' : '音效 ') + (store.state.settings[key] ? '开' : '关'); $(id).setAttribute('aria-pressed',String(store.state.settings[key])); }
   renderCommands();
-  for (const hero of game.heroes) { const ui = commandNodes.get(hero.id); const canCast = game.state === 'playing' && hero.rage >= 100 - 1e-8 && hero.rageRecovery <= 1e-8 && !hero.reserved;
+  for (const hero of game.heroes) { const ui = commandNodes.get(hero.id), rageCost = game.heroRageCost?.(hero) ?? 100, maxRage = game.heroMaxRage?.(hero) ?? 100; const canCast = game.state === 'playing' && hero.rage >= rageCost - 1e-8 && hero.rageRecovery <= 1e-8 && !hero.reserved;
     // Ready cue fires on the transition only, for heroes the player casts by hand.
     if (canCast && !ui.wasReady && !hero.auto) { sound.handleEvent({type:'rageReady',heroId:hero.id}); ui.node.classList.remove('just-ready'); void ui.node.offsetWidth; ui.node.classList.add('just-ready'); }
-    ui.wasReady = canCast; ui.fill.style.width = Math.min(100,hero.rage) + '%'; ui.node.disabled = !canCast; ui.node.classList.toggle('is-ready',canCast); ui.sub.textContent = hero.reserved ? '技能排队中' : hero.rageRecovery > 0 ? `冷却 ${Math.ceil(hero.rageRecovery)} 秒` : canCast ? `可击 ${hero.target?.count || 0} 人` : `怒气 ${Math.floor(hero.rage)}%`; ui.state.textContent = hero.reserved ? '队列' : hero.rageRecovery > 0 ? '冷却' : canCast ? '就绪' : hero.auto ? '自动' : hero.role === 'lead' ? '领衔' : '协战'; ui.node.setAttribute('aria-label',`${hero.name} · ${hero.definition.ultimate.name} · ${hero.reserved ? '技能排队中' : hero.rageRecovery > 0 ? `冷却 ${Math.ceil(hero.rageRecovery)} 秒` : canCast ? '可施放' : `蓄怒 ${Math.floor(hero.rage)} / 100`}`); }
+    ui.wasReady = canCast; ui.fill.style.width = Math.min(100,hero.rage / maxRage * 100) + '%'; ui.node.disabled = !canCast; ui.node.classList.toggle('is-ready',canCast); ui.sub.textContent = hero.reserved ? '技能排队中' : hero.rageRecovery > 0 ? `冷却 ${Math.ceil(hero.rageRecovery)} 秒` : canCast ? `可击 ${hero.target?.count || 0} 人` : endless ? `怒气 ${Math.floor(hero.rage)} / ${Number(rageCost.toFixed(1))}` : `怒气 ${Math.floor(hero.rage)}%`; ui.state.textContent = hero.reserved ? '队列' : hero.rageRecovery > 0 ? '冷却' : canCast ? '就绪' : hero.auto ? '自动' : hero.role === 'lead' ? '领衔' : '协战'; ui.node.setAttribute('aria-label',`${hero.name} · ${hero.definition.ultimate.name} · ${hero.reserved ? '技能排队中' : hero.rageRecovery > 0 ? `冷却 ${Math.ceil(hero.rageRecovery)} 秒` : canCast ? '可施放' : `蓄怒 ${Math.floor(hero.rage)} / ${Number(rageCost.toFixed(1))}`}`); }
   // The burst step hides the coach entirely so nothing covers the sweep.
   const guideVisible = tutorial.active && tutorial.step !== 'burst' && game.state === 'playing' && selectedSlot < 0 && !storyVisible; $('tutorial-card').hidden = !guideVisible; const view = guideVisible ? tutorial.view : null; const guideKey = `${guideVisible}/${tutorial.step}/${tutorial.burstKills}`;
   if (guideKey !== tutorialKey && view) { $('tutorial-card').dataset.step = tutorial.step; $('tutorial-progress').textContent = `学习守关 · ${view.number} / 4`; $('tutorial-title').textContent = view.title; $('tutorial-copy').textContent = view.copy.replaceAll('关羽',game.heroes[0].name); $('tutorial-action').textContent = view.action; $('tutorial-action').hidden = !view.action; $('tutorial-status').textContent = tutorial.freezesBattle ? '战斗已暂停 · 操作后继续' : '实战中 · 军阵自动迎敌'; } tutorialKey = guideKey; $('field-hint').hidden = guideVisible;
@@ -1064,24 +1364,29 @@ function advanceChoiceReveal(realDt, now) {
 }
 function consumeCues() {
   for (const cue of renderer.consumeUiEvents?.() || []) {
-    if (cue.type === 'gateHit') { const flash = $('gate-flash'); flash.classList.add('is-on'); setTimeout(() => flash.classList.remove('is-on'),calm() ? 0 : 140); replayClass(document.querySelector('.castle-stat'),'is-hit'); }
+    if (cue.type === 'gateHit') { const flash = $('gate-flash'); clearTimeout(gateFlashTimer); flash.classList.add('is-on'); gateFlashTimer = setTimeout(() => { flash.classList.remove('is-on'); gateFlashTimer = null; },calm() ? game?.mode === 'endless' ? 120 : 0 : 140); replayClass(document.querySelector('.castle-stat'),'is-hit'); }
     else if (cue.type === 'waveClear' && !cue.final) banner(`第 ${cue.wave} 波 · 肃清`);
   }
 }
 function playGate() { if (calm()) return; replayClass($('gate-transition'),'is-run'); }
 function togglePause() { if (!game || !['playing','paused'].includes(game.state)) return; selectedSlot = -1; game.state === 'paused' ? game.resume() : game.pause(); resetClock(); syncBattle(true); }
-function battleCanAdvance() { return mode === 'battle' && game?.state === 'playing' && selectedSlot < 0 && !storyVisible && !tutorial.freezesBattle && !document.hidden && !pageSuspended && $('lobby-modal').hidden; }
+function battleCanAdvance() { return mode === 'battle' && game?.state === 'playing' && selectedSlot < 0 && !storyVisible && !tutorial.freezesBattle && !document.hidden && !pageSuspended && $('lobby-modal').hidden && !(game.mode === 'endless' && renderer.presentationHoldRemaining > 1e-8); }
+function retryBattle() { enterBattle(game.mode === 'endless' ? endlessLevelId : game.level.id,false,{friend:challenge,retry:true,endless:game.mode === 'endless'}); }
 
 for (const id of ['campaign','heroes','workshop','settings']) bind(id + '-tab',() => showTab(id));
 bind('campaign-start',() => { enterBattle(); if (mode === 'battle') playGate(); }); bind('modal-close',closeModal);
+bind('endless-start',() => { enterBattle(selectedLevelId,false,{endless:true}); if (mode === 'battle') playGate(); });
+bind('endless-milestones',showEndlessMilestones);
+bind('choice-reroll',() => { if (game?.mode !== 'endless' || game.state !== 'choosing' || choiceRevealRemaining > 0) return; if (notify(game.rerollTactics(),'候选战术已刷新')) { choicesKey = ''; syncBattle(true); } });
+bind('choice-skip',() => { if (game?.mode !== 'endless' || game.state !== 'choosing' || choiceRevealRemaining > 0) return; if (notify(game.skipTactics(),'已获得补给军粮')) { resetClock(); syncBattle(true); } });
 bind('setting-music',() => changeSetting('musicEnabled',!store.state.settings.musicEnabled)); bind('setting-sfx',() => changeSetting('sfxEnabled',!store.state.settings.sfxEnabled)); bind('setting-motion',() => changeSetting('reducedMotion',!store.state.settings.reducedMotion)); bind('setting-speed',() => changeSetting('speed',nextSpeed(store.state.settings.speed)));
 bind('setting-guide',() => enterBattle(CONTENT.levels[0].id,true)); bind('save-export',showExport); bind('save-import',showImport);
 $('guest-checkbox').addEventListener('change',() => { notify(store.setGuest(selectedLevelId,$('guest-checkbox').checked)); renderLevelDetail(); });
-bind('story-start',beginCombat); bind('story-skip',beginCombat); bind('pause-button',togglePause); bind('resume-button',() => { game?.resume(); syncBattle(true); }); bind('restart-paused',() => enterBattle(game.level.id,false,{friend:challenge,retry:true})); bind('retry-button',() => enterBattle(game.level.id,false,{friend:challenge,retry:true})); bind('result-home',() => { returnHome(); showTab('campaign'); });
+bind('story-start',beginCombat); bind('story-skip',beginCombat); bind('pause-button',togglePause); bind('resume-button',() => { game?.resume(); syncBattle(true); }); bind('restart-paused',retryBattle); bind('retry-button',retryBattle); bind('result-home',() => { returnHome(); showTab('campaign'); });
 for (const id of ['tech','forge','bag']) bind('ws-tab-' + id,() => showWorkshopPanel(id));
 bind('prepare-button',showPrepare); bind('bulk-salvage',showBulkSalvage); bind('loot-rates-button',showLootRates);
-bind('leave-battle',() => { const body = openModal('结束本次演武？'); body.append(make('p','本局没有奖励，已有进度都会保留。','modal-note')); const actions = make('div','','modal-actions'); actions.append(button('继续守关','',() => { closeModal(); game.resume(); syncBattle(true); }),button('返回军帐','',returnHome)); body.append(actions); });
-bind('next-level',() => { if ($('next-level').dataset.action === 'retry') { enterBattle(game.level.id,false,{retry:true}); return; } const next = CONTENT.levels.find(l => l.globalIndex === game.level.globalIndex + 1); if (next) { enterBattle(next.id); playGate(); } });
+bind('leave-battle',() => { const body = openModal('结束本次演武？'); body.append(make('p',game?.mode === 'endless' ? '已领取的里程碑奖励会保留，退出不追加奖励。本局强化随挑战结束。' : '本局没有奖励，已有进度都会保留。','modal-note')); const actions = make('div','','modal-actions'); actions.append(button('继续守关','',() => { closeModal(); game.resume(); syncBattle(true); }),button('返回军帐','',returnHome)); body.append(actions); });
+bind('next-level',() => { if ($('next-level').dataset.action === 'endless-retry') { retryBattle(); return; } if ($('next-level').dataset.action === 'retry') { enterBattle(game.level.id,false,{retry:true}); return; } const next = CONTENT.levels.find(l => l.globalIndex === game.level.globalIndex + 1); if (next) { enterBattle(next.id); playGate(); } });
 bind('result-share',showShare); bind('challenge-enter',showChallengeEntry); bind('telemetry-view',showTelemetry);
 // Route and intel retain keyboard access and return focus to the control that opened them.
 let routeReturn = null, intelHintSeen = false;
@@ -1134,15 +1439,23 @@ bind('formation-button',cycleCamp); bind('close-camp',closeCamp); bind('speed-bu
 bind('tutorial-skip',() => finishTutorial(true)); bind('tutorial-action',() => { if (tutorial.step === 'intro') { tutorial.advance(); syncBattle(); } else if (tutorial.step === 'deploy') { const slot = guideSlot(); slot >= 0 ? openCamp(slot) : cycleCamp(); } else if (tutorial.step === 'ultimate') cast(); else if (tutorial.step === 'complete') finishTutorial(); });
 $('battle-canvas').addEventListener('pointerup',event => { if (mode !== 'battle' || storyVisible || !['playing','paused'].includes(game?.state)) return; const heroId=renderer.hitTestHero(event.clientX,event.clientY,game); if(heroId){heroNameCards.show(heroId);$('battle-announcer').textContent=heroName(heroId);return;} const slot = renderer.hitTest(event.clientX,event.clientY); if (slot >= 0) { void sound.unlock(); openCamp(slot); } else if (selectedSlot >= 0) closeCamp(); });
 document.addEventListener('keydown',event => { if (event.code === 'Escape') { if (!$('level-intel').hidden) closeIntel(); else if (!$('route-sheet').hidden) closeRoute(); else if (!$('lobby-modal').hidden && $('hero-gear-popover') && !$('hero-gear-popover').hidden) closeHeroGear(); else if (!$('lobby-modal').hidden) closeModal(); else if (selectedSlot >= 0) closeCamp(); else if (mode === 'battle') togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'KeyP') { togglePause(); event.preventDefault(); } else if (mode === 'battle' && event.code === 'Space' && !/^(BUTTON|INPUT|SELECT|TEXTAREA)$/.test(event.target.tagName)) { cast(); event.preventDefault(); } });
-document.addEventListener('visibilitychange',() => { resetClock(); if (document.hidden && game?.state === 'playing') { selectedSlot = -1; game.pause(); } syncAudio(); syncBattle(true); });
-window.addEventListener('pagehide',() => { pageSuspended = true; resetClock(); if (game?.state === 'playing') game.pause(); sound.setActive(false); audioActive = false; store.save(); });
+document.addEventListener('visibilitychange',() => { if (document.hidden) endlessTelemetry.setChoiceVisible(false); resetClock(); if (document.hidden && game?.state === 'playing') { selectedSlot = -1; game.pause(); } syncAudio(); syncBattle(true); });
+window.addEventListener('pagehide',() => { endlessTelemetry.setChoiceVisible(false); pageSuspended = true; resetClock(); if (game?.state === 'playing') game.pause(); sound.setActive(false); audioActive = false; store.save(); });
 window.addEventListener('pageshow',() => { pageSuspended = false; resetClock(); audioActive = null; syncAudio(); syncBattle(true); }); window.addEventListener('resize',() => renderer.resize()); motionPreference.addEventListener('change',() => { renderer.reducedMotion = store.state.settings.reducedMotion || motionPreference.matches; document.body?.classList?.toggle('reduce-motion',renderer.reducedMotion); if (renderer.reducedMotion) combatClock.clearImpact(); });
 
 function frame(now) {
   const realDt = Math.max(0,(now-last) / 1000); last = now;
   try {
     combatClock.advance(realDt,tutorial.active ? 1 : store.state.settings.speed,battleCanAdvance,step => { game.update(step); tutorial.update({state:game.state,rage:game.rage,maxRage:100,enemyCount:game.activeEnemyCount}); });
+    const presentationActive = mode === 'battle' && game?.mode === 'endless' && ['playing','choosing'].includes(game.state) && selectedSlot < 0 && !storyVisible && !document.hidden && !pageSuspended && !document.body.classList.contains('is-landscape-short') && $('lobby-modal').hidden;
+    renderer.advancePresentation(comboPresentationFrame === now ? 0 : Math.min(.1,realDt),{active:presentationActive});
+    if (game?.mode === 'endless') {
+      const cue = $('hero-combo-cue'), comboPresentation = renderer.roguelikePresentation.combo;
+      if (comboPresentation) cue.dataset.phase = renderer.roguelikePresentation.phase;
+      else cue.hidden = true;
+    }
     advanceChoiceReveal(realDt, now); tickCounters(now);
+    endlessTelemetry.setChoiceVisible(mode === 'battle' && game?.mode === 'endless' && game.state === 'choosing' && choiceRevealRemaining <= 1e-8 && !document.hidden && !pageSuspended && !storyVisible && !document.body.classList.contains('is-landscape-short') && $('lobby-modal').hidden);
     if (mode === 'battle' && game) {
       tutorial.update({state:game.state,rage:game.rage,maxRage:100,enemyCount:game.activeEnemyCount});
       const visible = !document.hidden && !pageSuspended;
@@ -1150,7 +1463,7 @@ function frame(now) {
       if (visible && game.state === 'playing' && tutorial.tick(realDt)) finishTutorial();
       if (visible && game.state === 'playing') {
         if (!battleCanAdvance()) battleFrozenMs += Math.min(100, realDt * 1000);
-        else if (game.heroes[0].rage >= 100 - 1e-8 && game.heroes[0].rageRecovery <= 1e-8 && !game.heroes[0].reserved && game.activeEnemyCount > 0) unusedRageSec += Math.min(.1,realDt) * (tutorial.active ? 1 : store.state.settings.speed);
+        else if (game.heroes[0].rage >= (game.heroRageCost?.(game.heroes[0]) ?? 100) - 1e-8 && game.heroes[0].rageRecovery <= 1e-8 && !game.heroes[0].reserved && game.activeEnemyCount > 0) unusedRageSec += Math.min(.1,realDt) * (tutorial.active ? 1 : store.state.settings.speed);
       }
       if(!storyVisible && game.state === 'playing') heroNameCards.discover(game.heroes.map(h=>h.id));
       const heroNameAlpha=heroNameCards.visible(calm());
@@ -1158,6 +1471,7 @@ function frame(now) {
       samplePerformance(realDt);
     }
     else syncAudio();
+    sound.update();
   } catch (error) { $('fatal-message').hidden = false; $('fatal-message').textContent = '战场暂时无法继续。当前进度保留在军帐存档中，请刷新后再试。'; console.error(error); return; }
   requestAnimationFrame(frame);
 }
@@ -1168,7 +1482,7 @@ for (const [id,key] of [['music-volume','musicVolume'],['sfx-volume','sfxVolume'
 }
 // Portrait lock: a short landscape viewport pauses combat behind a "rotate back" sheet.
 const landscape = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
-function syncOrientation() { document.body?.classList?.toggle('is-landscape-short',landscape.matches); if (landscape.matches && game?.state === 'playing') { selectedSlot = -1; game.pause(); syncBattle(true); } }
+function syncOrientation() { document.body?.classList?.toggle('is-landscape-short',landscape.matches); if (landscape.matches) endlessTelemetry.setChoiceVisible(false); if (landscape.matches && game?.state === 'playing') { selectedSlot = -1; game.pause(); syncBattle(true); } }
 landscape.addEventListener?.('change',syncOrientation);
 
 renderCampaign(); showWorkshopPanel(workshopPanel); $('nav-pill').style.setProperty('--tab','0'); syncAudio(); syncOrientation(); requestAnimationFrame(frame);

@@ -8,8 +8,35 @@ const audioFactory = () => {
   return Audio ? new Audio({ latencyHint: 'interactive' }) : null;
 };
 
+const note = (frequency, duration, volume, delay = 0, endFrequency = frequency, type = 'sine') => Object.freeze({ frequency, endFrequency, duration, volume, delay, type });
+const noise = (duration, volume, cutoff, delay = 0, endCutoff = cutoff) => Object.freeze({ duration, volume, cutoff, endCutoff, delay });
+const cue = (interval, priority, tones = [], noises = []) => Object.freeze({ interval, priority, tones:Object.freeze(tones), noises:Object.freeze(noises) });
+// Long envelopes use short, cancellable pulses rather than exceeding the shared
+// per-voice budget. Noise filter cutoffs describe colour, not oscillator pitch.
+export const ROGUELIKE_AUDIO_TIMBRES = Object.freeze({
+  tacticOffer:cue(.30, 3, [note(520,.07,.035,0,520,'triangle'),note(660,.07,.035,.07,660,'triangle'),note(780,.07,.035,.14,780,'triangle')]),
+  tacticPick:cue(.15, 3, [note(740,.12,.06,0,420,'triangle')], [noise(.05,.025,2600)]),
+  cardEpic:cue(.30, 4, [note(660,.22,.07),note(990,.22,.07)]),
+  cardLegendary:cue(.30, 5, [523,659,784,1047].map((frequency,index) => note(frequency,.09,.08,index*.09)).concat([note(131,.17,.045,.36),note(131,.17,.03,.53),note(131,.16,.018,.70)])),
+  reroll:cue(.20, 2, [], [noise(.14,.045,800,0,3200)]),
+  skip:cue(.30, 2, [note(180,.18,.05,0,90,'triangle')]),
+  gateRepair:cue(.30, 3, [note(330,.14,.05,0,412),note(412,.14,.035,.14,494)]),
+  campLevel5:cue(.30, 5, [note(90,.15,.10,0,65,'triangle'),note(65,.15,.07,.15,47,'triangle')], [noise(.18,.055,800,0,3200)]),
+  synergy:cue(.30, 5, [0,.18,.36].flatMap((delay,index) => [392,494,587].map(frequency => note(frequency,.19,[.075,.045,.025][index],delay)))),
+  endlessBoss:cue(.30, 5, [0,.42,.84].flatMap(delay => [note(70,.15,.11,delay,55,'triangle'),note(55,.15,.07,delay+.15,47,'triangle')]), [0,.42,.84].map(delay => noise(.15,.04,480,delay))),
+  waveMilestone:cue(.30, 5, [0,.18,.36,.54,.72].flatMap((delay,index) => [261,392].map(frequency => note(frequency,.18,[.08,.06,.04,.025,.018][index],delay))))
+});
+export const ROGUELIKE_COMBO_PAIRS = Object.freeze({
+  combo_east_wind:Object.freeze(['zhuge_liang','zhou_yu']), combo_righteous_sky:Object.freeze(['liu_bei','guan_yu']),
+  combo_changban_guard:Object.freeze(['zhang_fei','zhao_yun']), combo_thunder_rain:Object.freeze(['sima_yi','gan_ning']),
+  combo_tiger_command:Object.freeze(['xu_chu','cao_cao']), combo_divine_cavalry:Object.freeze(['taishi_ci','zhang_liao']),
+  combo_chibi_fire:Object.freeze(['sun_quan','zhou_yu']), combo_one_eye_tiger:Object.freeze(['xiahou_dun','xu_chu'])
+});
+
 // Future heroes/camps can override these timbres without changing the combat engine.
 export const AUDIO_TIMBRES = Object.freeze({
+  roguelike:ROGUELIKE_AUDIO_TIMBRES,
+  heroCombo: Object.freeze({frequency:82,endFrequency:52,duration:.20,volume:.09,noiseDuration:.12,noiseVolume:.035,cutoff:1100,interval:.30}),
   camps: Object.freeze({
     shield: { frequency: 155, endFrequency: 76, duration: 0.10, volume: 0.057, noiseDuration: 0.055, noiseVolume: 0.025, cutoff: 1350, interval: 0.10 },
     archer: { frequency: 1100, endFrequency: 510, duration: 0.055, volume: 0.026, noiseDuration: 0.045, noiseVolume: 0.018, cutoff: 3500, interval: 0.10 },
@@ -44,6 +71,10 @@ export class AudioSystem {
     this._resumePromise = null;
     this._musicVolume = 0.36;
     this._noiseBuffer = null;
+    this._battleAudioContext = { mode:'campaign', wave:0 };
+    this._roguelikeQuietUntil = 0;
+    this._ambientCursor = null;
+    this._attackDetuneIndex = 0;
   }
 
   /** Call from a user gesture. Rejected autoplay permissions simply leave the game silent. */
@@ -59,6 +90,7 @@ export class AudioSystem {
     if (Number.isFinite(musicVolume)) this.musicLevel = clamp(musicVolume, 0, 1);
     if (Number.isFinite(sfxVolume)) this.sfxLevel = clamp(sfxVolume, 0, 1);
     if (!this.sfxEnabled) this._stopVoices();
+    else if (this.sfxLevel === 0) this._cancelRoguelikeAudio();
     if (!this.musicEnabled) this._stopMusic();
     this._applyChannelLevels();
     if (this.musicEnabled) this._syncMusic();
@@ -70,6 +102,7 @@ export class AudioSystem {
     const next = aliases[scene] || scene;
     if (!SCENES.has(next) || this.destroyed) return;
     if (this.scene === next) return;
+    if (!(this._isCombatScene(this.scene) && this._isCombatScene(next))) this._cancelRoguelikeAudio();
     this.scene = next;
     if (next === 'menu' || (next === 'battle' && ['menu', 'result'].includes(this._lastMusicalScene))) this._combatEvents.clear();
     if (['menu', 'battle', 'boss', 'result'].includes(next)) this._lastMusicalScene = next;
@@ -99,10 +132,86 @@ export class AudioSystem {
     this._tone(600 + this._clickIndex * 28, 0.06, 0.024, 380, 'triangle');
   }
 
+  _isCombatScene(scene = this.scene) { return scene === 'battle' || scene === 'boss'; }
+
+  /** Optional explicit reset; ordinary engine events also carry this context. */
+  setBattleContext({ mode = 'campaign', wave } = {}) {
+    const previous = this._battleAudioContext, nextMode = mode === 'endless' ? 'endless' : 'campaign';
+    const nextWave = Number.isInteger(wave) && wave >= 0 ? wave : previous.wave;
+    if (nextMode !== previous.mode) this._cancelRoguelikeAudio();
+    else if ((previous.wave >= 51 ? 2 : previous.wave >= 26 ? 1 : 0) !== (nextWave >= 51 ? 2 : nextWave >= 26 ? 1 : 0)) this._cancelAmbient();
+    this._battleAudioContext = { mode:nextMode, wave:nextMode === 'endless' ? nextWave : 0 };
+  }
+
+  /** Called by the UI frame loop; AudioContext wall time schedules a tiny horizon. */
+  update() {
+    const { mode,wave } = this._battleAudioContext;
+    if (mode !== 'endless' || wave < 26 || !this._isCombatScene() || !this._canSound() || !this.sfxLevel || this.context.currentTime < this._roguelikeQuietUntil) {
+      this._cancelAmbient(); return;
+    }
+    const now = this.context.currentTime;
+    this._ambientCursor = Math.max(now,this._ambientCursor ?? now);
+    while (this._ambientCursor < now + .35) {
+      this._noise(.20,wave >= 51 ? .026 : .018,wave >= 51 ? 180 : 120,{delay:this._ambientCursor - now,priority:-1,roguelike:true,role:'ambient'});
+      this._ambientCursor += .20;
+    }
+  }
+
+  _playRoguelikeCue(type) {
+    const sound = ROGUELIKE_AUDIO_TIMBRES[type];
+    if (!sound || !this.sfxLevel || this.scene === 'pause' || this.context.currentTime < this._roguelikeQuietUntil && sound.priority < 5 || !this._allow([['roguelike:' + type,sound.interval]])) return;
+    const options = { priority:sound.priority,roguelike:true,role:type };
+    for (const tone of sound.tones) this._tone(tone.frequency,tone.duration,tone.volume,tone.endFrequency,tone.type,{...options,delay:tone.delay});
+    for (const layer of sound.noises) this._noise(layer.duration,layer.volume,layer.cutoff,{...options,delay:layer.delay,endCutoff:layer.endCutoff});
+  }
+
+  _playRoguelikeCombo(event) {
+    const now = this.context.currentTime;
+    if (!this.sfxLevel || now < this._roguelikeQuietUntil || !this._allow([['roguelike:heroCombo',.30]])) return;
+    this._cancelAmbient();
+    for (const voice of this._voices) if (voice.priority < 5) this._releaseVoice(voice,true);
+    this._roguelikeQuietUntil = now + 1.5;
+    this._duckMusic(1.5);
+    const options = { priority:6,roguelike:true,role:'heroCombo' };
+    // The freeze pad spans 0–.25; the two voices enter at .25/.33, the
+    // metallic title at .60, and the final impact at 1.10 (47 Hz floor).
+    this._tone(60,.13,.055,60,'sine',options);
+    this._tone(60,.13,.035,60,'sine',{...options,delay:.12});
+    const pair = ROGUELIKE_COMBO_PAIRS[event.comboId] || [event.fromHeroId,event.toHeroId];
+    for (const [index,id] of [event.fromHeroId || pair[0],event.toHeroId || pair[1]].entries()) {
+      const hero = { ...AUDIO_TIMBRES.heroes.guan_yu,...AUDIO_TIMBRES.heroes[id],...this.timbres.heroes?.[id] };
+      const divisor = index ? 1 : 2;
+      this._tone(clamp(hero.frequency / divisor,47,1100),.20,.075,clamp(hero.endFrequency / divisor,47,1100),'triangle',{...options,delay:.25 + index * .08});
+    }
+    for (const [index,delay] of [.60,.80,1.00].entries()) {
+      this._noise(index === 2 ? .10 : .20,[.09,.055,.03][index],4200,{...options,delay});
+      this._tone(880 - index * 146,.20,[.06,.04,.025][index],734 - index * 147,'sine',{...options,delay});
+    }
+    this._tone(47,.20,.12,47,'triangle',{...options,delay:1.10});
+    this._tone(47,.20,.075,47,'triangle',{...options,delay:1.30});
+  }
+
+  _cancelAmbient() {
+    for (const voice of this._voices) if (voice.role === 'ambient') this._releaseVoice(voice,true);
+    this._ambientCursor = null;
+  }
+
+  _cancelRoguelikeAudio() {
+    const restore = this._roguelikeQuietUntil > 0;
+    for (const voice of this._voices) if (voice.roguelike) this._releaseVoice(voice,true);
+    this._ambientCursor = null; this._roguelikeQuietUntil = 0;
+    if (restore && this.context) try { this._setGain(this._musicGain,this.musicEnabled && this.active ? this._sceneVolume() : 0); } catch { /* Optional automation. */ }
+  }
+
   handleEvent(event = {}) {
     // Enemy IDs restart in each battle, including retries requested while paused or muted.
-    if (event.type === 'start') this._combatEvents.clear();
+    if (event.type === 'start') {
+      this._combatEvents.clear(); this._cancelRoguelikeAudio(); this._attackDetuneIndex = 0;
+      for (const key of this._lastSound.keys()) if (key.startsWith('roguelike:')) this._lastSound.delete(key);
+      this.setBattleContext({ mode:event.mode, wave:event.wave || 1 });
+    } else if (event.mode === 'endless') this.setBattleContext({ mode:'endless', wave:event.wave });
     if (!this._canSound()) return;
+    if (Object.hasOwn(ROGUELIKE_AUDIO_TIMBRES,event.type)) { this._playRoguelikeCue(event.type); return; }
     const inBattle = this.scene === 'battle' || this.scene === 'boss';
     const pan = Number.isFinite(event.x) ? clamp((event.x - 210) / 250, -0.7, 0.7) : 0;
     switch (event.type) {
@@ -113,9 +222,17 @@ export class AudioSystem {
         const custom = this.timbres.camps?.[kind];
         if (!base && !custom) return;
         const profile = { ...AUDIO_TIMBRES.camps.shield, ...base, ...custom };
-        if (!this._allow([[`attack:${kind}`, profile.interval], [`camp:${kind}:${event.slot ?? 0}`, 0.30]])) return;
-        this._tone(profile.frequency, profile.duration, profile.volume, profile.endFrequency, 'triangle', { pan });
-        if (profile.noiseDuration > 0) this._noise(profile.noiseDuration, profile.noiseVolume, profile.cutoff, { pan });
+        const endless = event.mode === 'endless', late = endless && this._battleAudioContext.wave >= 51;
+        const globalGap = endless && this._battleAudioContext.wave >= 26 ? clamp(profile.interval * (late ? .8 : 1),.10,.30) : profile.interval;
+        if (!this._allow([[`attack:${kind}`, globalGap], [`camp:${kind}:${event.slot ?? 0}`, late ? .20 : .30]])) return;
+        if (endless) {
+          const detune = this._battleAudioContext.wave >= 26 ? (++this._attackDetuneIndex % 2 ? -6 : 6) : 0;
+          this._tone(clamp(profile.frequency + detune,47,1100),clamp(profile.duration,.05,.23),clamp(profile.volume,.018,.13),clamp(profile.endFrequency + detune,47,1100),'triangle',{pan,roguelike:true});
+          if (profile.noiseDuration > 0) this._noise(clamp(profile.noiseDuration,.05,.23),clamp(profile.noiseVolume,.018,.13),profile.cutoff,{pan,roguelike:true});
+        } else {
+          this._tone(profile.frequency, profile.duration, profile.volume, profile.endFrequency, 'triangle', { pan });
+          if (profile.noiseDuration > 0) this._noise(profile.noiseDuration, profile.noiseVolume, profile.cutoff, { pan });
+        }
         break;
       }
       case 'projectileImpact':
@@ -199,13 +316,27 @@ export class AudioSystem {
         [523.25, 659.25, 783.99].slice(0, tier + 2).forEach((frequency, index) => this._tone(frequency * (1 + tier * 0.06), 0.22, 0.032, frequency, 'sine', { delay: 0.04 + index * 0.06, priority: 1 }));
         break;
       }
+      case 'heroCombo': {
+        if (event.presentation === 'roguelike') { if (inBattle) this._playRoguelikeCombo(event); break; }
+        const sound = AUDIO_TIMBRES.heroCombo;
+        if (!inBattle || !this._allow([['heroCombo',sound.interval]])) return;
+        this._duckMusic();
+        this._tone(sound.frequency,sound.duration,sound.volume,sound.endFrequency,'triangle',{priority:3});
+        this._tone(660,.18,.035,880,'sine',{delay:.05,priority:3});
+        this._noise(sound.noiseDuration,sound.noiseVolume,sound.cutoff,{priority:3});
+        break;
+      }
       case 'build':
         if (!this._allow([['build', 0.12]])) return;
         this._tone(175, 0.12, 0.065, 90, 'triangle');
         this._tone(440, 0.17, 0.042, 440, 'sine', { delay: 0.06 });
         break;
       case 'upgrade':
+        if (!this._allow([['upgrade', 0.12]])) return;
+        [440, 587.33, 880].forEach((frequency, index) => this._tone(frequency, 0.20, 0.042, frequency, 'sine', { delay: index * 0.075, priority: 1 }));
+        break;
       case 'tactic':
+        if (event.presentation === 'roguelike') { this._playRoguelikeCue('tacticPick'); break; }
         if (!this._allow([['upgrade', 0.12]])) return;
         [440, 587.33, 880].forEach((frequency, index) => this._tone(frequency, 0.20, 0.042, frequency, 'sine', { delay: index * 0.075, priority: 1 }));
         break;
@@ -220,10 +351,12 @@ export class AudioSystem {
         if (event.boss) this._tone(123.47, 0.6, 0.055, 55, 'sawtooth', { delay: 0.10, priority: 1 });
         break;
       case 'win':
+        this._battleAudioContext = { mode:'campaign', wave:0 };
         this._stopVoices();
         [293.66, 392, 440, 587.33].forEach((frequency, index) => this._tone(frequency, 0.52, 0.065, frequency, 'triangle', { delay: index * 0.13, priority: 2 }));
         break;
       case 'lose':
+        this._battleAudioContext = { mode:'campaign', wave:0 };
         this._stopVoices();
         this._tone(196, 0.85, 0.065, 73.42, 'triangle', { priority: 2 });
         this._tone(146.83, 0.72, 0.044, 55, 'sine', { delay: 0.12, priority: 2 });
@@ -334,6 +467,7 @@ export class AudioSystem {
     const key = this.scene === 'pause' || this.scene === 'choosing' ? this._lastMusicalScene : this.scene;
     if (this.musicSource && this._musicKey === key) {
       try { this._setGain(this._musicGain, this._sceneVolume()); } catch { /* Silent fallback. */ }
+      if (this.context.currentTime < this._roguelikeQuietUntil) this._duckMusic(this._roguelikeQuietUntil - this.context.currentTime);
       return;
     }
     this._stopMusic();
@@ -356,6 +490,7 @@ export class AudioSystem {
       this._musicKey = key;
       this._setGain(this._musicGain, this._sceneVolume());
       source.start();
+      if (this.context.currentTime < this._roguelikeQuietUntil) this._duckMusic(this._roguelikeQuietUntil - this.context.currentTime);
     } catch {
       try { source?.disconnect(); } catch { /* Partially initialized source. */ }
       if (this.musicSource === source) this.musicSource = null;
@@ -397,7 +532,7 @@ export class AudioSystem {
     return true;
   }
 
-  _duckMusic() {
+  _duckMusic(duration = 1.2) {
     if (!this.musicEnabled || !this._musicGain) return;
     try {
       const now = this.context.currentTime;
@@ -405,13 +540,14 @@ export class AudioSystem {
       this._musicGain.gain.cancelScheduledValues(now);
       // Peerless owns the mix for ~1 s: drop to 30% under the windup and impact, then breathe back in.
       this._musicGain.gain.setValueAtTime(volume * 0.3, now);
-      this._musicGain.gain.linearRampToValueAtTime(volume * 0.3, now + 0.45);
-      this._musicGain.gain.linearRampToValueAtTime(volume, now + 1.2);
+      this._musicGain.gain.linearRampToValueAtTime(volume * 0.3, now + Math.min(.45,duration / 2));
+      this._musicGain.gain.linearRampToValueAtTime(volume, now + duration);
     } catch { /* Gain automation is optional. */ }
   }
 
   _reserveVoice(priority) {
     const now = this.context.currentTime;
+    if (now < this._roguelikeQuietUntil && priority < 5) return false;
     for (const voice of this._voices) if (voice.end <= now) this._releaseVoice(voice);
     if (this._voices.size < MAX_VOICES) return true;
     const steal = [...this._voices].find(voice => voice.priority < priority);
@@ -420,7 +556,7 @@ export class AudioSystem {
     return true;
   }
 
-  _startVoice(source, extraNodes, gain, duration, volume, { delay = 0, priority = 0, pan = 0 } = {}) {
+  _startVoice(source, extraNodes, gain, duration, volume, { delay = 0, priority = 0, pan = 0, roguelike = false, role = null } = {}) {
     if (!this._canSound() || !this._reserveVoice(priority)) {
       for (const node of [source, ...extraNodes, gain]) { try { node.disconnect(); } catch { /* Unused graph. */ } }
       return;
@@ -429,7 +565,7 @@ export class AudioSystem {
     const start = now + delay;
     const end = start + duration + 0.015;
     const nodes = [source, ...extraNodes, gain];
-    const voice = { source, nodes, end, priority, released: false };
+    const voice = { source, nodes, end, priority, released: false, ...(roguelike ? {roguelike,role} : {}) };
     try {
       let output = gain;
       if (this.context.createStereoPanner) {
@@ -486,6 +622,10 @@ export class AudioSystem {
       filter = this.context.createBiquadFilter();
       filter.type = 'bandpass';
       filter.frequency.value = cutoff;
+      if (Number.isFinite(options.endCutoff) && options.endCutoff !== cutoff) {
+        const start = this.context.currentTime + (options.delay || 0);
+        filter.frequency.setValueAtTime(cutoff,start); filter.frequency.linearRampToValueAtTime(options.endCutoff,start + duration);
+      }
       filter.Q.value = 0.7;
       gain = this.context.createGain();
       source.connect(filter);
@@ -507,6 +647,7 @@ export class AudioSystem {
 
   _stopVoices() {
     for (const voice of this._voices) this._releaseVoice(voice, true);
+    this._cancelRoguelikeAudio();
   }
 
   /** Eight-bar pentatonic motifs, plucked harmonics and hand-drum synthesis, authored here. */

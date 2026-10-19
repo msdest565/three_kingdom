@@ -1,0 +1,21 @@
+✔ the actual V1 JSON files resolve every reference and planned campaign structure (25.8142ms)
+✔ battle speed preserves a shared combat clock and density cannot be baked twice (132.4241ms)
+✔ unknown hero/map/tier/camp references and broken progression are rejected with locations (62.9261ms)
+✔ spawns must conserve per-species counts, cover routes, and use legal scheduled rewards (53.012ms)
+✔ geometry and boss resolution catch overlapping controls, invalid paths and double-scaling markers (73.0245ms)
+✔ star rewards, temporary guest loadouts and minimum gear scope share account contracts (96.0034ms)
+✔ pre-entry budget uses target-level fees and each per-level new star bonus only once (4.9713ms)
+✔ economy reports insufficient resources without rescuing them with repeats or current-tier rewards (27.2947ms)
+✔ art production references use the actual named content and local linked artifacts exist (12.1433ms)
+✔ redesigned skill documentation names the live geometry and fire-strip width tactic (2.019ms)
+✔ loot conserves one weapon per victory with fixed 2.5% gold and no forge shortcut (47.0314ms)
+✔ technology growth preserves frequency and capped hero-focused tower modifiers (25.01ms)
+✔ all fifteen heroes have a unique gold weapon and Guan Yu also has Red Hare (21.7015ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 674.4157

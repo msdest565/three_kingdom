@@ -1,0 +1,49 @@
+无双守关｜当前状态（唯一现状入口）
+更新：2026-10-20。先读本页；历史、完整规格和证据按任务需要打开，避免默认全库阅读。
+
+完成范围
+- 原生JavaScript ES Modules，无框架/运行依赖；Node>=20，当前24.21.0，PowerShell。
+- 默认入口index.html/campaign-app.js；15武将、60剧情关、12地图、6军营、最多3将编队、科技/装备/锻造/背包/schema 3存档。prototype.html为保留原型。
+- P0–P5全部完成：无尽目标80波且可继续，军营5级；136卡=属性26+军营42+武将60+羁绊8；4羁绊、8组合击、11难度锚点、一次性里程碑与本地统计。
+- 程序SVG/Canvas与WebAudio：61主题符号组合136卡，11新音效，3段音频变化，8类动效消费reducedMotion。未新增远程素材。
+- 最新选卡无需滚动：锁在卡片右下，44×44独立触控区；开锁透明底，闭锁金底，文字与底部操作完整可见。已验360×640/320×568/320×510，不代表任意更矮屏或字体缩放已验。
+- 剧情行为与军营3级上限保持原路径；无尽通过options.mode==='endless'隔离。
+
+开发约束
+1. runtime-data.js是生成物，禁止手改。配置改docs/v1/data/balance.json的v1Baseline及levels.json，再npm run data:build；test pretest/build也生成。
+2. 不改剧情全局默认/L1–L3基础值/原22战术id，不通过修改已有断言消除失败。
+3. game.tacticDefinitions无尽兼容视图104项；实际game.tacticCatalog为136，查卡用game.tacticDefinition(id)。BALANCE.tactics本身48项，不要误判漏卡。
+4. EQUIPMENT_ART_IDS仍是34装备；卡牌遍历TACTIC_ART_IDS=136，符号TACTIC_SYMBOL_IDS=61。
+5. 新动效去除前庭运动但保留信息；引擎、展示现实时间、音频时钟分开；draw不能推进或修改战斗状态。
+6. 工作区有未提交/未跟踪实现。不得reset/clean覆盖；浏览器QA用隔离存档，不操作玩家进度。
+
+任务路由（只读相关部分）
+- 启动、职责、存档维护：IMPLEMENTATION.md。
+- 无尽：roguelike-endless-design-v3.html。先看附录A修正名称和页首当前规则，再读所改章节；整体玩法变更再通读。
+- 曲线：data/endless-curve.mjs；运行层endless-rules.js；差异解释见DEVELOPMENT-HISTORY.txt。
+- 抽卡/属性：roguelike-system.js；专属hero-upgrade-{rules,effects}.js；军营camp-upgrade-{rules,effects}.js；羁绊synergy-{rules,effects}.js。
+- 战斗v1-engine.js；UI campaign-app.js/campaign.css/roguelike-presentation.css；展示v1-renderer.js/roguelike-presentation.js。
+- 图标equipment-art.js/tactic-art.js；头像精灵hero-portraits.js/battle-sprites.js；音频audio-system.js。
+- 存档奖励campaign-state.js/endless-milestones.js；统计endless-telemetry.js/experience.js。
+- 剧情/养成参考v1/README.md索引；v1/index.html为生成的离线阅读器。
+- 最近验证verification/latest.json；日志与截图同目录。历史仅DEVELOPMENT-HISTORY.txt，不再保留多份过时阶段待办。
+
+验证与边界
+最近玩法/界面交付486/486通过，54测试文件，含60关剧情仿真及固定种子隔离；文档清理后的检查见verification/latest.json。
+曲线stdout SHA256：55083EB07F4327246E9D08F1F8D24768D8BD7E90C8C4F4559B87E74A14FBECD7。
+浏览器证据来自隔离存档及固定候选/跳波/冻结夹具，不证明自然1–80波真人通关。未完成真人多构筑平衡、真实手机/TapTap宿主、低端机全场景性能或主观听感验收。
+下一步优先真人长局与真机性能/音频生命周期；用P4本地指标定位，再决定局部修复和调参。4–8秒选卡、15–25%城墙获取率是目标，不是已有成绩。
+
+常用命令（项目根目录）
+npm run dev                  # http://127.0.0.1:4173/；先检查已有服务
+npm run data:build
+node docs/v1/data/validate-balance.mjs
+npm run docs:validate
+node docs/data/endless-curve.mjs
+npm test                     # 自动pretest；含60关模拟，通常5–8分钟
+npm run build                # dist/index.html、dist/prototype.html
+npm run docs:build           # 根据源文档重建v1/index.html
+
+保留夹具
+v1/playtest/skill-art/baseline及balance-before.json被现有回归测试/基准直接引用，不能当无用旧档删除，也不是现行配置。
+v1/data/playable-audit.json与campaign-audit.json是注明版本的历史固定策略审计，不作为当前真人平衡结论。game-design-v0.1.md仅说明保留原型。

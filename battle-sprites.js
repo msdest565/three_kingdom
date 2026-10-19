@@ -383,11 +383,17 @@ export function drawHeroSprite(ctx, id, options = {}) {
 
 export function drawCampSprite(ctx, id, { state = 'idle', frame = 0, level = 1, reducedMotion = false } = {}) {
   id = Object.hasOwn(CAMP, id) ? id : 'shield';
-  level = Math.round(clamp(finite(level, 1), 1, 3));
+  level = Math.round(clamp(finite(level, 1), 1, 5));
   const index = reducedMotion ? 0 : frameIndex(frame, state === 'attack' ? 5 : 4);
   // The release frame is strongest, then the mechanism visibly settles.
   const attack = state === 'attack' ? .35 * (index / 5) + .001 : 0;
-  drawCampNew(ctx, id, level, reducedMotion ? 0 : index / 3, attack, reducedMotion);
+  // Keep the established three-tier silhouette; a static badge identifies the endless tiers.
+  drawCampNew(ctx, id, Math.min(level,3), reducedMotion ? 0 : index / 3, attack, reducedMotion);
+  if (level >= 4) {
+    ctx.save(); ctx.fillStyle = '#233a31'; ctx.strokeStyle = level === 5 ? '#f5cd76' : '#b9cbd0'; ctx.lineWidth = level === 5 ? 2 : 1;
+    ctx.beginPath(); ctx.moveTo(18,-29); ctx.lineTo(30,-29); ctx.lineTo(30,-15); ctx.lineTo(24,-11); ctx.lineTo(18,-15); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff0c5'; ctx.font = 'bold 11px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level === 5 ? 'Ⅴ' : 'Ⅳ',24,-21); ctx.restore();
+  }
 }
 
 export function drawEnemySprite(ctx, id, { state = 'walk', frame = 0, variant = '', reducedMotion = false } = {}) {
@@ -421,7 +427,7 @@ export function createBattleSpriteCache({ createCanvas = canvasFactory, maxPixel
     const count = kind === 'hero' ? HERO_MOTION[id][state].frames : kind === 'camp' ? state === 'attack' ? 5 : 4 : 6;
     let frame = frameIndex(options.frame, count);
     if (reducedMotion) frame = kind === 'hero' && ['attack', 'ultimate'].includes(state) ? frame < count / 2 ? 0 : count - 1 : 0;
-    const level = kind === 'camp' ? Math.round(clamp(finite(options.level, 1), 1, 3)) : 1;
+    const level = kind === 'camp' ? Math.round(clamp(finite(options.level, 1), 1, 5)) : 1;
     const variant = kind === 'enemy' && id === 'boss' && ['rammer', 'charger', 'banner_lord', 'guardian', 'siege_lord'].includes(options.variant) ? options.variant : '';
     const key = [kind, id, state, frame, level, dpr, variant, +reducedMotion].join('|');
     if (entries.has(key)) { const entry = entries.get(key); entries.delete(key); entries.set(key, entry); hits++; return entry; }

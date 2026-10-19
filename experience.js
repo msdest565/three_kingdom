@@ -20,6 +20,7 @@ export class Telemetry {
     this.storage = storage; this.now = now; this.clock = clock;
     this.session = Math.floor(now() / 1000).toString(36);
     this.firsts = new Set();
+    this.clearListeners = new Set();
     this.events = this._read();
   }
   _read() {
@@ -34,7 +35,8 @@ export class Telemetry {
     this._write(); return entry;
   }
   sessionEvents() { return this.events.filter(e => e.session === this.session); }
-  clear() { this.events = []; this._write(); }
+  onClear(listener) { this.clearListeners.add(listener); return () => this.clearListeners.delete(listener); }
+  clear() { this.events = []; this._write(); for (const listener of this.clearListeners) { try { listener(); } catch { /* Optional local summaries must not block clearing. */ } } }
   /** Funnel summary for the current session: first-screen → battle → deploy → Peerless → result. */
   summary() {
     const list = this.sessionEvents(); const first = type => list.find(e => e.type === type);

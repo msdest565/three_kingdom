@@ -1,4 +1,4 @@
-/* V2 interface layer (docs/v1/ui-redesign.html). Loaded after styles.css + campaign.css and
+/* Current interface layer (see docs/v1/art-design.md). Loaded after styles.css + campaign.css and
    overrides them; one token set for colour, type and motion. Brush face: brush-font.css (OFL). */
 :root{
   --ink:#0d1b16;--ink-2:#13261f;--jade:#1d3d30;--jade-2:#2a5544;--line:#f2c46b2e;--line-2:#f2c46b66;

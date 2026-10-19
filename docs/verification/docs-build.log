@@ -1,0 +1,5 @@
+
+> wushuang-guard-prototype@1.1.0-alpha.1 docs:build
+> node scripts/build-design-docs.mjs
+
+Built offline design reader: 5 documents, 60 levels, 12 maps, 687 KB.

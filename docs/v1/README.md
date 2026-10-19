@@ -1,48 +1,22 @@
-# 无双守关 V1 设计总入口
+# 无双守关文档入口
 
-更新：2026-10-11。**V1可玩开发版已接入**：默认入口已连接十五武将、六十关配置、十二地图与六类三级军营。当前版本为 `1.1.0-alpha.1` / `v1.1-alpha-20261011-r1`，是本地开发版，尚未完成真实手机、TapTap 宿主验收及生产级美术音频精修，不代表已发布或全部关卡已平衡。
+更新：2026-10-20。本地可玩开发版已完成剧情 60 关、15 武将、12 地图、6 类军营与肉鸽无尽 P0–P5；最新修复为三卡无滚动选卡界面和右下角图标锁。剧情军营上限 3 级，无尽上限 5 级；无尽 136 卡、4 羁绊、8 组合击，80 波后可继续。
 
-**范围已按本次目标确定：魏、蜀、吴各五名武将，各二十关；十二地图母版、六类三级军营，最多三名武将同时上阵，等级、技能、四槽装备养成，并预留后续章节与运营接口。**
-
-双击 [离线文档阅读器](index.html)，可切换五份文档、搜索文字、查看关卡路线与风格板。各文档源文件适合在 GitHub 阅读和提交评审。
+接手优先读 [项目状态](../PROJECT-STATUS.txt)、[实现维护指南](../IMPLEMENTATION.md) 和 [交付检查](delivery-checks.md)。只需追溯关键历史时再看 [开发摘要](../DEVELOPMENT-HISTORY.txt)，不要从旧阶段计划推断当前待办。
 
 | 文档 | 用途 |
 | --- | --- |
-| [游戏开发设计](game-development.md) | 玩法、编队、培养、界面、架构、存档、平台适配、运营与里程碑 |
-| [美术与音频设计](art-design.md) | 十五武将辨识、十二地图、军营、UI、动画、音频、资源交付和工量 |
-| [数值设计](balance-design.md) | 技能、塔、敌兵、三将怒气、养成公式、六十关成长和经济预算 |
-| [关卡与剧情设计](level-design.md) | 六十关的目标、对白、地图、波次、首领、奖励和解锁 |
-| [成长扩展设计](progression-design.md) | 六营科技、锻造与背包、十五套专属装备、胜利箱概率与迁移 |
+| [无尽设计 v3](../roguelike-endless-design-v3.html) | 肉鸽与无尽规格；先读附录 A 名称勘误，已实现差异以项目状态及可运行曲线为准 |
+| [曲线脚本](../data/endless-curve.mjs) | `node docs/data/endless-curve.mjs` 复现曲线 |
+| [游戏开发设计](game-development.md) | 剧情基础系统、架构、存档与平台适配 |
+| [美术与音频设计](art-design.md) | 原项目表现设计；无尽扩展看 v3 第 13 节 |
+| [数值设计](balance-design.md) | 原项目技能、成长与剧情经济 |
+| [关卡与剧情设计](level-design.md) | 生成的剧情 60 关地图、波次、奖励与解锁 |
+| [成长扩展设计](progression-design.md) | 生成的科技、锻造、装备、胜利箱与迁移规则 |
+| [素材来源记录](../ASSET_LICENSES.md) | 资源来源与程序绘制资产说明 |
 
-数据事实源为 [数值 JSON](data/balance.json) 与 [关卡 JSON](data/levels.json)。成长扩展文档由 scripts/generate-progression-docs.mjs 从数值 JSON 生成。关卡 JSON 和关卡文档由 scripts/generate-level-design.mjs 生成；构建脚本将 JSON 导出为 runtime-data.js，波内人数已包含生成倍率，运行时不能再乘一次。维护方法见 [实现维护指南](../IMPLEMENTATION.md)，资源来源见 [素材记录](../ASSET_LICENSES.md)。
+数据事实源为 [balance.json](data/balance.json) 的 `v1Baseline` 和 [levels.json](data/levels.json)。**不要直接编辑 `runtime-data.js`**；改源后运行 `npm run data:build`。剧情关卡改动先检查生成器，完整命令与代码职责见实现维护指南。
 
-## 本轮实现与设计的边界
+根目录使用 Node.js >=20：`npm run dev` 访问 `http://127.0.0.1:4173/`，`npm test` 自动生成配置后运行测试，`npm run build` 生成双入口离线包。`npm run docs:build` 生成 [离线设计阅读器](index.html)，该阅读器以五份基础设计为内容，不代替最新状态入口。
 
-已实现：十五武将的实际技能与最多三人队列；六十关主线、十二地图、六营；编队、等级、技能、军营科技、铁匠铺、四槽装备强化/升品与背包换装/跨将转移/分解、每次胜利宝箱、剧情借将、解锁与首次追赶、首通/星差额奖励、每日前三次重复通关收益；schema 3 存档及 schema 2 数值等价迁移、备份、导出、检查预览与确认导入。
-
-首次引导可跳过或重看，战斗支持 1× / 1.5× / 2×，音乐/音效独立开关并保存，暂停与后台停止战斗推进。装备可在战前跨将转移，空槽按白装 Lv0 处理；金专武只由胜利箱取得，匹配本人激活额外效果。每日前三次重复材料收益软上限不限制继续挑战或宝箱，失败不发箱，无保底。
-
-美术采用十五张原创程序 SVG 头像、十五位固定阵位 Canvas 武将轮廓、十二种 Canvas 地图主题、六营程序外观与 Web Audio 合成声音。风格板是制作参考，精修位图角色、动画图集与完整版配乐仍待生产。
-
-已验证的范围在 [交付检查记录](delivery-checks.md) 更新；静态校验、模拟 DOM/Canvas 测试不能代替浏览器、真实手机或完整 V1 平衡验证。
-
-## 维护命令
-
-~~~powershell
-npm test
-npm run audit:campaign
-npm run build
-node docs/v1/data/validate-balance.mjs
-npm run docs:levels
-npm run docs:progression
-npm run docs:validate
-npm run docs:build
-~~~
-
-改数值后先检查派生数据，明确要刷新算例时才用 --write-derived；再生成关卡、成长扩展文档、交叉检查和阅读器。改剧情或地图时改关卡生成器，不手改生成表格。npm run data:build 刷新运行配置，测试与构建也会刷新。主线离线包为 dist/index.html，保留原型为 dist/prototype.html，文档阅读器为 docs/v1/index.html。所有命令在仓库根目录执行，使用 Node.js 20 或更新版本。
-
-## 继续开发的顺序
-
-接下来验证最低培养与不同队伍的主线体验、精锐及首领压力、奖励到账时序、短屏触控、真机性能与音频生命周期，再进行生产资源精修和平台适配。新增章节沿稳定 ID 和版本契约扩展。
-
-长期发行的 TapTap 产品类型与资料要求需要在对应后台核对，当前不能确认“小游戏一定免软著”。相关官方来源和后续发布事项放在游戏开发设计的“GitHub 试点与 TapTap 适配”章节。
+最近完整测试 **486/486 通过，54 个文件**；[验证摘要](../verification/latest.json)、[完整日志](../verification/npm-test.log)。已做程序 SVG、模拟 DOM/Canvas/AudioContext 与指定短屏浏览器检查。仍待真人多构筑长局、真实手机、低端设备性能、听感和 TapTap 宿主验收；配置齐备及自动测试通过均不代表发行或全面平衡。

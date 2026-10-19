@@ -1,0 +1,30 @@
+{
+  "cards": [
+    {
+      "animation": "none",
+      "lockBackground": "rgb(230, 189, 98)",
+      "lockPressed": "true",
+      "title": "匠人修补",
+      "transform": "none"
+    },
+    {
+      "animation": "none",
+      "lockBackground": "rgba(0, 0, 0, 0)",
+      "lockPressed": "false",
+      "title": "养由基之弓",
+      "transform": "none"
+    },
+    {
+      "animation": "none",
+      "lockBackground": "rgba(0, 0, 0, 0)",
+      "lockPressed": "false",
+      "title": "青龙·刀风",
+      "transform": "none"
+    }
+  ],
+  "clientHeight": 639,
+  "clientWidth": 359,
+  "reduceMotion": true,
+  "scrollHeight": 639,
+  "scrollWidth": 359
+}

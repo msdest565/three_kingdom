@@ -1,0 +1,29 @@
+✔ all twenty-four new specializations render readable real choices, count once and do not persist into the save (13211.8529ms)
+✔ an owned camp panel lists all seven actual specializations while the live L5 note remains visible (4596.7225ms)
+✔ calm mode retains camp specialization descriptions and the story panel keeps the original presentation (1787.2003ms)
+✔ public endless entry uses the actual party and leaves campaign progress, resources and reward ledgers unchanged (1890.6847ms)
+✔ public draft controls lock across a reroll, spend local food, skip for 25 and freeze battle time (1706.4004ms)
+✔ endless defeat and retry never settle a story reward or create a campaign battle receipt (1669.2352ms)
+✔ a future-schema read-only account cannot enter endless or overwrite the original save (128.0272ms)
+✔ hero cards expose four distinct tiers, real descriptions and acquired counts through the public choice UI (4304.4117ms)
+✔ new legendary solo card carries its live condition and four rarity corners while calm mode keeps the information (1130.4266ms)
+✔ the actual draft renders category icons, four quality marks and one reveal sound per offer (2227.9313ms)
+✔ reroll, skip, epic, actual wall repair, level-five and milestone events reach their dedicated sound branches (2119.8648ms)
+✔ the combo hold freezes every combat subsystem for a quarter real second at all three speeds, including reduced motion (3484.0333ms)
+✔ background and pause preserve the informative combo hold without building combat-time debt (1030.7619ms)
+✔ all four prebattle bonds expose distinct permanent marks, including a strategy stamp after resource rerenders (3022.5518ms)
+✔ reduced-motion gate hits retain the 120ms red signal and retry clears all new transient cues (1292.0678ms)
+✔ campaign keeps its original tactic rendering and has no roguelike cinematic or audio context (796.8712ms)
+✔ retry inside the red-flash window clears the old gate signal immediately (544.1249ms)
+✔ only late endless boss warning lead time changes; birth times, counts, HP and food stay identical (1.9682ms)
+✔ the real roster previews active endless synergies and its available hero combos before starting (2164.4024ms)
+✔ an actual same-area hit sequence announces its name and remaining quota in calm mode; mastery updates the real quota (3559.5936ms)
+✔ a matching three-hero roster in the campaign keeps the original battle behavior and hides endless-only information (1001.1653ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19732.3041

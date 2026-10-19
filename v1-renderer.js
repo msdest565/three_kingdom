@@ -20,6 +20,7 @@
 import { Renderer, CAMP_SLOTS, WORLD_WIDTH, WORLD_HEIGHT } from './renderer.js';
 import { HERO_ART } from './hero-portraits.js';
 import { getBattleSprite, HERO_MOTION } from './battle-sprites.js';
+import { RoguelikePresentation } from './roguelike-presentation.js';
 
 const TAU = Math.PI * 2;
 const CAMP_NAMES = { shield: '盾营', archer: '弓营', crossbow: '弩营', catapult: '投石营', fire_oil: '火油营', war_drum: '战鼓营' };
@@ -138,6 +139,7 @@ export class V1Renderer extends Renderer {
   }
 
   initFeedbackState() {
+    if (this.roguelikePresentation) this.roguelikePresentation.reset(); else this.roguelikePresentation = new RoguelikePresentation();
     this.uiEvents = [];
     this.campAnims = new Map();   // slot -> { kind: 'build' | 'upgrade', started, level }
     this.spawnAnims = new Map();  // enemyId -> { started, x, y }
@@ -157,6 +159,11 @@ export class V1Renderer extends Renderer {
   /** Returns and clears the queued DOM cues. See the comment at the top of this file. */
   consumeUiEvents() {
     const events = this.uiEvents; this.uiEvents = []; return events;
+  }
+
+  get presentationHoldRemaining() { return this.roguelikePresentation.holdRemaining; }
+  advancePresentation(realDt,{active = true} = {}) {
+    this.roguelikePresentation.tick(realDt,{active:active && !this.destroyed && !globalThis.document?.hidden});
   }
 
   pushUi(cue) {
@@ -330,7 +337,7 @@ export class V1Renderer extends Renderer {
 
   campCue(kind, slot, camp, now = nowSeconds()) {
     if (!Number.isFinite(slot)) return;
-    const level = clamp(camp?.level ?? 1, 1, 3), position = (this.map?.campSlots ?? CAMP_SLOTS).find((s, i) => (s.slot ?? i) === slot);
+    const level = clamp(camp?.level ?? 1, 1, 5), position = (this.map?.campSlots ?? CAMP_SLOTS).find((s, i) => (s.slot ?? i) === slot);
     this.campAnims.set(slot, { kind, started: now, level });
     if (this.tracked) this.tracked.camps.set(slot, `${camp?.type}:${level}`);
     this.pushUi({ type: kind, slot, campType: camp?.type, level, x: camp?.x ?? position?.x, y: camp?.y ?? position?.y });
@@ -358,6 +365,14 @@ export class V1Renderer extends Renderer {
 
   handleEvent(event = {}) {
     if (this.destroyed || globalThis.document?.hidden) return;
+    let presentationEvent = event;
+    if (event.presentation === 'roguelike' && event.type === 'heroCombo') {
+      const game = this.tracked?.game,definition = id => { const hero = game?.heroes?.find(value => value.id === id); return hero ? game.heroUltimate?.(hero) || hero.definition?.ultimate : null; };
+      presentationEvent = {...event,fromUltimate:event.fromUltimate || definition(event.fromHeroId),toUltimate:event.toUltimate || definition(event.toHeroId)};
+    }
+    const presented = this.roguelikePresentation.handleEvent(presentationEvent);
+    if (presented && event.type === 'heroCombo') this.roguelikeHoldVisualTime = this.visualTime;
+    if (presented && ['heroCombo','campLevel5'].includes(event.type)) return;
     const now = nowSeconds();
     this.pruneFeedback(now);
     if (['ultimate', 'burst', 'ultimate_result'].includes(event.type)) { this.flashUltimate(event); return; }
@@ -421,7 +436,7 @@ export class V1Renderer extends Renderer {
       const seen = this.tracked?.game === game ? this.tracked.seen : new Set();
       for (const e of enemies) seen.add(e.id);
       this.tracked = { game, hp, maxHp: max, seen, living: living.length,
-        camps: new Map([...camps].map(([slot, c]) => [slot, `${c.type}:${clamp(c.level ?? 1, 1, 3)}`])),
+        camps: new Map([...camps].map(([slot, c]) => [slot, `${c.type}:${clamp(c.level ?? 1, 1, 5)}`])),
         clearedWave: this.tracked?.game === game ? this.tracked.clearedWave : null,
         lastEnemyWave: this.tracked?.game === game ? this.tracked.lastEnemyWave : null };
       this.gateFx.stage = gateStage(clamp(hp / max));
@@ -431,7 +446,7 @@ export class V1Renderer extends Renderer {
     if (hp < t.hp - 1e-6) this.gateHit(t.hp - hp, { hp, maxHp: max }, now);
     else if (hp > t.hp) { t.hp = hp; this.updateGateStage(hp / max); }
     for (const [slot, camp] of camps) {
-      const key = `${camp.type}:${clamp(camp.level ?? 1, 1, 3)}`, known = t.camps.get(slot);
+      const key = `${camp.type}:${clamp(camp.level ?? 1, 1, 5)}`, known = t.camps.get(slot);
       if (known === key) continue;
       this.campCue(known && known.split(':')[0] === camp.type ? 'upgrade' : 'build', slot, camp, now);
     }
@@ -680,16 +695,19 @@ export class V1Renderer extends Renderer {
     const sx = this.width / 420, sy = this.height / 600, iso = Math.min(sx, sy);
     this.cssIso = Math.max(0.1, Math.min(rect.width / 420, rect.height / 600));
     this.spriteScaleX = iso / sx; this.spriteScaleY = iso / sy;
-    const ctx = this.ctx, time = this.reducedMotion ? 0 : this.visualTime;
+    const ctx = this.ctx, time = this.reducedMotion ? 0 : this.roguelikePresentation.phase === 'hold' ? this.roguelikeHoldVisualTime ?? this.visualTime : this.visualTime;
     this.observe(game, now);
     const enemies = this.enemyDrawPositions((game.enemies ?? []).filter(e => e.hp > 0 && !e.escaped));
     this.heroNameIds = heroNameIds; this.heroNameAlpha = heroNameAlpha;
+    this.heroRageCosts = new Map((game.heroes ?? []).map(hero => [hero.id,game.heroRageCost?.(hero) ?? 100]));
+    this.heroRageMaxima = new Map((game.heroes ?? []).map(hero => [hero.id,game.heroMaxRage?.(hero) ?? 100]));
     this.battleTime = game.time ?? this.visualTime;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
     // Edges exposed by shake/zoom read as dark ink rather than stale pixels.
     ctx.globalAlpha = 1; ctx.fillStyle = '#0d1b16'; ctx.fillRect(0, 0, 420, 600);
     this.applyCamera(ctx, now);
     ctx.drawImage(this.background, 0, 0, 420, 600);
+    if (this.roguelikePresentation.phase === 'hold') { ctx.fillStyle = '#f4f0da28'; ctx.fillRect(0,0,420,600); }
     this.drawGate(ctx, game, now, time);
     this.drawDeaths(ctx, now);
     this.drawSpawnDust(ctx, now);
@@ -702,13 +720,19 @@ export class V1Renderer extends Renderer {
     }
     this.drawCampGround(ctx, camps, slots, now);
     for (const hero of game.heroes ?? []) {
-      if ((hero.role === 'lead' || hero === game.heroes[0]) && hero.rage >= 100 && hero.target) this.drawSkillShape(ctx, { ...hero.target, heroId: hero.heroId ?? hero.id }, { preview: true, game });
+      if ((hero.role === 'lead' || hero === game.heroes[0]) && hero.rage >= (this.heroRageCosts.get(hero.id) ?? 100) && hero.target) this.drawSkillShape(ctx, { ...hero.target, heroId: hero.heroId ?? hero.id }, { preview: true, game });
     }
-    for (const effect of game.effects ?? []) if (['field', 'mine', 'telegraph', 'oil'].includes(effect.type)
-      || effect.type === 'ultimate' && (REDESIGNED_SHAPES.has(effect.shape) || effect.heroId === 'xu_chu')) {
-      if (effect.type === 'ultimate' && (game.effects ?? []).some(other => other.type === 'field' && other.heroId === effect.heroId)) continue;
-      this.drawSkillShape(ctx, effect, { ground: true, game });
+    for (const effect of game.effects ?? []) {
+      if (effect.type === 'synergyZone') { this.drawSynergyZone(ctx,effect,game); continue; }
+      if (effect.type === 'campZone') { this.drawCampUpgradeZone(ctx, effect); continue; }
+      if (effect.type === 'heroZone') { this.drawHeroUpgradeZone(ctx, effect); continue; }
+      if (['field', 'mine', 'telegraph', 'oil'].includes(effect.type)
+        || effect.type === 'ultimate' && (REDESIGNED_SHAPES.has(effect.shape) || effect.heroId === 'xu_chu')) {
+        if (effect.type === 'ultimate' && (game.effects ?? []).some(other => other.type === 'field' && other.heroId === effect.heroId)) continue;
+        this.drawSkillShape(ctx, effect, { ground: true, game });
+      }
     }
+    this.drawRoguelikeSkills(ctx,game,true);
     slots.forEach((slot, index) => {
       if (!camps.some(c => c.slot === (slot.slot ?? index))) this.sprite(ctx, slot.x, slot.y, () => this.drawEmptyCamp(ctx, { x: 0, y: 0 }, (slot.slot ?? index) === selectedSlot, time));
     });
@@ -734,9 +758,8 @@ export class V1Renderer extends Renderer {
         if (unit.kind === 'camp') { this.applyCampAnim(ctx, unit.slot, now); this.drawV1Camp(ctx, unit, selectedSlot === unit.slot, time); }
         else if (unit.kind === 'hero') this.drawV1Hero(ctx, unit, time);
         else {
-          this.applySpawnAnim(ctx, unit.id, now);
-          this.drawV1Enemy(ctx, unit, time);
-          this.drawHitFlash(ctx, unit, now);
+          if (this.roguelikePresentation.phase === 'hold') this.drawRoguelikeSilhouette(ctx,unit);
+          else { this.applySpawnAnim(ctx, unit.id, now); this.drawV1Enemy(ctx, unit, time); this.drawHitFlash(ctx, unit, now); }
           if (this.lastEnemy && this.lastEnemy.enemyId === unit.id) this.drawLastEnemyMark(ctx, now);
         }
       });
@@ -749,10 +772,13 @@ export class V1Renderer extends Renderer {
         x: 0, y: 0, targetX: (projectile.targetX ?? projectile.x) - projectile.x, targetY: (projectile.targetY ?? projectile.y) - projectile.y });
     });
     for (const effect of game.effects ?? []) {
+      if (['heroZone','campZone','synergyZone'].includes(effect.type)) continue;
       if (effect.type === 'ultimate' && (game.effects ?? []).some(other => other.type === 'field' && other.heroId === effect.heroId)) continue;
       if (['ultimate', 'field', 'mine', 'telegraph', 'oil'].includes(effect.type)) this.drawSkillShape(ctx, effect, { game });
       else super.drawEffect(ctx, { ...effect, maxLife: effect.life, life: Math.max(0, effect.life - (effect.age ?? 0)) });
     }
+    this.drawRoguelikeSkills(ctx,game,false);
+    this.drawRoguelikeEffects(ctx);
     this.drawDamageLabels(ctx, now);
     this.drawGateLabels(ctx, now);
     if ((game.hp ?? game.gateHp) < (game.maxHp ?? game.maxGateHp ?? 100) * 0.3) this.drawDanger(ctx, time);
@@ -761,6 +787,7 @@ export class V1Renderer extends Renderer {
     if (this.mapLabel) this.sprite(ctx, 210, 20, () => text(ctx, this.map.name ?? '演武沙盘', 0, 0, Math.max(12, 12 / this.cssIso), '#ead5a0'));
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
     this.drawEdgeFlash(ctx, now);
+    this.drawRoguelikeResult(ctx);
     if (this.flash) {
       const age = nowSeconds() - this.flash.started;
       if (age > 1.6) this.flash = null;
@@ -773,9 +800,144 @@ export class V1Renderer extends Renderer {
     }
   }
 
+  drawRoguelikeSilhouette(ctx,enemy) {
+    const boss = enemy.type === 'boss',r = boss ? 18 : enemy.type === 'siege' ? 15 : 10;
+    ctx.save(); ctx.fillStyle = '#091510'; ctx.strokeStyle = '#fff7dc'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0,-r * 2,r * .62,0,TAU); ctx.fill(); ctx.stroke();
+    polygon(ctx,[[-r,-r * 1.6],[r,-r * 1.6],[r * 1.3,r * .5],[-r * 1.3,r * .5]],'#091510','#fff7dc');
+    line(ctx,[[-r * 1.7,-r * 2.7],[-r * 1.4,r]],'#fff7dc',2);
+    if (enemy.type === 'cavalry') polygon(ctx,[[-r * 1.9,0],[r * 1.7,-r * .5],[r * 2.2,r * .7],[-r * 1.6,r]],'#091510','#fff7dc');
+    if (boss) polygon(ctx,[[-r,-r * 2.7],[-r,-r * 3.6],[0,-r * 3],[r,-r * 3.6],[r,-r * 2.7]],'#fff7dc');
+    this.drawEnemyHealth(ctx,enemy,boss ? 42 : 24,boss ? -76 : -42); ctx.restore();
+  }
+
+  // The actual P3 synergyZone outlines stay untouched. These are read-only presentation snapshots.
+  drawRoguelikeRegion(ctx,target,color,definition = {}) {
+    if (!target) return;
+    ctx.save(); ctx.strokeStyle = ctx.fillStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = .75;
+    const shape = target.shape || definition.shape || '',radius = target.radius;
+    const circle = (x,y,r) => { ctx.beginPath(); ctx.arc(x,y,Math.max(0,r),0,TAU); ctx.save(); ctx.globalAlpha = .1; ctx.fill(); ctx.restore(); ctx.stroke(); };
+    if (target.circles) for (const value of target.circles) circle(value.x,value.y,value.radius);
+    else if (radius) circle(target.x ?? 210,target.y ?? 300,radius);
+    else if (target.strips || shape.includes('lane')) {
+      const entries = target.strips || (target.laneIds || [target.laneId || 'route_0']).map(laneId => ({...target,laneId}));
+      for (const value of entries) {
+        const route = this.route(value.laneId),end = value.s1 ?? route.length,start = value.s0 ?? Math.max(0,end - (value.length || definition.length || definition.surgeLength || route.length));
+        ctx.globalAlpha = .13; ctx.lineWidth = value.width || target.width || definition.width || 100; roadPath(ctx,routeSection(route,start,end)); ctx.stroke();
+        ctx.globalAlpha = .85; ctx.lineWidth = 2; roadPath(ctx,routeSection(route,start,end)); ctx.stroke();
+      }
+    } else {
+      const x = target.x ?? 210,y = target.y ?? 530,angle = target.angle ?? -Math.PI / 2;
+      if (shape.includes('cone')) {
+        const radius = definition.range || target.range || 360,spread = (definition.angleDegrees || 75) * Math.PI / 360;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.arc(x,y,radius,angle - spread,angle + spread); ctx.closePath();
+      } else {
+        const width = target.width || definition.width || 80,length = target.length || definition.length || 100,c = Math.cos(angle),s = Math.sin(angle);
+        ctx.beginPath(); for (const [index,[ahead,side]] of [[0,-width / 2],[length,-width / 2],[length,width / 2],[0,width / 2]].entries()) {
+          const px = x + ahead * c - side * s,py = y + ahead * s + side * c; if (index) ctx.lineTo(px,py); else ctx.moveTo(px,py);
+        } ctx.closePath();
+      }
+      ctx.save(); ctx.globalAlpha = .1; ctx.fill(); ctx.restore(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawRoguelikeSkills(ctx,game,ground) {
+    const view = this.roguelikePresentation.view(this.reducedMotion),combo = view.combo;
+    if (!combo || !this.reducedMotion && !combo.dualVisible) return;
+    for (const [id,target,color,snapshot] of [[combo.fromHeroId,combo.fromTarget,combo.style.fromColor,combo.fromUltimate],[combo.toHeroId,combo.target,combo.style.toColor,combo.toUltimate]]) {
+      const hero = (game.heroes || []).find(value => value.id === id),definition = snapshot || hero && (game.heroUltimate?.(hero) || hero.definition?.ultimate) || {};
+      if (this.reducedMotion) { if (ground) this.drawRoguelikeRegion(ctx,target,color,definition); continue; }
+      if (!target) continue;
+      const age = (definition.delaySec || definition.landAtSec || definition.flightSec || 0) + combo.progress * .8;
+      this.drawSkillShape(ctx,{...target,type:'ultimate',heroId:id,ultimate:definition,age,time:age,life:2},{game,ground});
+    }
+    if (!ground) this.drawRoguelikeMotif(ctx,combo);
+  }
+
+  drawRoguelikeMotif(ctx,combo) {
+    const reduced = this.reducedMotion,p = reduced ? 1 : combo.progress;
+    const x = clamp(((combo.target?.x ?? 210) + (combo.fromTarget?.x ?? 210)) / 2,85,335),y = clamp(((combo.target?.y ?? 300) + (combo.fromTarget?.y ?? 300)) / 2,125,455);
+    const a = combo.style.fromColor,b = combo.style.toColor,r = reduced ? 46 : 22 + p * 24;
+    const ring = (radius,color) => { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x,y,radius,0,TAU); ctx.stroke(); };
+    const arrow = (sx,sy,ex,ey,color) => { line(ctx,[[sx,sy],[ex,ey]],color,2.5); polygon(ctx,[[ex,ey],[ex - 5,ey - 10],[ex + 5,ey - 10]],color); };
+    ctx.save(); ctx.globalAlpha = .85;
+    switch (combo.style.motif) {
+      case 'windFire':
+        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.strokeStyle = a; ctx.arc(x,y,r + i * 8,(reduced ? 0 : p * 2) + i,(reduced ? 0 : p * 2) + i + Math.PI); ctx.stroke(); }
+        line(ctx,[[x - 75,y + 12],[x + 75,y - 12]],b,6);
+        for (let i = 0; i < 5; i++) { const dx = x - 58 + i * 29; polygon(ctx,[[dx - 7,y + 9],[dx,y - 15 - (reduced ? 0 : Math.sin(p * 12 + i) * 4)],[dx + 7,y + 9]],b); } break;
+      case 'crossBlades': line(ctx,[[x - 65,y - 40],[x + 65,y + 40]],a,7); line(ctx,[[x - 65,y + 40],[x + 65,y - 40]],b,7); ring(r * .6,'#fff2c6'); break;
+      case 'roarSpears':
+        for (let i = 0; i < 3; i++) { const dx = x - r + i * 22; line(ctx,[[dx - 10,y - 40],[dx + 10,y],[dx - 10,y + 40]],a,3); }
+        for (let i = 0; i < 5; i++) arrow(x + 20 + i * 9,y + 40,x + 20 + i * 9,y - 40,b); break;
+      case 'thunderArrows':
+        for (let i = -1; i <= 1; i++) { const dx = x + i * 48; line(ctx,[[dx - 15,y - 4],[dx + 15,y - 4]],a,5); line(ctx,[[dx,y - 19],[dx,y + 11]],a,5); arrow(dx - 8,y - 42,dx + 5,y + 33,b); } break;
+      case 'flagRings':
+        polygon(ctx,[[x,y + 36],[x - 48,y - 40],[x + 48,y - 40]],a + '55',a); ring(r,b); ring(r + 12,b);
+        for (let i = -1; i <= 1; i++) { const dx = x + i * 30; line(ctx,[[dx,y + 15],[dx,y - 28]],b,2); polygon(ctx,[[dx,y - 28],[dx + 20,y - 23],[dx,y - 12]],b); } break;
+      case 'arrowCharge':
+        for (let i = -1; i <= 1; i++) { const dx = x + i * 25; arrow(dx,y - 50,dx,y + 20,a); line(ctx,[[dx - 7,y + 43],[dx,y + 24],[dx + 7,y + 43]],b,4); } break;
+      case 'tideFire':
+        ctx.beginPath(); ctx.strokeStyle = a; ctx.lineWidth = 5; ctx.arc(x,y + 25,r + 15,Math.PI,TAU); ctx.stroke();
+        for (let i = 0; i < 7; i++) { const dx = x - 63 + i * 21; polygon(ctx,[[dx - 9,y + 15],[dx - 4,y - 4],[dx + 2,y - 28 - (reduced ? 0 : Math.sin(p * 14 + i) * 5)],[dx + 9,y + 15]],b); } break;
+      case 'impactCone':
+        ring(r,a); polygon(ctx,[[x,y + 34],[x - 48,y - 40],[x + 48,y - 40]],b + '66',b);
+        for (let i = 0; i < 6; i++) { const angle = i * TAU / 6; line(ctx,[[x,y],[x + Math.cos(angle) * r * .55,y + Math.sin(angle) * r * .55],[x + Math.cos(angle + .15) * r,y + Math.sin(angle + .15) * r]],a,2); } break;
+    }
+    ctx.restore();
+  }
+
+  drawRoguelikeEffects(ctx) {
+    for (const effect of this.roguelikePresentation.effects) {
+      const p = clamp(effect.age / effect.life),reduced = this.reducedMotion;
+      ctx.save(); ctx.globalAlpha = 1 - Math.max(0,(p - .7) / .3);
+      if (effect.kind === 'heal') {
+        const particles = reduced ? 0 : this.takeParticles(this.quality === 'low' ? 6 : 12);
+        if (!reduced) for (let i = 0; i < particles; i++) {
+          const angle = i * 2.39996,dx = Math.cos(angle) * (8 + p * 32),dy = -p * (22 + i % 4 * 8);
+          ctx.fillStyle = i % 2 ? '#a5efb0' : '#4fcf91'; ctx.fillRect(effect.x + dx - 2,effect.y + dy - 2,4,4);
+        }
+        ctx.strokeStyle = '#71e4a6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(effect.x,effect.y,reduced ? 20 : 12 + p * 20,0,TAU); ctx.stroke();
+        text(ctx,'+' + round1(effect.amount),effect.x,effect.y - 30 - (reduced ? 0 : p * 24),Math.max(14,14 / this.cssIso),'#91f2b7');
+      } else {
+        if (!reduced) {
+          const height = 100 * easeOutCubic(clamp(p * 2)),gradient = ctx.createLinearGradient(effect.x,effect.y - height,effect.x,effect.y);
+          gradient.addColorStop(0,'#fff2bd00'); gradient.addColorStop(1,'#fff2bd99'); ctx.fillStyle = gradient; ctx.fillRect(effect.x - 22,effect.y - height,44,height);
+          ctx.strokeStyle = '#ffe5a2'; ctx.lineWidth = 3 * (1 - p) + 1; ctx.beginPath(); ctx.ellipse(effect.x,effect.y,24 + p * 50,14 + p * 27,0,0,TAU); ctx.stroke();
+        } else if (effect.age <= .12 + 1e-8) { ctx.strokeStyle = '#fff0b3'; ctx.lineWidth = 3; ctx.strokeRect(effect.x - 29,effect.y - 48,58,59); }
+        text(ctx,'Ⅴ · ' + (CAMP_NAMES[effect.campType] || '军营') + '质变',effect.x,effect.y - 58,Math.max(12,12 / this.cssIso),'#ffe7ab');
+      }
+      ctx.restore();
+    }
+  }
+
+  drawRoguelikeResult(ctx) {
+    const combo = this.roguelikePresentation.view(this.reducedMotion).combo; if (!combo) return;
+    if (combo.titleVisible && this.roguelikeTitles !== false) {
+      const p = clamp((combo.age - .6) / .15),scale = this.reducedMotion ? 1 : 1.12 - .12 * easeOutCubic(p);
+      ctx.save(); if (!this.reducedMotion) { ctx.translate(210,126); ctx.scale(scale,scale); ctx.translate(-210,-126); }
+      ctx.font = '700 30px "STKaiti", "KaiTi", serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 5; ctx.strokeStyle = '#13241b'; ctx.strokeText(combo.name,210,126); ctx.fillStyle = '#fff0c0'; ctx.fillText(combo.name,210,126); ctx.restore();
+    }
+    if (combo.settling) {
+      const p = clamp((combo.age - 1.1) / .3),placed = [],size = Math.max(12,12 / this.cssIso);
+      for (const [index,value] of combo.recipients.entries()) {
+        const amount = String(round1(value.amount)),halfWidth = amount.length * size * .35 + 7;
+        const x = clamp(value.x + (this.reducedMotion ? 0 : (index % 2 ? 1 : -1) * p * 12),halfWidth,420 - halfWidth);
+        let y = clamp(value.y - 30 - (this.reducedMotion ? 0 : p * 24),size + 8,540);
+        for (let attempt = 0; attempt < placed.length; attempt++) {
+          const overlap = placed.find(other => Math.abs(x - other.x) < halfWidth + other.halfWidth && Math.abs(y - other.y) < size + 7);
+          if (!overlap) break; y = Math.max(size + 8,overlap.y - size - 8);
+        }
+        placed.push({x,y,halfWidth}); text(ctx,amount,x,y,size,combo.style.toColor);
+      }
+      text(ctx,combo.damage > 0 ? '本段双将实伤 ' + round1(combo.damage) : '合击完成',210,158,Math.max(12,12 / this.cssIso),'#fff0c0');
+    }
+  }
+
   // Camera: decaying shake (max of active sources) and a short zoom punch around the field centre.
   applyCamera(ctx, now) {
-    if (this.reducedMotion) return;
+    if (this.reducedMotion || this.roguelikePresentation.phase === 'hold') return;
     let strength = 0, source = null;
     for (const s of this.shakes) {
       const age = now - s.started;
@@ -787,7 +949,9 @@ export class V1Renderer extends Renderer {
       const zoom = 1 + (PUNCH.scale - 1) * clamp(k);
       ctx.translate(210, 300); ctx.scale(zoom, zoom); ctx.translate(-210, -300);
     }
-    if (strength > 0.05) {
+    const comboCamera = this.roguelikePresentation.camera(this.reducedMotion);
+    if (comboCamera.strength > strength) { ctx.translate(comboCamera.x,comboCamera.y); }
+    else if (strength > 0.05) {
       const age = now - source.started;
       ctx.translate(Math.sin(age * 118) * strength, Math.cos(age * 91) * strength * 0.7);
     }
@@ -992,11 +1156,11 @@ export class V1Renderer extends Renderer {
   }
 
   drawV1Camp(ctx, camp, selected, time) {
-    const level = clamp(camp.level ?? 1, 1, 3);
+    const level = clamp(camp.level ?? 1, 1, 5);
     const active = camp.attackFlash > 0;
     const frame = this.reducedMotion ? (active ? 0 : 1) : active ? Math.min(4, Math.floor((0.12 - camp.attackFlash) / 0.12 * 5)) : Math.floor(time * 3) % 4;
     this.drawCachedActor(ctx, 'camp', camp.type, { state: active ? 'attack' : 'idle', frame, level });
-    if (selected) text(ctx, (CAMP_NAMES[camp.type] ?? '军营') + ' ' + 'ⅠⅡⅢ'[level - 1], 0, 31, Math.max(12, 12 / this.cssIso), '#ffe3a1');
+    if (selected) text(ctx, (CAMP_NAMES[camp.type] ?? '军营') + ' ' + 'ⅠⅡⅢⅣⅤ'[level - 1], 0, 31, Math.max(12, 12 / this.cssIso), '#ffe3a1');
   }
 
   actorFrame(hero, time) {
@@ -1022,21 +1186,21 @@ export class V1Renderer extends Renderer {
       const frame = spec.attack?.times ? Math.max(0, spec.attack.times.findLastIndex(t => t <= age + 1e-8)) : Math.min(count - 1, Math.floor((clock - attack.started) / attack.duration * count));
       return { state: 'attack', frame: this.reducedMotion ? (flash > 0 ? 0 : count - 1) : frame };
     }
-    const ready = hero.rage >= 100;
+    const ready = hero.rage >= (this.heroRageCosts?.get(hero.id) ?? 100);
     const count = spec.idle?.frames ?? 6, duration = spec.idle?.duration ?? 2.4;
     return { state: ready ? 'ready' : 'idle', frame: this.reducedMotion ? 0 : Math.floor(time / duration * count * (ready ? 1.3 : 1)) % count };
   }
 
   drawV1Hero(ctx, hero, time) {
     const id = hero.heroId ?? hero.id, art = HERO_ART[id] ?? HERO_ART.guan_yu;
-    const ready = hero.rage >= 100, lead = hero.role !== 'support';
+    const ready = hero.rage >= (this.heroRageCosts?.get(hero.id) ?? 100), lead = hero.role !== 'support';
     const radius = lead ? 23 : 19;
     oval(ctx, 0, 5, radius - 3, 6, '#142b2760');
     ctx.strokeStyle = ready ? '#c4f4ca' : '#67bda2'; ctx.lineWidth = ready ? 2.5 : 1.5;
     ctx.beginPath(); ctx.ellipse(0, 4, radius, radius * 0.4, 0, 0, TAU); ctx.stroke();
     if (hero.rage > 0) {
       ctx.strokeStyle = '#ecd58e'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(0, 4, radius, radius * 0.4, 0, Math.PI / 2, Math.PI / 2 + TAU * clamp(hero.rage / 100)); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, 4, radius, radius * 0.4, 0, Math.PI / 2, Math.PI / 2 + TAU * clamp(hero.rage / (this.heroRageMaxima?.get(hero.id) ?? 100))); ctx.stroke();
     }
     const pose = this.actorFrame(hero, time);
     if (id === 'zhang_liao' && hero.casting && !this.reducedMotion) {
@@ -1066,6 +1230,9 @@ export class V1Renderer extends Renderer {
     const frame = this.reducedMotion ? 0 : Math.floor(time * 6 + (Number(enemy.id) || 0) * 0.7) % 6;
     this.drawCachedActor(ctx, 'enemy', enemy.type, { state, frame, variant: enemy.bossTemplateId ?? '' });
     this.drawEnemyHealth(ctx, enemy, boss ? 42 : enemy.type === 'siege' ? 35 : 24, boss ? -59 : enemy.type === 'banner' ? -49 : -39);
+    if (enemy.blindRemaining > 0) text(ctx, '盲', 18, -24, 11, '#c9dfed');
+    if (enemy.campRootRemaining > 0) text(ctx, '定', 0, -28, 11, '#e6dbab');
+    if (enemy.permanentVulnerabilityStacks > 0) text(ctx, `易${enemy.permanentVulnerabilityStacks > 1 ? 'Ⅱ' : 'Ⅰ'}`, -18, -24, 11, '#f3d489');
     if (enemy.invulnerable || enemy.bossPhase === 'invulnerable') {
       ctx.strokeStyle = '#c4d3d3'; ctx.setLineDash([3, 2]); ctx.beginPath(); ctx.ellipse(0, -12, 23, 33, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     }
@@ -1102,9 +1269,10 @@ export class V1Renderer extends Renderer {
       }
       polygon(ctx, [[0, -16], [length, -3], [length, 3], [0, 16]], '#e5bc6435');
     } else if (id === 'zhao_yun') {
-      for (let i = 0; i < 3; i++) if (age >= (definition.passAtSec?.[i] ?? i * 0.25)) {
-        const y = (i - 1) * width / 4;
-        polygon(ctx, [[0, y - 6], [length, y], [0, y + 6]], ['#92ddef55', '#e6ffff70', '#9bc8ff55'][i]);
+      const passes = definition.passAtSec?.length || 3;
+      for (let i = 0; i < passes; i++) if (age >= (definition.passAtSec?.[i] ?? i * 0.25)) {
+        const y = (i - (passes - 1) / 2) * width / (passes + 1);
+        polygon(ctx, [[0, y - 6], [length, y], [0, y + 6]], ['#92ddef55', '#e6ffff70', '#9bc8ff55'][i % 3]);
         line(ctx, [[8, y], [length, y]], '#edffff', 1.5);
       }
     } else if (id === 'xu_chu') {
@@ -1344,9 +1512,96 @@ export class V1Renderer extends Renderer {
     ctx.restore();
   }
 
+  drawSynergyZone(ctx, effect, game) {
+    const target = effect.target || effect, kind = effect.kind;
+    const color = kind === 'thunderCross' ? '#dbc4f5' : kind === 'tigerCommand' ? '#f1d494' : '#eac293';
+    const label = {eastWind:'借东风 · 火带扩展',tigerCommand:'虎卫号令 · 射程+50%',thunderCross:'雷海箭雨',chibiBurn:'赤壁燃烧'}[kind] || '合击区域';
+    let x = target.x ?? 210, y = target.y ?? 300, radius = target.radius ?? 40;
+    if (kind === 'chibiBurn' && game?.enemies) {
+      const enemy = game.enemies.find(unit => unit.id === effect.enemyId && unit.hp > 0 && !unit.escaped);
+      if (!enemy) return;
+      x = enemy.x; y = enemy.y;
+    }
+    ctx.save(); ctx.fillStyle = ctx.strokeStyle = color; ctx.lineWidth = 2;
+    if (kind === 'eastWind') {
+      for (const strip of target.strips || [target]) {
+        const route = this.route(strip.laneId || target.laneId);
+        const end = strip.s1 ?? route.length, start = strip.s0 ?? Math.max(0,end - strip.length);
+        ctx.globalAlpha = .18; ctx.lineWidth = strip.width || target.width;
+        ctx.lineCap = 'butt'; ctx.lineJoin = 'round'; roadPath(ctx,routeSection(route,start,end)); ctx.stroke();
+        ctx.globalAlpha = .8; ctx.lineWidth = 2; roadPath(ctx,routeSection(route,start,end)); ctx.stroke();
+      }
+    } else if (kind === 'thunderCross') {
+      for (const cross of target.crosses || []) {
+        const l = cross.length / 2, w = cross.width / 2;
+        const points = [[-l,-w],[-w,-w],[-w,-l],[w,-l],[w,-w],[l,-w],[l,w],[w,w],[w,l],[-w,l],[-w,w],[-l,w]];
+        ctx.beginPath(); points.forEach(([dx,dy],index) => { if (index) ctx.lineTo(cross.x+dx,cross.y+dy); else ctx.moveTo(cross.x+dx,cross.y+dy); }); ctx.closePath();
+        ctx.globalAlpha = .18; ctx.fill(); ctx.globalAlpha = .8; ctx.stroke();
+      }
+    } else {
+      ctx.beginPath(); ctx.arc(x,y,radius,0,TAU); ctx.globalAlpha = .16; ctx.fill(); ctx.globalAlpha = .8; ctx.stroke();
+    }
+    ctx.restore();
+    text(ctx,label,clamp(x,70,350),clamp(y-radius-8,16,580),Math.max(11,11/(this.cssIso || 1)),color);
+  }
+
+  drawCampUpgradeZone(ctx, effect) {
+    // Final, static geometry carries the same ground hazard information in calm mode.
+    const x = effect.x, y = effect.y, radius = effect.radius;
+    ctx.save(); ctx.fillStyle = '#bd593b'; ctx.strokeStyle = '#efba82'; ctx.lineWidth = 2;
+    ctx.globalAlpha = .18; ctx.beginPath(); ctx.arc(x,y,radius,0,TAU); ctx.fill();
+    ctx.globalAlpha = .8; ctx.stroke(); ctx.restore();
+    text(ctx,'火油弹火场',clamp(x,45,375),clamp(y-radius-8,16,580),Math.max(11,11/(this.cssIso || 1)),'#f2c68e');
+  }
+
+  drawHeroUpgradeZone(ctx, effect) {
+    // Readable final geometry in both motion modes; these zones never move or pulse.
+    const kind = effect.zoneKind || ({cao_cao:'banner',liu_bei:'barrier',guan_yu:'bladeWind',zhang_liao:'chargeMist'}[effect.heroId]) || 'impact';
+    const colors = {banner:'#edcf87',barrier:'#b8ed99',bladeWind:'#91e9bc',rearguard:'#e6ba9f',chargeMist:'#c6d0bd',impact:'#edbd8b'};
+    const labels = {banner:'令旗阵地',barrier:'盾墙',bladeWind:'刀风重叠',rearguard:'断后',chargeMist:'减速雾',impact:'连跃'};
+    const x = effect.x ?? 210, y = effect.y ?? 300, radius = effect.radius ?? 45;
+    const trace = target => {
+      ctx.beginPath();
+      if (target.radius) { ctx.arc(target.x, target.y, target.radius, 0, TAU); return; }
+      const angle = target.angle ?? -Math.PI / 2, length = target.length || 0, width = target.width || 0;
+      const dx = Math.cos(angle), dy = Math.sin(angle);
+      for (const [index, [ahead, across]] of [[0,-width/2],[length,-width/2],[length,width/2],[0,width/2]].entries()) {
+        const px = target.x + ahead * dx - across * dy, py = target.y + ahead * dy + across * dx;
+        if (index) ctx.lineTo(px,py); else ctx.moveTo(px,py);
+      }
+      ctx.closePath();
+    };
+    ctx.save(); ctx.strokeStyle = ctx.fillStyle = colors[kind]; ctx.lineWidth = 2;
+    if (kind === 'bladeWind' && effect.previousTarget) {
+      trace(effect.target || effect); ctx.clip(); trace(effect.previousTarget); ctx.clip();
+      ctx.globalAlpha = .16; ctx.fillRect(0,0,420,600); ctx.globalAlpha = .75;
+      trace(effect.target || effect); ctx.stroke(); trace(effect.previousTarget); ctx.stroke();
+    } else if (kind === 'barrier') {
+      const point = atDistance(this.route(effect.laneId),effect.progress ?? 0);
+      const half = (effect.width || radius * 2) / 2;
+      line(ctx,[[x-point.ty*half,y+point.tx*half],[x+point.ty*half,y-point.tx*half]],colors[kind],6);
+    } else {
+      const region = kind === 'rearguard' ? effect.target || effect : {...effect,x,y,radius};
+      ctx.globalAlpha = .13; trace(region); ctx.fill();
+      ctx.globalAlpha = .65; trace(region); ctx.stroke();
+    }
+    ctx.restore();
+    text(ctx,labels[kind],clamp(x,35,385),clamp(y-radius-8,16,580),Math.max(11,11/(this.cssIso || 1)),colors[kind]);
+  }
+
   drawSkillShape(ctx, effect, { preview = false, ground = false, game } = {}) {
     const id = effect.heroId, shape = effect.shape ?? (effect.type === 'mine' ? 'lane_mines' : 'circle');
-    const definition = game?.heroes?.find(h => (h.heroId ?? h.id) === id)?.definition?.ultimate ?? {};
+    const hero = game?.heroes?.find(h => (h.heroId ?? h.id) === id);
+    const definition = effect.ultimate || effect.skillDefinition || (hero ? game?.heroUltimate?.(hero) || hero.definition?.ultimate : null) || {};
+    // Multi-route cards retain the exact locked strip on each real road.
+    if (effect.strips?.length) {
+      for (const strip of effect.strips) this.drawSkillShape(ctx, { ...effect, ...strip, strips: null, laneIds: null }, { preview, ground, game });
+      return;
+    }
+    if (['lane_following_charge', 'lane_volley_strip', 'lane_fire_strip'].includes(shape) && effect.laneIds?.length > 1) {
+      for (const laneId of effect.laneIds) this.drawSkillShape(ctx, { ...effect, laneId, laneIds: null }, { preview, ground, game });
+      return;
+    }
     if (REDESIGNED_SHAPES.has(shape)) {
       this.drawRedesignedSkill(ctx, effect, { preview, ground, game, definition }); return;
     }
@@ -1373,10 +1628,9 @@ export class V1Renderer extends Renderer {
       for (const laneId of effect.laneIds ?? ['route_0', 'route_1']) {
         const index = Number(String(laneId).replace('route_', '')) || 0, path = this.map.paths[index];
         if (!path) continue;
-        const hero = game?.heroes?.find(h => (h.heroId ?? h.id) === id);
-        for (const fraction of hero?.definition?.ultimate?.laneProgressFractions ?? [0.25, 0.55]) {
+        for (const fraction of definition.laneProgressFractions ?? [0.25, 0.55]) {
           const points = partialPath(path, fraction), point = points[points.length - 1];
-          ctx.beginPath(); ctx.arc(point.x, point.y, hero?.definition?.ultimate?.triggerRadius ?? 45, 0, TAU); ctx.stroke();
+          ctx.beginPath(); ctx.arc(point.x, point.y, definition.triggerRadius ?? 45, 0, TAU); ctx.stroke();
         }
       }
     } else if (lane) {
@@ -1421,7 +1675,11 @@ export class V1Renderer extends Renderer {
         ctx.strokeStyle = '#d6ffdf'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(front, -width / 2); ctx.quadraticCurveTo(front - 20, 0, front, width / 2); ctx.stroke();
       } else if (!preview && !ground && id === 'zhao_yun') {
-        for (let i = 0; i < 3; i++) if (age >= (definition.passAtSec?.[i] ?? i * 0.25)) line(ctx, [[8, (i - 1) * width / 4], [length, (i - 1) * width / 4]], '#c4edf2', 3 - i * 0.5);
+        const passes = definition.passAtSec?.length || 3;
+        for (let i = 0; i < passes; i++) if (age >= (definition.passAtSec?.[i] ?? i * 0.25)) {
+          const offset = (i - (passes - 1) / 2) * width / (passes + 1);
+          line(ctx, [[8, offset], [length, offset]], '#c4edf2', Math.max(1, 3 - i * 0.5));
+        }
       } else if (!preview && !ground && id === 'zhang_fei') {
         for (let i = 0; i < 3; i++) line(ctx, [[length * (0.3 + i * 0.25), -width * 0.42], [length * (0.3 + i * 0.25) + 15, 0], [length * (0.3 + i * 0.25), width * 0.42]], '#ecd093', 2);
       } else if (!preview && !ground && cone) {

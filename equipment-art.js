@@ -1,3 +1,5 @@
+import { TACTIC_ART_IDS, TACTIC_ART, TACTIC_SYMBOL_IDS, TACTIC_RARITY_QUALITY, tacticArtMetadata, composeTacticIcon } from './tactic-art.js';
+
 // Original procedural equipment icons. Local SVG data URIs only: no remote assets, scripts or image refs.
 // Each signature item has its own drawing that follows its name (倚天剑, 赤兔, 白衣兵书 …); ordinary gear has one
 // drawing per slot. Quality is shown three ways, not by colour alone: frame colour, corner pips and the frame shape.
@@ -109,6 +111,15 @@ function frame(quality) {
 const cache = new Map();
 /** Safe local image source: equipmentIcon(templateId, quality) → data:image/svg+xml URI. Unknown ids fall back per slot. */
 export function equipmentIcon(templateId, quality = 'white', slot = null) {
+  const card = tacticArtMetadata(templateId);
+  if (card) {
+    const key = 'tactic|' + card.id;
+    if (cache.has(key)) return cache.get(key);
+    const svg = composeTacticIcon(card.id, QUALITY_STYLE, card.signatureWeaponId ? WEAPONS[card.signatureWeaponId]() : '');
+    const uri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    cache.set(key, uri);
+    return uri;
+  }
   const id = Object.hasOwn(DRAWINGS, templateId) ? templateId : SLOT_FALLBACK[slot] || (/_horse$/.test(String(templateId)) ? 'basic_horse' : /_armor$/.test(String(templateId)) ? 'basic_armor' : /command/.test(String(templateId)) ? 'basic_command_token' : 'basic_weapon');
   const q = Object.hasOwn(QUALITY_STYLE, quality) ? quality : 'white';
   const key = id + '|' + q;
@@ -121,3 +132,4 @@ export function equipmentIcon(templateId, quality = 'white', slot = null) {
 }
 
 export const EQUIPMENT_ART_IDS = Object.freeze(Object.keys(DRAWINGS));
+export { TACTIC_ART_IDS, TACTIC_ART, TACTIC_SYMBOL_IDS, TACTIC_RARITY_QUALITY, tacticArtMetadata };

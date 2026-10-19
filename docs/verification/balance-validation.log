@@ -1,0 +1,251 @@
+{
+  "validation": "passed",
+  "combatSimulationPerformed": false,
+  "heroes": 15,
+  "camps": 6,
+  "enemies": 7,
+  "stageTiers": 12,
+  "technologyExamples": {
+    "oneCampTo10Copper": 3900,
+    "oneCampTo10Iron": 30,
+    "sixCampsTo10Copper": 23400,
+    "sixCampsTo10Iron": 180,
+    "maximumDamageMultiplier": 1.25,
+    "maximumRangeAdd": 15,
+    "maximumDrumDamageAura": 0.02
+  },
+  "lootExamples": {
+    "goldPercent": 2.5,
+    "meanBoxesToAnyGold": 40,
+    "chanceAtLeastOneGoldIn60": 0.7811,
+    "specificSignaturePercent": 0.1667
+  },
+  "calculationStatus": "static_arithmetic_not_combat_simulation",
+  "campDps": {
+    "shield": [
+      {
+        "level": 1,
+        "singleTargetDps": 2.2222,
+        "eliteDpsBeforeTactics": 2.2222
+      },
+      {
+        "level": 2,
+        "singleTargetDps": 2.9412,
+        "eliteDpsBeforeTactics": 2.9412
+      },
+      {
+        "level": 3,
+        "singleTargetDps": 3.75,
+        "eliteDpsBeforeTactics": 3.75
+      }
+    ],
+    "archer": [
+      {
+        "level": 1,
+        "singleTargetDps": 13.3333,
+        "eliteDpsBeforeTactics": 13.3333
+      },
+      {
+        "level": 2,
+        "singleTargetDps": 22.2222,
+        "eliteDpsBeforeTactics": 22.2222
+      },
+      {
+        "level": 3,
+        "singleTargetDps": 36.1111,
+        "eliteDpsBeforeTactics": 36.1111
+      }
+    ],
+    "catapult": [
+      {
+        "level": 1,
+        "singleTargetDps": 4.6667,
+        "eliteDpsBeforeTactics": 4.6667,
+        "maximumCappedGroupDps": 28,
+        "maximumCappedBlastDamage": 84
+      },
+      {
+        "level": 2,
+        "singleTargetDps": 6.3158,
+        "eliteDpsBeforeTactics": 6.3158,
+        "maximumCappedGroupDps": 37.8947,
+        "maximumCappedBlastDamage": 108
+      },
+      {
+        "level": 3,
+        "singleTargetDps": 8.5185,
+        "eliteDpsBeforeTactics": 8.5185,
+        "maximumCappedGroupDps": 51.1111,
+        "maximumCappedBlastDamage": 138
+      }
+    ],
+    "crossbow": [
+      {
+        "level": 1,
+        "singleTargetDps": 15.3846,
+        "eliteDpsBeforeTactics": 19.2308
+      },
+      {
+        "level": 2,
+        "singleTargetDps": 25.641,
+        "eliteDpsBeforeTactics": 32.0513
+      },
+      {
+        "level": 3,
+        "singleTargetDps": 42.3077,
+        "eliteDpsBeforeTactics": 52.8846
+      }
+    ],
+    "fire_oil": [
+      {
+        "level": 1,
+        "singleTargetDps": 3.3333,
+        "eliteDpsBeforeTactics": 3.3333
+      },
+      {
+        "level": 2,
+        "singleTargetDps": 4.7059,
+        "eliteDpsBeforeTactics": 4.7059
+      },
+      {
+        "level": 3,
+        "singleTargetDps": 6.25,
+        "eliteDpsBeforeTactics": 6.25
+      }
+    ],
+    "war_drum": [
+      {
+        "level": 1,
+        "singleTargetDps": 0,
+        "eliteDpsBeforeTactics": 0
+      },
+      {
+        "level": 2,
+        "singleTargetDps": 0,
+        "eliteDpsBeforeTactics": 0
+      },
+      {
+        "level": 3,
+        "singleTargetDps": 0,
+        "eliteDpsBeforeTactics": 0
+      }
+    ]
+  },
+  "prototypeEnemyCounts": {
+    "infantry": 880,
+    "cavalry": 70,
+    "armor": 48,
+    "boss": 1
+  },
+  "referenceEnemyCountsBeforeDensity": {
+    "infantry": 547,
+    "cavalry": 41,
+    "armor": 30,
+    "boss": 1
+  },
+  "referenceEnemyCounts": {
+    "infantry": 875,
+    "cavalry": 66,
+    "armor": 48,
+    "boss": 1
+  },
+  "referenceBattleEconomy": {
+    "enemyRewardUpperBound": 1259,
+    "startingFood": 120,
+    "totalFoodUpperBound": 1379,
+    "remainingFourBuildCost": 320,
+    "sixCampUpgradeCost": 1640,
+    "sixCampFullMaxCost": 1960,
+    "sixCampFullMaxBudgetDeficit": 581,
+    "oneEachPlusMainThreeMaxCost": 1140,
+    "remainingFoodAfterMainThreeMax": 239
+  },
+  "combatClockExamples": [
+    {
+      "multiplier": 1,
+      "leadReadyCombatSec": 19.875,
+      "leadReadyWallSec": 19.875,
+      "leadRepeatCombatSec": 31,
+      "leadRepeatWallSec": 31,
+      "reference240CombatSecWallDurationSec": 240,
+      "audioPlaybackRate": 1
+    },
+    {
+      "multiplier": 1.5,
+      "leadReadyCombatSec": 19.875,
+      "leadReadyWallSec": 13.25,
+      "leadRepeatCombatSec": 31,
+      "leadRepeatWallSec": 20.6667,
+      "reference240CombatSecWallDurationSec": 160,
+      "audioPlaybackRate": 1
+    },
+    {
+      "multiplier": 2,
+      "leadReadyCombatSec": 19.875,
+      "leadReadyWallSec": 9.9375,
+      "leadRepeatCombatSec": 31,
+      "leadRepeatWallSec": 15.5,
+      "reference240CombatSecWallDurationSec": 120,
+      "audioPlaybackRate": 1
+    }
+  ],
+  "rage": {
+    "leadEarliestFullCombatReadySec": 15,
+    "supportEarliestFullCombatReadySec": 50,
+    "leadReadyWithMaxContactSec": 19.875,
+    "supportReadyWithMaxContactSec": 54.875,
+    "leadMinimumRepeatSec": 31,
+    "supportMinimumRepeatSec": 56
+  },
+  "training": {
+    "heroXpTo30": 5220,
+    "heroBooksTo30": 105,
+    "heroLevelCoinsTo30": 10440,
+    "skillCoinsTo5": 4800,
+    "campaignFirstClearRewards": {
+      "experience_book": 600,
+      "copper_coin": 108600,
+      "refined_iron": 1338
+    },
+    "campaignAllThreeStarRewards": {
+      "experience_book": 664,
+      "copper_coin": 130320,
+      "refined_iron": 1566
+    },
+    "threeHero30Skill5PurpleMainWeapon8Cost": {
+      "experience_book": 315,
+      "copper_coin": 56820,
+      "refined_iron": 312
+    },
+    "threeHero30Skill5RedMainWeapon10Cost": {
+      "experience_book": 315,
+      "copper_coin": 65970,
+      "refined_iron": 615
+    },
+    "threeHero30Skill5PurpleGear8Cost": {
+      "experience_book": 315,
+      "copper_coin": 90120,
+      "refined_iron": 1248
+    },
+    "threeHero30Skill5RedGear10Cost": {
+      "experience_book": 315,
+      "copper_coin": 126720,
+      "refined_iron": 2460
+    },
+    "maxHeroActiveDamageMultiplier": 1.976,
+    "maxThreeHeroArmorGateHp": 114,
+    "maxThreeHeroCommandDamageMultiplier": 1.12
+  },
+  "targetExamples": {
+    "archerLevel1InfantryContinuousTtkSec": 2.1,
+    "archerLevel3ArmorContinuousTtkSec": 1.5231,
+    "armorAfterLevel1GuanUltimateSoloHp": 0,
+    "armorAfterLevel1GuanUltimateThreePartyHp": 20,
+    "bossAfterLevel1GuanUltimateSoloHp": 690,
+    "zhouInfantryStationaryClearSec": 1,
+    "zhouCavalryStationaryClearSec": 1.25,
+    "zhouFullFieldArmorDamage": 96,
+    "zhouFullFieldBossDamage": 240,
+    "finalBossHpThreePartyNormal": 5235
+  }
+}

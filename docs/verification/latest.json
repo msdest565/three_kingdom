@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-20",
+  "status": "verified",
+  "scope": "Documentation consolidation and obsolete-archive cleanup; gameplay/data/tests preserved",
+  "implemented": {
+    "heroes": 15,
+    "campaignLevels": 60,
+    "maps": 12,
+    "endlessCards": 136,
+    "cardCategories": {
+      "attribute": 26,
+      "camp": 42,
+      "hero": 60,
+      "synergy": 8
+    },
+    "comboPairs": 8,
+    "artSymbols": 61,
+    "equipmentIcons": 34,
+    "campaignCampMax": 3,
+    "endlessCampMax": 5
+  },
+  "tests": {
+    "command": "npm test",
+    "total": 486,
+    "passed": 486,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 304485.8508,
+    "files": 54
+  },
+  "checks": {
+    "documentTests": {
+      "passed": 13,
+      "failed": 0,
+      "log": "document-tests.log"
+    },
+    "balanceValidation": "passed",
+    "designValidation": "passed",
+    "documentationGeneration": "passed",
+    "offlineBuild": "passed",
+    "localDocumentLinks": {
+      "filesChecked": 12,
+      "broken": 0
+    },
+    "existingTestFilesUnchanged": 54,
+    "criticalGameplayDataFilesUnchanged": 14,
+    "gitDiffWhitespace": "passed"
+  },
+  "cleanup": {
+    "deletedFiles": 390,
+    "deletedBytes": 84880840,
+    "stillPresent": []
+  },
+  "handoff": {
+    "beforeCharacters": 10840,
+    "afterCharacters": 1388,
+    "reductionPercent": 87.2,
+    "defaultReading": [
+      "docs/ai-handoff-prompt.txt",
+      "docs/PROJECT-STATUS.txt"
+    ]
+  },
+  "browserEvidence": {
+    "isolatedStorage": true,
+    "choiceSizes": [
+      [
+        360,
+        640
+      ],
+      [
+        320,
+        568
+      ],
+      [
+        320,
+        510
+      ]
+    ],
+    "choiceLayouts": 408,
+    "naturalEightyWaveClearTested": false,
+    "subjectiveListeningReview": false,
+    "realMobileOrTapTapAcceptance": false,
+    "freshBrowserRunInDocumentationCleanup": false,
+    "evidenceScope": "Preserved historical isolated-fixture checks; not a fresh natural run or real-device review"
+  },
+  "curveSha256": "55083EB07F4327246E9D08F1F8D24768D8BD7E90C8C4F4559B87E74A14FBECD7",
+  "evidence": {
+    "fullTests": "npm-test.log",
+    "documentAudit": "document-audit.json",
+    "cleanupManifest": "cleanup-summary.json",
+    "sourceIntegrity": "source-hashes.json",
+    "currentChoiceLayout": "choice-layout.png",
+    "layoutDetails": "choice-layout-audit.json",
+    "p5HistoricalSummary": "p5-validation.json"
+  }
+}

@@ -63,9 +63,80 @@ export function validateDesignData(balance, campaign) {
   }
   for (const [id, camp] of Object.entries(camps)) {
     check(integer(camp.buildCost) && camp.buildCost > 0, `${id}: invalid camp build cost`);
-    check(array(camp.levels).map(level => level.level).join('/') === '1/2/3', `${id}: camp levels must be 1/2/3`);
+    check(array(camp.levels).map(level => level.level).join('/') === '1/2/3/4/5', `${id}: camp levels must be 1/2/3/4/5, with L4/L5 reserved for endless`);
     for (const level of array(camp.levels)) check(integer(level.upgradeCost) && positive(level.range), `${id} Lv${level.level}: invalid upgrade cost/range`);
   }
+  const endless = v.endless || {};
+  check(endless.campLevelMax === 5 && endless.targetWaveCount === 80 && endless.choiceEveryWave === true && endless.noMetaRewards === true, 'endless: mode must use five camp levels, an 80-wave target, choices every wave and no meta rewards');
+  check(mapById.has(endless.mapId), 'endless: unknown map');
+  check(array(endless.hpGrowthSegments).length === 6 && array(endless.hpGrowthSegments).every(segment => positive(segment.perWaveGrowth)), 'endless: expected six positive HP-growth segments');
+  const attributes = values(v.tactics).filter(tactic => tactic.category === 'attribute');
+  check(attributes.length === 26 && attributes.filter(tactic => tactic.attributeGroup === 'gate').length === 8, 'endless: expected 26 attribute cards including eight gate cards');
+  for (const tactic of attributes) {
+    check(tactic.repeatable === true && tactic.decay === (tactic.attributeGroup === 'gate' ? 1 : .85), `endless: invalid attribute repeat/decay for ${tactic.name}`);
+    check(['common', 'rare', 'epic', 'legendary'].includes(tactic.rarity), `endless: invalid attribute rarity for ${tactic.name}`);
+  }
+  const heroUpgrades = v.heroUpgrades || {}, heroCards = values(heroUpgrades).flatMap(group => array(group.upgrades));
+  check(sameSet(keys(heroUpgrades), keys(heroes)), 'heroUpgrades: every hero requires a matching upgrade group');
+  check(heroCards.length === 60 && new Set(heroCards.map(card => card.id)).size === 60, 'heroUpgrades: expected sixty unique hero cards');
+  check(heroCards.filter(card => !v.tactics?.[card.id]).length === 56, 'heroUpgrades: expected 56 additions and four preserved legacy hero cards');
+  for (const [heroId, group] of Object.entries(heroUpgrades)) {
+    const cards = array(group.upgrades);
+    check(group.baseStrength === 100 && cards.length === 4, `heroUpgrades.${heroId}: expected four cards with a base-strength reference of 100`);
+    check(cards.map(card => card.tier).sort().join('/') === '1/2/3/4', `heroUpgrades.${heroId}: tiers must cover 1/2/3/4`);
+    check(cards.map(card => card.rarity).sort().join('/') === 'epic/legendary/rare/rare', `heroUpgrades.${heroId}: expected two rare, one epic and one legendary card`);
+    for (const card of cards) {
+      const label = `heroUpgrades.${heroId}.${card.id}`;
+      check(card.hero === heroId && heroes[card.hero] && card.category === 'hero', `${label}: invalid hero/category reference`);
+      check(card.repeatable === false && card.decay === 1 && card.description && card.effects && keys(card.effects).length > 0, `${label}: missing nonrepeatable hero effects or description`);
+      const legacy = v.tactics?.[card.id];
+      if (legacy) check(keys(legacy).every(key => JSON.stringify(card[key]) === JSON.stringify(legacy[key])), `${label}: legacy card fields differ from the preserved tactic`);
+      else check(card.endlessOnly === true && card.camp === null, `${label}: new hero cards must be endless-only`);
+    }
+  }
+  const campUpgrades = v.campUpgrades || {}, campCards = values(campUpgrades).flatMap(group => array(group.upgrades));
+  check(sameSet(keys(campUpgrades), keys(camps)), 'campUpgrades: every camp requires a matching upgrade group');
+  check(campCards.length === 42 && new Set(campCards.map(card => card.id)).size === 42, 'campUpgrades: expected 42 unique specialization cards');
+  check(campCards.filter(card => !v.tactics?.[card.id]).length === 24, 'campUpgrades: expected 24 additions and eighteen preserved camp tactics');
+  for (const [campId, group] of Object.entries(campUpgrades)) {
+    const cards = array(group.upgrades), added = cards.filter(card => !v.tactics?.[card.id]);
+    check(cards.length === 7 && added.length === 4, `campUpgrades.${campId}: expected seven cards including four additions`);
+    check(added.map(card => card.rarity).sort().join('/') === 'epic/legendary/rare/rare', `campUpgrades.${campId}: additions require two rare, one epic and one legendary card`);
+    for (const card of cards) {
+      const label = `campUpgrades.${campId}.${card.id}`;
+      check(card.camp === campId && camps[card.camp] && card.category === 'camp', `${label}: invalid camp/category reference`);
+      check(card.repeatable === false && card.decay === 1 && card.description && card.effects && keys(card.effects).length > 0, `${label}: missing nonrepeatable specialization effects or description`);
+      const legacy = v.tactics?.[card.id];
+      if (legacy) check(keys(legacy).every(key => JSON.stringify(card[key]) === JSON.stringify(legacy[key])), `${label}: legacy card fields differ from the preserved tactic`);
+      else check(card.endlessOnly === true && card.hero === null, `${label}: new camp cards must be endless-only`);
+    }
+  }
+  const synergyGroups = v.synergies || {}, synergyCards = array(v.synergyUpgrades), heroCombos = array(v.heroCombos);
+  check(sameSet(keys(synergyGroups), ['taoyuan', 'weiwu_xiongfeng', 'jiangdong_huchen', 'wolong_zhonghu']), 'synergies: expected the four corrected synergy IDs');
+  check(synergyCards.length === 8 && new Set(synergyCards.map(card => card.id)).size === 8, 'synergyUpgrades: expected eight unique cards');
+  check(synergyCards.map(card => card.rarity).sort().join('/') === 'epic/epic/epic/epic/legendary/rare/rare/rare', 'synergyUpgrades: expected four epic, three rare and one legendary card');
+  const synergyById = new Map(synergyCards.map(card => [card.id, card]));
+  for (const [id, synergy] of Object.entries(synergyGroups)) {
+    const members = array(synergy.members), label = `synergies.${id}`;
+    check(members.length > 0 && new Set(members).size === members.length && members.every(heroId => heroes[heroId]), `${label}: invalid hero members`);
+    check(typeof synergy.requireAll === 'boolean' && (synergy.requireAll || integer(synergy.minMembers) && synergy.minMembers > 0 && synergy.minMembers <= members.length), `${label}: invalid member-count condition`);
+    check(synergyById.get(synergy.bonusUpgradeId)?.requiredSynergy === id, `${label}: missing matching bonus card`);
+  }
+  for (const card of synergyCards) {
+    const label = `synergyUpgrades.${card.id}`;
+    check(card.category === 'synergy' && card.repeatable === false && card.decay === 1 && card.endlessOnly === true && card.camp === null && card.hero === null, `${label}: invalid endless-only card metadata`);
+    check(card.name && card.description && card.runtimeNotes && keys(card.effects).length > 0, `${label}: missing readable effects or runtime notes`);
+    if (card.requiredSynergy) check(Boolean(synergyGroups[card.requiredSynergy]), `${label}: unknown required synergy`);
+    if (card.requiredHeroes) check(array(card.requiredHeroes).length > 0 && card.requiredHeroes.every(heroId => heroes[heroId]), `${label}: unknown required hero`);
+  }
+  check(new Set([...keys(v.tactics), ...heroCards.map(card => card.id), ...campCards.map(card => card.id), ...synergyCards.map(card => card.id)]).size === 136, 'synergyUpgrades: complete P0–P3 catalog must contain 136 distinct cards');
+  check(heroCombos.length === 8 && new Set(heroCombos.map(combo => combo.id)).size === 8 && new Set(heroCombos.map(combo => combo.from + '/' + combo.to)).size === 8, 'heroCombos: expected eight distinct directed pairs');
+  for (const combo of heroCombos) {
+    check(heroes[combo.from] && heroes[combo.to] && combo.from !== combo.to, `heroCombos.${combo.id}: invalid hero pair`);
+    check(combo.name && combo.description && combo.runtimeNotes && keys(combo.effects).length > 0, `heroCombos.${combo.id}: missing readable effects or runtime notes`);
+  }
+  const comboRules = v.comboRuntimeRules || {};
+  check(comboRules.windowSec === 2 && comboRules.maxPerRun === 3 && comboRules.masterWindowSec === 4 && comboRules.masterMaxPerRun === 5 && comboRules.clock === 'combat', 'comboRuntimeRules: expected shared 2/4-second combat windows and 3/5-use run limits');
   for (const [id, enemy] of Object.entries(enemies)) check(positive(enemy.hp) && positive(enemy.speed) && integer(enemy.reward), `${id}: invalid enemy HP/speed/reward`);
   for (const [id, boss] of Object.entries(bosses)) check(enemies[boss.enemyBaseId]?.class === 'boss', `${id}: unknown boss enemy base`);
   const party = v.party || {};
@@ -298,7 +369,7 @@ export function validateDesignData(balance, campaign) {
     check(level.rewardsExcludeSummons === true, `${label}: summoned reinforcements must not inflate reward budgets`);
     const cheapestBuild = Math.min(...[...availableCamps].map(id => camps[id]?.buildCost ?? Infinity));
     const basicBuildCost = (array(map?.campSlots).length - free.length) * cheapestBuild;
-    const cheapestUpgradeCost = Math.min(...[...availableCamps].map(id => sum(array(camps[id]?.levels).map(item => item.upgradeCost))));
+    const cheapestUpgradeCost = Math.min(...[...availableCamps].map(id => sum(array(camps[id]?.levels).slice(0, 3).map(item => item.upgradeCost))));
     const cheapestFullLevelThreeFieldCost = basicBuildCost + array(map?.campSlots).length * cheapestUpgradeCost;
     battleBudgets.push({ levelId: label, tierId: level.growthTierId, startingFood: level.startingFood, foodIfAllScheduledEnemiesKilled: level.startingFood + rewardUpperBound, cheapestFillEmptySlotsCost: basicBuildCost, cheapestFullLevelThreeFieldCost, allKillMarginAfterCheapestFullMax: level.startingFood + rewardUpperBound - cheapestFullLevelThreeFieldCost, startingBuildMargin: level.startingFood - basicBuildCost, basicBuildMargin: level.startingFood + rewardUpperBound - basicBuildCost, startingAdditionalCampsAffordable: Math.floor(level.startingFood / cheapestBuild) });
     if (level.unlockHeroId) { check(Boolean(heroes[level.unlockHeroId]) && !availableHeroes.has(level.unlockHeroId), `${label}: duplicate/unknown hero unlock`); availableHeroes.add(level.unlockHeroId); }

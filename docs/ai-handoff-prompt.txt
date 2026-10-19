@@ -1,0 +1,23 @@
+你接手 D:\AI\塔防《无双守关》。请中文沟通，在现有实现上继续；先只读 docs/PROJECT-STATUS.txt 和本提示词，再按任务需要查其他文件，不默认扫描历史和大日志。
+
+已完成P0–P5及无滚动选卡修复：15将、60剧情关；无尽目标80波且可继续、军营5级、136卡（属性26/营42/将60/羁绊8）、4羁绊8合击、锚点/一次性奖励/本地统计、图标音效与reducedMotion。右下锁44×44，开锁透明、闭锁金底。剧情仍3级且行为隔离。
+
+栈：原生JS ES Modules，无框架/新依赖；Node>=20（现24.21），PowerShell。入口index.html/campaign-app.js，引擎v1-engine.js，渲染v1-renderer.js；prototype.html为保留原型。
+
+铁律：
+1. runtime-data.js为生成物；数据改docs/v1/data/balance.json的v1Baseline或levels.json，再npm run data:build，不手改生成物。
+2. 不改剧情默认/L1–L3/原22战术id，不删改既有测试断言；新动效消费reducedMotion且保留信息。
+3. tacticDefinitions=104兼容视图，实际tacticCatalog=136，查卡用tacticDefinition(id)；装备ID34与卡牌ID136分开遍历。
+4. 工作区含未提交/未跟踪实现，勿reset/clean覆盖。QA用隔离存档。skill-art/baseline和balance-before是必要测试夹具，不能当旧档删除。
+
+按需索引：
+- 现状/代码路由：docs/PROJECT-STATUS.txt；维护：docs/IMPLEMENTATION.md。
+- 无尽规格：docs/roguelike-endless-design-v3.html（先附录A修正名称和页首说明，再相关章节；整体改玩法再通读）。数值以node docs/data/endless-curve.mjs为准。
+- 历史/差异：docs/DEVELOPMENT-HISTORY.txt；证据：docs/verification/latest.json。不要重做P0–P5或恢复选卡滚动。
+- 具体规则查对应rules/effects模块及测试，不把模型近似、固定夹具或历史审计当真人实测。
+
+验证：npm test（自动pretest，含60关模拟，约5–8分钟）、npm run docs:validate、node docs/v1/data/validate-balance.mjs、npm run build。最新结果见verification/latest.json；当前486/486、54测试文件。修改后重新验证，不能沿用历史通过结论。
+
+尚未验收：自然1–80波真人多构筑平衡、真实手机/TapTap、低端机长局性能及主观听感。建议先真人长局与真机高波压测，用现有本地统计定位，有样本后再调数值。
+
+先回复已核实状态、真实风险和一轮最小可验收计划；用户已有具体请求就继续完成。没有新功能授权时不擅自重构/调数值/发布。不重复读全部旧记录，报告改动、检查结果和边界即可。

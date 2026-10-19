@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-20",
+  "documentFilesChecked": 12,
+  "brokenLocalLinks": [],
+  "testsCompared": 54,
+  "criticalGameplayDataFilesCompared": 14,
+  "changedTestsOrCriticalGameplayFiles": [],
+  "curveSha256": "55083EB07F4327246E9D08F1F8D24768D8BD7E90C8C4F4559B87E74A14FBECD7",
+  "cleanup": {
+    "deletedFiles": 390,
+    "deletedBytes": 84880840,
+    "stillPresent": []
+  },
+  "handoff": {
+    "beforeCharacters": 10840,
+    "afterCharacters": 1388,
+    "reductionPercent": 87.2,
+    "defaultReading": [
+      "docs/ai-handoff-prompt.txt",
+      "docs/PROJECT-STATUS.txt"
+    ]
+  }
+}

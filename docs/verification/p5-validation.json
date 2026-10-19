@@ -1,0 +1,77 @@
+{
+  "phase": "P5",
+  "date": "2026-10-20",
+  "node": "v24.21.0",
+  "tests": {
+    "total": 486,
+    "passed": 486,
+    "failed": 0,
+    "new": 37,
+    "existingFiles": 50,
+    "modifiedExistingTestFiles": 0,
+    "durationMs": 371883.2213
+  },
+  "art": {
+    "cards": 136,
+    "symbols": 61,
+    "categoryTextures": 4,
+    "rarityFrames": 4,
+    "existingEquipmentIconsUnchanged": 170,
+    "browserDecoded": 136
+  },
+  "audio": {
+    "newEvents": 11,
+    "comboPairs": 8,
+    "maximumVoices": 18,
+    "ambientPhases": 3,
+    "newPulseRange": {
+      "frequencyHz": [
+        47,
+        1100
+      ],
+      "durationSec": [
+        0.05,
+        0.23
+      ],
+      "volume": [
+        0.018,
+        0.13
+      ],
+      "intervalSec": [
+        0.1,
+        0.3
+      ]
+    }
+  },
+  "motion": {
+    "classes": 8,
+    "comboHoldSec": 0.25,
+    "testedSpeeds": [
+      1,
+      1.5,
+      2
+    ],
+    "reducedMotion": "passed",
+    "l5CalmFirstFrameFPS": [
+      30,
+      10
+    ]
+  },
+  "checks": {
+    "balanceValidation": "passed",
+    "designValidation": "passed",
+    "offlineBuild": "passed",
+    "sixtyStageCampaign": "passed",
+    "curveSha256": "55083EB07F4327246E9D08F1F8D24768D8BD7E90C8C4F4559B87E74A14FBECD7"
+  },
+  "browserQA": {
+    "isolatedMemoryStorage": true,
+    "viewport": [
+      360,
+      640
+    ],
+    "errors": 0,
+    "naturalEightyWaveClearTested": false,
+    "subjectiveListeningReview": false
+  }
+}
