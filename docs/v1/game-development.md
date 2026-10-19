@@ -266,7 +266,7 @@ contentVersion、buildVersion、saveSchemaVersion 分别演进；数值补丁可
 
 ## 12. GitHub 试点与 TapTap 适配
 
-GitHub 仓库 https://github.com/msdest565/three_kingdom 是当前源代码和文档入口。npm run build 输出独立 dist/index.html 可双击离线体验，也能用于静态试玩部署；本次不自动提交、推送或发布。正式开发保留源目录，设计阅读器位于 docs/v1/index.html，避免把所有源文件只留在一个 HTML 中。
+GitHub 仓库 https://github.com/msdest565/three_kingdom 是当前源代码和文档入口。npm run build 输出独立 dist/index.html 可双击离线体验，也能用于静态试玩部署。当前发布主线为 main，现有 GitHub Pages 流程在推送后发布到 [公开试玩](https://msdest565.github.io/three_kingdom/)；构建命令本身不提交或推送，分享新版本前须确认对应提交的 Pages 部署成功。正式开发保留源目录，设计阅读器位于 docs/v1/index.html，避免把所有源文件只留在一个 HTML 中。
 
 GitHub Pages 适合当前静态试玩，长期商业化上线应另评估正式托管与条款。[GitHub Pages 使用限制](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) 资源路径以当前项目目录相对路径构建，不能假设部署在域名根目录。缓存采用版本化文件名，旧资源保留到兼容窗口结束；不要将自动缓存升级作为无法回滚的全局替换。
 

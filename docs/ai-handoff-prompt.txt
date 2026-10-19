@@ -8,7 +8,7 @@
 1. runtime-data.js为生成物；数据改docs/v1/data/balance.json的v1Baseline或levels.json，再npm run data:build，不手改生成物。
 2. 不改剧情默认/L1–L3/原22战术id，不删改既有测试断言；新动效消费reducedMotion且保留信息。
 3. tacticDefinitions=104兼容视图，实际tacticCatalog=136，查卡用tacticDefinition(id)；装备ID34与卡牌ID136分开遍历。
-4. 工作区含未提交/未跟踪实现，勿reset/clean覆盖。QA用隔离存档。skill-art/baseline和balance-before是必要测试夹具，不能当旧档删除。
+4. 当前实现已合入main，试玩https://msdest565.github.io/three_kingdom/；接手先核对git status，勿reset/clean覆盖其他本地文件。QA用隔离存档。skill-art/baseline和balance-before是必要测试夹具，不能当旧档删除。
 
 按需索引：
 - 现状/代码路由：docs/PROJECT-STATUS.txt；维护：docs/IMPLEMENTATION.md。

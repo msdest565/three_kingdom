@@ -1,5 +1,6 @@
 无双守关｜当前状态（唯一现状入口）
 更新：2026-10-20。先读本页；历史、完整规格和证据按任务需要打开，避免默认全库阅读。
+发布主线：main；共享试玩：https://msdest565.github.io/three_kingdom/ 。推送主线后由现有GitHub Pages流程更新，确认部署成功再分享最新版本。
 
 完成范围
 - 原生JavaScript ES Modules，无框架/运行依赖；Node>=20，当前24.21.0，PowerShell。
@@ -15,7 +16,7 @@
 3. game.tacticDefinitions无尽兼容视图104项；实际game.tacticCatalog为136，查卡用game.tacticDefinition(id)。BALANCE.tactics本身48项，不要误判漏卡。
 4. EQUIPMENT_ART_IDS仍是34装备；卡牌遍历TACTIC_ART_IDS=136，符号TACTIC_SYMBOL_IDS=61。
 5. 新动效去除前庭运动但保留信息；引擎、展示现实时间、音频时钟分开；draw不能推进或修改战斗状态。
-6. 工作区有未提交/未跟踪实现。不得reset/clean覆盖；浏览器QA用隔离存档，不操作玩家进度。
+6. 本轮实现已提交并合入main；接手先核对git status，不reset/clean覆盖其他本地文件。浏览器QA用隔离存档，不操作玩家进度。
 
 任务路由（只读相关部分）
 - 启动、职责、存档维护：IMPLEMENTATION.md。

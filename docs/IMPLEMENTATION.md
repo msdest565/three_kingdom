@@ -11,7 +11,7 @@ npm run data:build
 npm run dev
 ~~~
 
-`http://127.0.0.1:4173/` 是主游戏，`/prototype.html` 是保留的关羽单关原型。`npm run build` 生成自包含的 `dist/index.html` 与 `dist/prototype.html`；本地构建不包含提交、部署或平台审核。
+`http://127.0.0.1:4173/` 是主游戏，`/prototype.html` 是保留的关羽单关原型。公开试玩为 [GitHub Pages](https://msdest565.github.io/three_kingdom/)，发布主线为 `main`；推送后等待现有 Pages 构建与部署成功，再确认线上版本。`npm run build` 生成自包含的 `dist/index.html` 与 `dist/prototype.html`；本地构建不包含提交、部署或平台审核。
 
 **`runtime-data.js` 是生成物，禁止直接编辑。** 数值源是 `docs/v1/data/balance.json` 的 `v1Baseline`，内容源是 `docs/v1/data/levels.json`；修改源 JSON 后运行 `npm run data:build`。`npm test` 的 `pretest` 及 `npm run build` 也会重新生成。
 
@@ -55,4 +55,4 @@ npm run build
 
 全量 `npm test` 包含六十关固定策略仿真，通常需 5–8 分钟。不得删改已有断言以取得通过；按改动新增有效覆盖。文档/生成器改动另执行适用的 `docs:levels`、`docs:progression`、`docs:build`，明确要重算派生算例时才用 `validate-balance.mjs --write-derived`，并审查生成差异。
 
-最近完整基线为 **486/486，54 个测试文件**，证据入口为 [verification/latest.json](verification/latest.json) 与 [完整日志](verification/npm-test.log)。真实浏览器已检查卡面与短屏选卡；这不代表自然打通 80 波、真实手机、主观听感或平台发行已验收。浏览器 QA 使用独立内存存档，不覆盖用户真实进度。素材增补同步 [素材来源记录](ASSET_LICENSES.md)。工作区含未提交与未跟踪实现，交接须保留完整工作区，不能仅复制 Git HEAD。
+最近完整基线为 **486/486，54 个测试文件**，证据入口为 [verification/latest.json](verification/latest.json) 与 [完整日志](verification/npm-test.log)。真实浏览器已检查卡面与短屏选卡；这不代表自然打通 80 波、真实手机、主观听感或平台发行已验收。浏览器 QA 使用独立内存存档，不覆盖用户真实进度。素材增补同步 [素材来源记录](ASSET_LICENSES.md)。当前实现已提交到主线；后续交接先核对工作区，若存在未提交或未跟踪实现应完整保留，不能仅复制 Git HEAD。

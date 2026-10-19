@@ -13,8 +13,8 @@
   },
   "handoff": {
     "beforeCharacters": 10840,
-    "afterCharacters": 1388,
-    "reductionPercent": 87.2,
+    "afterCharacters": 1475,
+    "reductionPercent": 86.4,
     "defaultReading": [
       "docs/ai-handoff-prompt.txt",
       "docs/PROJECT-STATUS.txt"
